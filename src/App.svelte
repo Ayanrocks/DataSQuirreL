@@ -7,6 +7,7 @@
   let port = 0;
   let userName = '';
   let password = '';
+  let dbName = '';
 
   function OnClick(e) {
     console.log('Passowrd: ', connName, password, userName);
@@ -15,16 +16,22 @@
       return;
     }
     // Invoke the command
-    invoke('my_custom_command', {
+    invoke('init_connection', {
       reqPayload: {
         conn_name: connName,
         host_name: hostName,
+        database_name: dbName,
         port: parseInt(port),
         user_name: userName,
+        password: password,
       },
-    }).catch((e) => {
-      console.log(e);
-    });
+    })
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((e) => {
+        console.log(e);
+      });
   }
 </script>
 
@@ -79,6 +86,17 @@
         <label class="label" for="password">Password</label>
         <div class="control">
           <input id="password" class="input" type="password" bind:value={password} placeholder="Enter Password" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="columns">
+    <div class="column is-full">
+      <div class="field">
+        <label class="label" for="connName">Database Name</label>
+        <div class="control">
+          <input id="connName" class="input" type="text" bind:value={dbName} placeholder="Enter database name" />
         </div>
       </div>
     </div>
