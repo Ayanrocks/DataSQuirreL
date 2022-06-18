@@ -42,7 +42,7 @@ async fn init_connection(req_payload: DBConnectionRequest) -> IPCResponse {
         status: http::status::StatusCode::OK.as_u16(),
         error_code: None,
         sys_err: None,
-        frontend_msg: Some("Connected Successfully".to_string()),
+        frontend_msg: Some("Database connected successfully".to_string()),
     };
 }
 
