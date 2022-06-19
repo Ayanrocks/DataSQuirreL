@@ -30,7 +30,7 @@
     })
       .then((res) => {
         console.log(res);
-        notificationMsg.set({ type: NOTIFCATION_TYPE_SUCCESS, message: res.frontend_msg });
+        notificationMsg.set({ type: NOTIFICATION_TYPE_SUCCESS, message: res.frontend_msg });
 
         // setTimeout(() => {
         //   navigate('/dashboard');
