@@ -30,15 +30,23 @@
     })
       .then((res) => {
         console.log(res);
+        if(res.error_code) {
+          notificationMsg.set({ type: NOTIFICATION_TYPE_ERROR, message: res.frontend_msg });
+          return
+        }
+        
         notificationMsg.set({ type: NOTIFICATION_TYPE_SUCCESS, message: res.frontend_msg });
 
-        // setTimeout(() => {
-        //   navigate('/dashboard');
-        // }, 7000);
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       })
       .catch((e) => {
         console.log(e);
-        notificationMsg.set({ type: NOTIFICATION_TYPE_ERROR, message: 'Database connected successfully' });
+        notificationMsg.set({
+          type: NOTIFICATION_TYPE_ERROR,
+          message: 'Something went wrong. Check console for more information',
+        });
       });
   }
 </script>

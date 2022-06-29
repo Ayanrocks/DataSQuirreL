@@ -1,1 +1,2 @@
-pub const StatusOk: i32 = 200;
+// ErrCodeDatabaseConnFailed - database
+pub const ErrCodeDatabaseConnFailed: &str = "2001A";

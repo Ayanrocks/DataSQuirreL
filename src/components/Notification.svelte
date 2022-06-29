@@ -16,11 +16,15 @@
   notificationMsg.subscribe((val) => {
     if (msg == '' && !alreadyRegistered && val.message != '') {
       console.log('Registering Clear Event');
+      let timeout = 3 * 1000; // 3 sec for success messages
+      if (val.type != NOTIFICATION_TYPE_SUCCESS) {
+        timeout = 6 * 1000;
+      }
       notificationClearTimeout = setTimeout(() => {
-        console.log('Cleared after 5s');
+        console.log('Cleared after ', timeout, 's');
         notificationMsg.set({ type: '', message: '' });
         alreadyRegistered = false;
-      }, 6000);
+      }, timeout);
       alreadyRegistered = true;
     }
     msg = val.message;
@@ -41,6 +45,7 @@
 
   function hideMsg() {
     notificationMsg.set({ type: '', message: '' });
+    alreadyRegistered = false;
     clearTimeout(notificationClearTimeout);
   }
 </script>
@@ -101,10 +106,6 @@
     -webkit-box-shadow: 1px 5px 7px 0px rgba(242, 89, 119, 0.5);
     -moz-box-shadow: 1px 5px 7px 0px rgba(242, 89, 119, 0.5);
     box-shadow: 1px 5px 7px 0px rgba(242, 89, 119, 0.5);
-  }
-
-  .notification {
-    height: 7rem;
   }
 
   .notification-body {
