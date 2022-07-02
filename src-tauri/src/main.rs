@@ -3,16 +3,16 @@
     windows_subsystem = "windows"
 )]
 
-use database::db::{connect_to_db, ConnPool};
+use database::db::{connect_to_db, ConnPool, TableSchema};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::{http, State};
+use tauri::{http, CustomMenuItem, Menu, MenuItem, State, Submenu};
 
 pub mod constants;
 mod database;
 
 struct ApplicationState {
-    DBPool: Mutex<Option<ConnPool>>,
+    dbpool: Mutex<Option<ConnPool>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,26 +25,26 @@ struct DBConnectionRequest {
     password: String,
 }
 #[derive(Debug, Serialize, Deserialize)]
-struct TableData {
+struct TableData<T> {
     columns: Vec<String>,
-    rows: Option<Vec<String>>,
+    rows: Option<Vec<Vec<T>>>,
     table_type: String,
 }
 #[derive(Debug, Serialize, Deserialize)]
-struct IPCResponse {
+struct IPCResponse<T> {
     status: u16,
     error_code: Option<String>,
     sys_err: Option<String>,
     frontend_msg: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<Vec<TableData>>,
+    data: Option<T>,
 }
 
 #[tauri::command]
 async fn init_connection(
     req_payload: DBConnectionRequest,
     application_state: State<'_, ApplicationState>,
-) -> Result<IPCResponse, ()> {
+) -> Result<IPCResponse<String>, ()> {
     let conn_result = connect_to_db(
         &req_payload.user_name,
         &req_payload.password,
@@ -57,7 +57,7 @@ async fn init_connection(
 
     match conn_result {
         Ok(conn_pool) => {
-            *application_state.DBPool.lock().unwrap() = Some(conn_pool);
+            *application_state.dbpool.lock().unwrap() = Some(conn_pool);
             return Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: None,
@@ -67,9 +67,9 @@ async fn init_connection(
             });
         }
         Err(e) => {
-            return Ok(IPCResponse {
+            return Ok(IPCResponse::<_> {
                 status: http::status::StatusCode::OK.as_u16(),
-                error_code: Some(constants::ErrCodeDatabaseConnFailed.to_string()),
+                error_code: Some(constants::ERR_CODE_DATABASE_CONN_FAILED.to_string()),
                 sys_err: Some(e.to_string()),
                 frontend_msg: Some(e.to_string()),
                 data: None,
@@ -79,29 +79,63 @@ async fn init_connection(
 }
 
 #[tauri::command]
-async fn fetch_tables(application_state: State<'_, ApplicationState>) -> Result<IPCResponse, ()> {
-    // let db_conn = *application_state.DBPool.lock().unwrap();
+fn fetch_tables<'a>(
+    application_state: State<ApplicationState>,
+) -> Result<IPCResponse<TableData<TableSchema>>, ()> {
+    tauri::async_runtime::block_on(async {
+        let table_result = application_state
+            .dbpool
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .fetch_tables()
+            .await;
 
-    // match db_conn {
-    //     Some(db) => {}
-    //     None => todo!(),
-    // };
+        match table_result {
+            Ok(t) => {
+                let table_data = TableData {
+                    columns: vec![String::from("Table Name")],
+                    rows: Some(vec![t]),
+                    table_type: "fetch_tables".to_string(),
+                };
 
-    return Ok(IPCResponse {
-        status: http::status::StatusCode::OK.as_u16(),
-        error_code: Some(constants::ErrCodeDatabaseConnFailed.to_string()),
-        sys_err: None,
-        frontend_msg: Some("".to_string()),
-        data: None,
-    });
+                return Ok(IPCResponse {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: None,
+                    sys_err: None,
+                    frontend_msg: Some("Operation Successful".to_string()),
+                    data: Some(table_data),
+                });
+            }
+            Err(e) => {
+                return Ok(IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                })
+            }
+        }
+    })
 }
 
 fn main() {
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
+    let close = CustomMenuItem::new("close".to_string(), "Close");
+    let submenu = Submenu::new("File", Menu::new().add_item(quit).add_item(close));
+    let menu = Menu::new()
+        .add_native_item(MenuItem::Copy)
+        .add_item(CustomMenuItem::new("hide", "Hide"))
+        .add_submenu(submenu);
+
     tauri::Builder::default()
         .manage(ApplicationState {
-            DBPool: Default::default(),
+            dbpool: Default::default(),
         })
-        .invoke_handler(tauri::generate_handler![init_connection])
+        .menu(menu)
+        .invoke_handler(tauri::generate_handler![init_connection, fetch_tables])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

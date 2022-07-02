@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
-use sqlx::Postgres;
-use std::env;
+use sqlx::{query_as, FromRow, Postgres};
 
 pub struct ConnPool {
     pub conn_name: String,
@@ -9,7 +9,7 @@ pub struct ConnPool {
     pub pool: sqlx::Pool<Postgres>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct TableSchema {
     pub table_catalog: String,
     pub table_schema: String,
@@ -36,27 +36,21 @@ pub async fn connect_to_db(
         .await;
 
     match pool_result {
-        Ok(pool) => {
-            env::set_var("DATABASE_URL", &dsn);
-            Ok(ConnPool {
-                conn_name: conn_name.to_string(),
-                db_name: dbname.to_string(),
-                dsn: dsn,
-                pool,
-            })
-        }
+        Ok(pool) => Ok(ConnPool {
+            conn_name: conn_name.to_string(),
+            db_name: dbname.to_string(),
+            dsn: dsn,
+            pool,
+        }),
         Err(e) => Err(e),
     }
 }
 
 impl ConnPool {
-    pub async fn fetch_tables(&self) {
-        let db_conn_result = self.pool.acquire().await;
-        match db_conn_result {
-            Ok(mut db_conn) => async {
-                let query_result = sqlx::query_as(
-                    format!(
-                        "
+    pub async fn fetch_tables(&self) -> Result<Vec<TableSchema>, sqlx::Error> {
+        let mut db_conn = self.pool.acquire().await?;
+        let query = format!(
+            "
                     SELECT
                         table_catalog,
                         table_schema,
@@ -66,23 +60,26 @@ impl ConnPool {
                         information_schema.tables
                     WHERE
                         table_schema = 'public'
-                        AND table_catalog = '{}'",
-                        self.dsn,
-                    )
-                    .as_str(),
-                )
-                .fetch_all(&mut db_conn)
-                .await;
+                        AND table_catalog = '{}'
+            ",
+            self.db_name,
+        );
 
-                match query_result {
-                    Ok(v) => {
-                        println!("Vec: {}", v)
-                    },
-                    Err(_) => todo!(),
-                };
-            },
+        println!("Printing Query: {}", &query);
+
+        let query_result = query_as::<sqlx::Postgres, TableSchema>(&query)
+            .fetch_all(&mut db_conn)
+            .await;
+        print!("\nInside Function\n");
+        match query_result {
+            Ok(row) => {
+                print!("\nInside Function\n");
+                println!("{:?}", row);
+                return Ok(row);
+            }
             Err(e) => {
-                println!("Error Fetching: {}", e)
+                println!("{:#?}", e);
+                return Err(e);
             }
         }
     }
