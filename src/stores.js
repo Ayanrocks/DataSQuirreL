@@ -5,9 +5,7 @@ export const notificationMsg = writable({
   message: '',
 });
 
-export const tableNames = writable([
-  {
-    tableName: '',
-    tables: [],
-  },
-]);
+export const tableNames = writable({
+  tableName: '',
+  tables: [],
+});
