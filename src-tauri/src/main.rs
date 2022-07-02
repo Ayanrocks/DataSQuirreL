@@ -41,47 +41,49 @@ struct IPCResponse<T> {
 }
 
 #[tauri::command]
-async fn init_connection(
+fn init_connection(
     req_payload: DBConnectionRequest,
     application_state: State<'_, ApplicationState>,
-) -> Result<IPCResponse<String>, ()> {
-    let conn_result = connect_to_db(
-        &req_payload.user_name,
-        &req_payload.password,
-        &req_payload.host_name,
-        &req_payload.port,
-        &req_payload.database_name,
-        &req_payload.conn_name,
-    )
-    .await;
+) -> IPCResponse<String> {
+    tauri::async_runtime::block_on(async {
+        let conn_result = connect_to_db(
+            &req_payload.user_name,
+            &req_payload.password,
+            &req_payload.host_name,
+            &req_payload.port,
+            &req_payload.database_name,
+            &req_payload.conn_name,
+        )
+        .await;
 
-    match conn_result {
-        Ok(conn_pool) => {
-            *application_state.dbpool.lock().unwrap() = Some(conn_pool);
-            return Ok(IPCResponse {
-                status: http::status::StatusCode::OK.as_u16(),
-                error_code: None,
-                sys_err: None,
-                frontend_msg: Some("Database connected successfully".to_string()),
-                data: None,
-            });
+        match conn_result {
+            Ok(conn_pool) => {
+                *application_state.dbpool.lock().unwrap() = Some(conn_pool);
+                return IPCResponse {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: None,
+                    sys_err: None,
+                    frontend_msg: Some("Database connected successfully".to_string()),
+                    data: None,
+                };
+            }
+            Err(e) => {
+                return IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(constants::ERR_CODE_DATABASE_CONN_FAILED.to_string()),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                }
+            }
         }
-        Err(e) => {
-            return Ok(IPCResponse::<_> {
-                status: http::status::StatusCode::OK.as_u16(),
-                error_code: Some(constants::ERR_CODE_DATABASE_CONN_FAILED.to_string()),
-                sys_err: Some(e.to_string()),
-                frontend_msg: Some(e.to_string()),
-                data: None,
-            })
-        }
-    }
+    })
 }
 
 #[tauri::command]
 fn fetch_tables<'a>(
     application_state: State<ApplicationState>,
-) -> Result<IPCResponse<TableData<TableSchema>>, ()> {
+) -> IPCResponse<TableData<TableSchema>> {
     tauri::async_runtime::block_on(async {
         let table_result = application_state
             .dbpool
@@ -100,22 +102,22 @@ fn fetch_tables<'a>(
                     table_type: "fetch_tables".to_string(),
                 };
 
-                return Ok(IPCResponse {
+                return IPCResponse {
                     status: http::status::StatusCode::OK.as_u16(),
                     error_code: None,
                     sys_err: None,
                     frontend_msg: Some("Operation Successful".to_string()),
                     data: Some(table_data),
-                });
+                };
             }
             Err(e) => {
-                return Ok(IPCResponse::<_> {
+                return IPCResponse::<_> {
                     status: http::status::StatusCode::OK.as_u16(),
                     error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()),
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                })
+                }
             }
         }
     })

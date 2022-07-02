@@ -39,7 +39,7 @@
 
         setTimeout(() => {
           navigate('/dashboard');
-        }, 1000);
+        }, 500);
       })
       .catch((e) => {
         console.log(e);

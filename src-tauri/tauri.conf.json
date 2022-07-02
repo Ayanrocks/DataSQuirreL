@@ -7,7 +7,7 @@
     "distDir": "../public"
   },
   "package": {
-    "productName": "tauri-app",
+    "productName": "datasquirrel",
     "version": "0.1.0"
   },
   "tauri": {
@@ -52,7 +52,7 @@
         "fullscreen": false,
         "height": 800,
         "resizable": true,
-        "title": "Tauri App",
+        "title": "Data Squirrel",
         "width": 1200
       }
     ]

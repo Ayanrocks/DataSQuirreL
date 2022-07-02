@@ -11,9 +11,7 @@
     <Route path="/">
       <InitConnection />
     </Route>
-    <Route path="/dashboard">
-      <MainScreen />
-    </Route>
+    <Route path="dashboard" component={MainScreen} />
   </div>
 </Router>
 
