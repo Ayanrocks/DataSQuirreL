@@ -5,29 +5,35 @@
   import Sidebar from '../components/Sidebar.svelte';
   import DataTable from '../components/DataTable.svelte';
   import { notificationMsg, tableNames } from '../stores';
-  import { NOTIFICATION_TYPE_ERROR } from '../constants/constants';
+  import {
+    NOTIFICATION_TYPE_ERROR,
+    BORDER_SIZE,
+    MAX_RESIZE_EXPANDABLE_SIZE,
+    MIN_RESIZE_EXPANDABLE_SIZE,
+  } from '../constants/constants';
 
   const registerFocus = useFocus();
 
   // on mousedown for the draggable
-  const BORDER_SIZE = 2;
-  const MAX_RESIZE_EXPANDABLE_SIZE = '600px';
+
   let m_pos;
 
   function resize(e) {
     const dx = e.x - m_pos;
     m_pos = e.x;
     const leftSidebarContainer = document.getElementById('left-sidebar-conntainer');
-    const leftSidebar = document.getElementById('left-sidebar');
+    const rightMainContainer = document.getElementById('right-main-content');
     let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width) + dx + 'px';
 
-    if (computedWidth < MAX_RESIZE_EXPANDABLE_SIZE) {
+    if (computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE && computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE) {
       leftSidebarContainer.style.width = computedWidth;
-      leftSidebar.style.width = computedWidth;
+      rightMainContainer.style.width = computedWidth;
+      rightMainContainer.style.marginLeft = computedWidth;
     }
   }
 
   function resizeSideBar(e) {
+    e = e.detail.event;
     console.log('Registering mousedown,', e.offsetX);
     if (e.offsetX < BORDER_SIZE) {
       m_pos = e.x;
@@ -85,10 +91,9 @@
 
 <div class="main-container" use:registerFocus>
   <div class="columns split-view-container" id="left-sidebar-conntainer">
-    <Sidebar />
-    <div class="split-sidebar-draggable-div" on:mousedown={resizeSideBar} />
+    <Sidebar on:resizing={resizeSideBar} />
   </div>
-  <div class="columns split-main-content">
+  <div class="columns split-main-content" id="right-main-content">
     <DataTable />
   </div>
 </div>
@@ -97,31 +102,22 @@
   .main-container {
     height: 102vh;
     width: 100vw;
-    background-color: #fff0e0;
+    background-color: #e0e0e0;
     display: flex;
     justify-content: flex-start;
   }
 
   .split-view-container {
-    height: 102%;
     position: absolute;
+    background-color: #f9f2ed;
+    height: 102%;
     width: 24%;
     min-width: 250px;
     max-width: 600px;
   }
 
-  .split-sidebar-draggable-div {
-    position: absolute;
-    right: 0;
-    background-color: rgb(191, 191, 191);
-    width: 4px;
-    height: 98%;
-    margin-left: 30px;
-    cursor: ew-resize;
-  }
-
   .split-main-content {
     width: 75%;
-    margin-left: 250px;
+    margin-left: clamp(250px, 24%, 600px);
   }
 </style>

@@ -1,5 +1,14 @@
 <script>
   import { tableNames } from '../stores';
+  import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
+
+  function resize(e) {
+    dispatch('resizing', {
+      event: e,
+    });
+  }
 
   let sideBarColumn = 'Table Names';
   let tables = [];
@@ -8,11 +17,10 @@
     tables = e.tables;
     sideBarColumn = e.tableName;
   });
-
-  
 </script>
 
 <div class="column is-one-quarter split-sidebar" id="left-sidebar">
+  <div class="split-sidebar-draggable-div" on:mousedown={resize} />
   <div class="sidebar-content">
     <div class="db-selector-dropdown">
       <div class="control has-icons-left">
@@ -21,9 +29,11 @@
             <option selected>{sideBarColumn}</option>
           </select>
         </div>
-        <span class="icon is-left">
-          <i class="fas fa-solid fa-database" />
-        </span>
+        <div class="dropdown-icon-wrapper">
+          <span class="icon is-left">
+            <i class="fas fa-solid fa-database" />
+          </span>
+        </div>
       </div>
     </div>
     <div class="table-list has-text-left">
@@ -33,7 +43,8 @@
           <li class="rounded-rectangle">
             <span class="icon is-left">
               <i class="fas fa-thin fa-table" />
-            </span>{t}
+            </span>
+            {t}
           </li>
         {/each}
       </ul>
@@ -44,9 +55,8 @@
 <style>
   .split-sidebar {
     height: 102%;
-    background-color: #f9f2ed;
-    min-width: 250px;
-    max-width: 600px;
+    width: 100%;
+    flex: none;
   }
 
   .sidebar-content {
@@ -58,11 +68,25 @@
     height: 100%;
   }
 
+  .split-sidebar-draggable-div {
+    position: absolute;
+    right: 0;
+    background-color: rgb(191, 191, 191);
+    width: 4px;
+    height: 100%;
+    margin-left: 30px;
+    cursor: ew-resize;
+  }
+
+  .db-selector-dropdown {
+    /* text-align: center; */
+    margin: 0 auto;
+  }
+
   .table-list {
     overflow-y: scroll;
     overflow-x: hidden;
-    height: 95vh;
-    margin: 20px auto;
+    margin: 20px 5px;
     line-height: 25px;
     word-break: break-all;
   }
