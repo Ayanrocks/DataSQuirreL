@@ -2,14 +2,46 @@
   import { invoke } from '@tauri-apps/api/tauri';
   import { onMount } from 'svelte';
   import { useFocus } from 'svelte-navigator';
+  import Sidebar from '../components/Sidebar.svelte';
+  import DataTable from '../components/DataTable.svelte';
   import { notificationMsg, tableNames } from '../stores';
-  import { NOTIFICATION_TYPE_SUCCESS, NOTIFICATION_TYPE_ERROR } from '../constants/constants';
+  import { NOTIFICATION_TYPE_ERROR } from '../constants/constants';
 
   const registerFocus = useFocus();
-  let sideBarColumn = 'Table Names';
-  let tables = [];
 
-  const BORDER_SIZE = 4;
+  // on mousedown for the draggable
+  const BORDER_SIZE = 2;
+  const MAX_RESIZE_EXPANDABLE_SIZE = '600px';
+  let m_pos;
+
+  function resize(e) {
+    const dx = e.x - m_pos;
+    m_pos = e.x;
+    const leftSidebarContainer = document.getElementById('left-sidebar-conntainer');
+    const leftSidebar = document.getElementById('left-sidebar');
+    let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width) + dx + 'px';
+
+    if (computedWidth < MAX_RESIZE_EXPANDABLE_SIZE) {
+      leftSidebarContainer.style.width = computedWidth;
+      leftSidebar.style.width = computedWidth;
+    }
+  }
+
+  function resizeSideBar(e) {
+    console.log('Registering mousedown,', e.offsetX);
+    if (e.offsetX < BORDER_SIZE) {
+      m_pos = e.x;
+      document.addEventListener('mousemove', resize, false);
+    }
+  }
+
+  document.addEventListener(
+    'mouseup',
+    function () {
+      document.removeEventListener('mousemove', resize, false);
+    },
+    false
+  );
 
   onMount(() => {
     console.log('OnLoad');
@@ -30,6 +62,10 @@
               tablesResult.push(i.table_name);
             }
 
+            // sort tablenames
+
+            tablesResult = tablesResult.sort((a, b) => a > b);
+
             tableNames.set({
               tableName: entityName,
               tables: tablesResult,
@@ -45,96 +81,47 @@
         });
       });
   });
-
-  tableNames.subscribe((e) => {
-    tables = e.tables;
-    sideBarColumn = e.tableName;
-  });
-
-  // on mousedown for the draggable
-  let m_pos;
-
-  function resize(e) {
-    const dx = e.x - m_pos;
-    m_pos = e.x;
-    const panel = document.getElementById('left-sidebar');
-    panel.style.width = parseInt(getComputedStyle(panel, '').width) + dx + 'px';
-  }
-
-  function resizeSideBar(e) {
-    console.log('Registering mousedown,', e.offsetX);
-    if (e.offsetX < BORDER_SIZE) {
-      m_pos = e.x;
-      document.addEventListener('mousemove', resize, false);
-    }
-  }
-
-  document.addEventListener(
-    'mouseup',
-    function () {
-      document.removeEventListener('mousemove', resize, false);
-    },
-    false
-  );
 </script>
 
 <div class="main-container" use:registerFocus>
-  <div class="columns split-view-container">
-    <div class="column is-one-quarter split-sidebar" id="left-sidebar">
-      <div class="split-sidebar-draggable-div" on:mousedown={resizeSideBar} />
-      <div class="table-container has-text-centered">
-        <table class="table is-fullwidth is-hoverable has-text-centered">
-          <thead>
-            <tr>
-              <th>{sideBarColumn}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each tables as t}
-              <tr>
-                <th>{t}</th>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="column split-main-content">Auto</div>
+  <div class="columns split-view-container" id="left-sidebar-conntainer">
+    <Sidebar />
+    <div class="split-sidebar-draggable-div" on:mousedown={resizeSideBar} />
+  </div>
+  <div class="columns split-main-content">
+    <DataTable />
   </div>
 </div>
 
 <style>
   .main-container {
-    height: 100vh;
+    height: 102vh;
     width: 100vw;
+    background-color: #fff0e0;
+    display: flex;
+    justify-content: flex-start;
   }
 
   .split-view-container {
     height: 102%;
-    width: 100%;
-  }
-
-  .split-sidebar {
     position: absolute;
-    width: 96px;
-    height: 102%;
-    left: 0;
-    background-color: #f0f0ff;
+    width: 24%;
     min-width: 250px;
     max-width: 600px;
   }
 
   .split-sidebar-draggable-div {
-    content: '';
-    background-color: rgb(161, 161, 161);
     position: absolute;
     right: 0;
+    background-color: rgb(191, 191, 191);
     width: 4px;
     height: 98%;
+    margin-left: 30px;
     cursor: ew-resize;
   }
 
-  .table-container {
-    overflow-y: scroll;
+  .split-main-content {
+    width: 75%;
+    margin-left: 250px;
   }
 </style>
