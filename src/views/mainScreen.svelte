@@ -27,7 +27,7 @@
 
     if (computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE && computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE) {
       leftSidebarContainer.style.width = computedWidth;
-      rightMainContainer.style.width = computedWidth;
+      rightMainContainer.style.width = (Math.round(window.innerHeight / 100) - computedWidth);
       rightMainContainer.style.marginLeft = computedWidth;
     }
   }
@@ -102,14 +102,15 @@
   .main-container {
     height: 102vh;
     width: 100vw;
-    background-color: #e0e0e0;
+    background-color: var(--offWhite);
+    color: var(--accentColor);
     display: flex;
     justify-content: flex-start;
   }
 
   .split-view-container {
     position: absolute;
-    background-color: #f9f2ed;
+    background-color: var(--accentColor);
     height: 102%;
     width: 24%;
     min-width: 250px;

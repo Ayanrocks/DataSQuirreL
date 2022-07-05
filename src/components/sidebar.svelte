@@ -20,12 +20,16 @@
 </script>
 
 <div class="column is-one-quarter split-sidebar" id="left-sidebar">
-  <div class="split-sidebar-draggable-div" on:mousedown={resize} />
+  <div class="split-sidebar-draggable-div" on:mousedown={resize}>
+    <span id="resize-icon">
+      <i class="fas fa-solid fa-grip-lines-vertical" />
+    </span>
+  </div>
   <div class="sidebar-content">
     <div class="db-selector-dropdown">
       <div class="control has-icons-left">
-        <div class="select">
-          <select class="rounded-rectangle">
+        <div class="select is-rounded">
+          <select>
             <option selected>{sideBarColumn}</option>
           </select>
         </div>
@@ -57,6 +61,8 @@
     height: 102%;
     width: 100%;
     flex: none;
+    color: var(--offWhite);
+    background-color: var(--primaryColor);
   }
 
   .sidebar-content {
@@ -71,8 +77,8 @@
   .split-sidebar-draggable-div {
     position: absolute;
     right: 0;
-    background-color: rgb(191, 191, 191);
-    width: 4px;
+    background-color: var(--secondaryColor);
+    width: 10px;
     height: 100%;
     margin-left: 30px;
     cursor: ew-resize;
@@ -81,6 +87,15 @@
   .db-selector-dropdown {
     /* text-align: center; */
     margin: 0 auto;
+  }
+
+  div.select select {
+    color: var(--offWhite);
+    background-color: var(--secondaryColor);
+  }
+  
+  div.select::after {
+    border-color: var(--primaryColor);
   }
 
   .table-list {
@@ -102,14 +117,23 @@
   }
 
   .table-list-ul li:hover {
-    background-color: #c5c5c5;
+    background-color: var(--secondaryColor);
   }
 
   .fa-table {
-    color: #3ab0ff;
+    color: var(--accentColor);
   }
 
   .fa-database {
-    color: #f87474;
+    color: var(--offBlue);
+  }
+
+  #resize-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    color: var(--yellowPrimary);
   }
 </style>
