@@ -3,8 +3,10 @@
     windows_subsystem = "windows"
 )]
 
+use crate::database::db::TableColumns;
 use database::db::{connect_to_db, ConnPool, TableSchema};
 use serde::{Deserialize, Serialize};
+use sqlx::Error;
 use std::sync::Mutex;
 use tauri::{http, CustomMenuItem, Menu, MenuItem, State, Submenu};
 
@@ -38,6 +40,11 @@ struct IPCResponse<T> {
     frontend_msg: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     data: Option<T>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TableDataRequest {
+    table_name: String,
 }
 
 #[tauri::command]
@@ -81,9 +88,7 @@ fn init_connection(
 }
 
 #[tauri::command]
-fn fetch_tables<'a>(
-    application_state: State<ApplicationState>,
-) -> IPCResponse<TableData<TableSchema>> {
+fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<TableData<TableSchema>> {
     tauri::async_runtime::block_on(async {
         let table_result = application_state
             .dbpool
@@ -123,6 +128,72 @@ fn fetch_tables<'a>(
     })
 }
 
+#[tauri::command]
+fn fetch_table_data(
+    req_payload: TableDataRequest,
+    application_state: State<ApplicationState>,
+) -> IPCResponse<TableData<TableSchema>> {
+    tauri::async_runtime::block_on(async {
+        /*
+           3 things needed to display table data
+               1. table columns
+               2. Total rows
+               3. first 600 rows
+        */
+
+        let mut columns: Vec<String> = vec![];
+
+        let table_columns_result = application_state
+            .dbpool
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .fetch_table_columns(&req_payload.table_name)
+            .await;
+
+        match table_columns_result {
+            Ok(table_columns) => {
+                let mut i = 0;
+                for t in table_columns {
+                    columns.push(t.column_name);
+                    i += 1;
+                }
+
+                println!("Columns Data: {:?}", columns)
+            }
+            Err(e) => {
+                return IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(
+                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
+                    ),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                }
+            }
+        };
+
+        let _ = application_state
+            .dbpool
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .fetch_table_data(&req_payload.table_name)
+            .await;
+
+        return IPCResponse::<_> {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string()),
+            sys_err: Some("".to_string()),
+            frontend_msg: Some("".to_string()),
+            data: None,
+        };
+    })
+}
+
 fn main() {
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
     let close = CustomMenuItem::new("close".to_string(), "Close");
@@ -137,7 +208,11 @@ fn main() {
             dbpool: Default::default(),
         })
         .menu(menu)
-        .invoke_handler(tauri::generate_handler![init_connection, fetch_tables])
+        .invoke_handler(tauri::generate_handler![
+            init_connection,
+            fetch_tables,
+            fetch_table_data,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

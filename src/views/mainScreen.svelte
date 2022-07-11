@@ -5,6 +5,7 @@
   import Sidebar from '../components/Sidebar.svelte';
   import DataTable from '../components/DataTable.svelte';
   import { notificationMsg, tableNames } from '../stores';
+  import { PhysicalSize } from '@tauri-apps/api/window';
   import {
     NOTIFICATION_TYPE_ERROR,
     BORDER_SIZE,
@@ -27,6 +28,7 @@
 
     if (computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE && computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE) {
       leftSidebarContainer.style.width = computedWidth;
+      console.log("RIghtMainWidth: ", PhysicalSize, computedWidth)
       rightMainContainer.style.width = (Math.round(window.innerHeight / 100) - computedWidth);
       rightMainContainer.style.marginLeft = computedWidth;
     }
@@ -118,7 +120,6 @@
   }
 
   .split-main-content {
-    width: 75%;
     margin-left: clamp(250px, 24%, 600px);
   }
 </style>
