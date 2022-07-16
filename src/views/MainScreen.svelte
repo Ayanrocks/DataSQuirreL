@@ -22,14 +22,13 @@
   function resize(e) {
     const dx = e.x - m_pos;
     m_pos = e.x;
-    const leftSidebarContainer = document.getElementById('left-sidebar-conntainer');
+    const leftSidebarContainer = document.getElementById('left-sidebar-container');
     const rightMainContainer = document.getElementById('right-main-content');
     let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width) + dx + 'px';
 
     if (computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE && computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE) {
       leftSidebarContainer.style.width = computedWidth;
-      console.log("RIghtMainWidth: ", PhysicalSize, computedWidth)
-      rightMainContainer.style.width = (Math.round(window.innerHeight / 100) - computedWidth);
+      // rightMainContainer.style.width = (Math.round(window.innerHeight / 100) - computedWidth);
       rightMainContainer.style.marginLeft = computedWidth;
     }
   }
@@ -92,7 +91,7 @@
 </script>
 
 <div class="main-container" use:registerFocus>
-  <div class="columns split-view-container" id="left-sidebar-conntainer">
+  <div class="columns split-view-container" id="left-sidebar-container">
     <Sidebar on:resizing={resizeSideBar} />
   </div>
   <div class="columns split-main-content" id="right-main-content">

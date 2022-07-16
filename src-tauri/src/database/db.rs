@@ -45,6 +45,7 @@ pub async fn connect_to_db(
     );
     let pool_result = PgPoolOptions::new()
         .max_connections(5)
+        .connect_timeout(std::time::Duration::from_secs(5)) // wait 5 seconds
         .connect(dsn.as_str())
         .await;
 
@@ -188,10 +189,10 @@ impl ConnPool {
         match query_result {
             Ok(row) => {
                 for v in row {
-                    let _val: ty = v.try_get(6).unwrap();
+                    // let _val: ty = v.try_get(6).unwrap();
 
                     // println!("Row Result: {:?}", *_val);
-                    dbg!(_val.);
+                    // dbg!(_val.);
                 }
                 return Ok(());
             }

@@ -23,8 +23,6 @@
     });
 
     function clickedSidebar(e) {
-        console.log("Clicked:L ", e)
-
         // Invoke the command
         invoke('fetch_table_data', {
             reqPayload: {
@@ -33,7 +31,6 @@
         }).then((res) => {
             console.log(res);
         })
-
     }
 
 </script>
@@ -54,7 +51,7 @@
                 </div>
                 <div class="dropdown-icon-wrapper">
           <span class="icon is-left">
-            <i class="fas fa-solid fa-database"/>
+            <i class="fas fa-solid fa-database"></i>
           </span>
                 </div>
             </div>
@@ -65,7 +62,7 @@
                 {#each tables as t (t)}
                     <li class="rounded-rectangle" on:click={clickedSidebar(t)}>
             <span class="icon is-left">
-              <i class="fas fa-thin fa-table"/>
+              <i class="fas fa-thin fa-table"></i>
             </span>
                         {t}
                     </li>
