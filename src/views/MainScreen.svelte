@@ -1,7 +1,7 @@
 <script>
     import {invoke} from '@tauri-apps/api/tauri';
     import {appWindow} from "@tauri-apps/api/window";
-    import {onMount} from 'svelte';
+    import {onDestroy, onMount} from 'svelte';
     import {useFocus} from 'svelte-navigator';
     import Sidebar from '../components/Sidebar.svelte';
     import DataTable from '../components/DataTable.svelte';
@@ -32,7 +32,6 @@
 
         if (computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE && computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE) {
             leftSidebarContainer.style.width = computedWidthInPx;
-            // todo fix this with window size
             rightMainContainer.style.width = (windowWidth - computedWidth) + 'px'
             rightMainContainer.style.marginLeft = computedWidthInPx;
         }
@@ -55,13 +54,23 @@
         false
     );
 
-    onMount(async () => {
+    var listen;
+
+    onDestroy(() => {
+        listen()
+    })
+
+    onMount(() => {
         console.log('OnLoad');
 
-        appWindow.onResized
+        appWindow.onResized(({payload: size}) => {
+            console.log('Window resized', size);
+        });
 
-// you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
-//         unlisten();
+        appWindow.onMoved(({payload: position}) => {
+            console.log('Window moved', position);
+        });
+
 
         // setting the current window height
         appWindow.innerSize().then(async w => {
@@ -125,12 +134,12 @@
 </script>
 
 <div class="main-container" use:registerFocus>
-  <div class="columns split-view-container" id="left-sidebar-container">
-    <Sidebar on:resizing={resizeSideBar}/>
-  </div>
-  <div class="columns split-main-content" id="right-main-content">
-    <DataTable/>
-  </div>
+    <div class="columns split-view-container" id="left-sidebar-container">
+        <Sidebar on:resizing={resizeSideBar}/>
+    </div>
+    <div class="columns split-main-content" id="right-main-content">
+        <DataTable/>
+    </div>
 </div>
 
 <style>
