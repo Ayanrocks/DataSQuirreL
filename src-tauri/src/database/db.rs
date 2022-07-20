@@ -215,6 +215,25 @@ impl ConnPool {
                     }
                     result.push(row_result);
                 }
+                // for (rowIndex, r) in row.iter().enumerate() {
+                //     for (colIndex, col) in row.columns().iter().enumerate() {
+                //         let colType: String = col.type_().to_string();
+                //
+                //         if colType == "int4" {
+                //             //i32
+                //             let value: i32 = r.get(colIndex);
+                //             return value.to_string();
+                //         } else if colType == "text" {
+                //             let value: &str = row.get(colIndex);
+                //             return value; //TODO: escape characters
+                //         }
+                //         //TODO: more type support
+                //         else {
+                //             //TODO: raise error
+                //         }
+                //     }
+                // }
+
                 return Ok(result);
             }
             Err(e) => {

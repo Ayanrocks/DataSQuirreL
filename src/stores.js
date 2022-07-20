@@ -12,3 +12,11 @@ export const tableNames = writable({
 
 export const windowWidth = writable(0);
 export const windowHeight = writable(0);
+
+// setting state for one tab
+export const activeTable = writable({
+    tableName: '',
+    rows: [[]],
+    columns: [''],
+    rowCount: 0
+})

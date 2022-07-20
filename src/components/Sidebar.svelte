@@ -1,12 +1,8 @@
 <script>
-    import {notificationMsg, tableNames} from '../stores';
+    import {activeTable, notificationMsg, tableNames} from '../stores';
     import {createEventDispatcher} from 'svelte';
     import {invoke} from '@tauri-apps/api/tauri';
-    import {
-        NOTIFICATION_TYPE_ERROR,
-        NOTIFICATION_TYPE_SUCCESS
-    } from "../constants/constants";
-    import {navigate} from "svelte-navigator";
+    import {NOTIFICATION_TYPE_ERROR} from "../constants/constants";
 
 
     const dispatch = createEventDispatcher();
@@ -33,46 +29,60 @@
             },
         }).then((res) => {
             console.log(res);
+            let data = res.data;
+
+            activeTable.set({
+                tableName: data.table_type,
+                columns: data.columns,
+                rows: data.rows,
+                rowCount: data.row_count,
+            })
+        }).catch(e => {
+            console.log(e)
+            notificationMsg.set({
+                type: NOTIFICATION_TYPE_ERROR,
+                message: e,
+            });
         })
     }
 
 </script>
 
 <div class="column is-one-quarter split-sidebar" id="left-sidebar">
-  <div class="split-sidebar-draggable-div" on:mousedown={resize}>
+    <div class="split-sidebar-draggable-div" on:mousedown={resize}>
     <span id="resize-icon">
       <i class="fas fa-solid fa-grip-lines-vertical"/>
     </span>
-  </div>
-  <div class="sidebar-content">
-    <div class="db-selector-dropdown">
-      <div class="control has-icons-left">
-        <div class="select is-rounded">
-          <select>
-            <option selected>{sideBarColumn}</option>
-          </select>
-        </div>
-        <div class="dropdown-icon-wrapper">
+    </div>
+    <div class="sidebar-content">
+        <div class="db-selector-dropdown">
+            <div class="control has-icons-left">
+                <div class="select is-rounded">
+                    <select>
+                        <option selected>{sideBarColumn}</option>
+                    </select>
+                </div>
+                <div class="dropdown-icon-wrapper">
           <span class="icon is-left">
             <i class="fas fa-solid fa-database"></i>
           </span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="table-list has-text-left">
-      <h1>Tables</h1>
-      <ul class="table-list-ul">
-        {#each tables as t (t)}
-          <li class="rounded-rectangle" on:click={clickedSidebar(t)}>
+        <div class="table-list has-text-left">
+            <h1>Tables</h1>
+            <ul class="table-list-ul">
+                {#each tables as t (t)}
+                    <li class="rounded-rectangle" on:click={clickedSidebar(t)}>
             <span class="icon is-left">
               <i class="fas fa-thin fa-table"></i>
             </span>
-            {t}
-          </li>
-        {/each}
-      </ul>
+                        {t}
+                    </li>
+                {/each}
+            </ul>
+        </div>
     </div>
-  </div>
 </div>
 
 <style>

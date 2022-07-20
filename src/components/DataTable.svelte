@@ -1,71 +1,16 @@
 <script>
     import {Grid} from 'ag-grid-community';
     import {onDestroy, onMount} from 'svelte';
+    import {activeTable} from '../stores';
+
 
     import 'ag-grid-community/dist/styles/ag-grid.css';
     import 'ag-grid-community/dist/styles/ag-theme-material.css';
 
     let domNode;
     let grid;
-
-    var data = {
-        columnDefs: [
-            {headerName: 'Row ID', valueGetter: 'node.id'},
-            {field: 'make'},
-            {field: 'model'},
-            {field: 'price'},
-            {field: 'class'},
-            {field: 'category'},
-            {field: 'discount'},
-        ],
-        rowDefs: [
-            {
-                id: 'c1',
-                make: 'Toyota',
-                model: 'Celica',
-                price: 35000,
-                class: 'sports',
-                category: "Expensive",
-                discount: '25%',
-            },
-            {
-                id: 'c2',
-                make: 'Ford',
-                model: 'Mondeo',
-                price: 32000,
-                class: 'muscle',
-                category: "Expensive",
-                discount: '5%'
-            },
-            {
-                id: 'c8',
-                make: 'Porsche',
-                model: 'Boxster',
-                price: 72000,
-                class: 'sports',
-                category: "Expensive",
-                discount: '2%'
-            },
-            {
-                id: 'c4',
-                make: 'BMW',
-                model: 'M50',
-                price: 60000,
-                class: 'sedan',
-                category: "Expensive",
-                discount: '8%'
-            },
-            {
-                id: 'c14',
-                make: 'Aston Martin',
-                model: 'DBX',
-                price: 190000,
-                class: 'sports',
-                category: "Expensive",
-                discount: '5%'
-            },
-        ]
-    };
+    let columnDefs = [];
+    let rowDefs = [];
 
     const gridOptions = {
         defaultColDef: {
@@ -84,15 +29,43 @@
         pagination: true,
         paginationPageSize: 10,
         rowSelection: 'single',
-        columnDefs: data.columnDefs,
-        rowData: data.rowDefs,
+        columnDefs: columnDefs,
+        rowData: rowDefs,
         suppressColumnVirtualisation: true,
         suppressRowVirtualisation: true,
     };
 
     onMount(() => {
-        grid = new Grid(domNode, gridOptions);
+        new Grid(domNode, gridOptions);
     });
+
+    activeTable.subscribe(val => {
+        columnDefs.push({
+            headerName: 'Row ID', valueGetter: 'node.id',
+        });
+
+        // set the columns
+        val.columns.forEach(elem => {
+            console.log('COl: ', elem)
+            columnDefs.push({
+                field: elem
+            })
+        })
+
+        // set the rows
+        val.rows.forEach(elem => {
+            let singleRowData = {}
+            console.log("Row: ", elem)
+            elem.forEach((subElem, index) => {
+                singleRowData[val.columns[index]] = subElem
+            })
+            rowDefs.push(singleRowData)
+        })
+
+        gridOptions.api.setColumnDefs(columnDefs);
+        gridOptions.api.setRowData(rowDefs);
+
+    })
 
     onDestroy(() => {
         if (grid) {
@@ -102,9 +75,9 @@
 </script>
 
 <div class="datatable-main-container">
-  <div class="datagrid-container">
-    <div id="datagrid" bind:this={domNode} class="ag-theme-material"/>
-  </div>
+    <div class="datagrid-container">
+        <div id="datagrid" bind:this={domNode} class="ag-theme-material"></div>
+    </div>
 </div>
 
 <style>
