@@ -1,11 +1,14 @@
-import { writable } from 'svelte/store';
+import {writable} from 'svelte/store';
 
 export const notificationMsg = writable({
-  type: '',
-  message: '',
+    type: '',
+    message: '',
 });
 
 export const tableNames = writable({
-  tableName: '',
-  tables: [],
+    tableName: '',
+    tables: [],
 });
+
+export const windowWidth = writable(0);
+export const windowHeight = writable(0);

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sqlx::error::BoxDynError;
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::{query, query_as, Column, FromRow, Postgres, Row, ValueRef};
 use std::any::Any;
@@ -27,7 +28,7 @@ pub struct TableColumns {
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct TableRowCount {
-    pub row_count: String,
+    pub row_count: i64,
 }
 
 // connect_to_db connects to postgres db
@@ -45,7 +46,7 @@ pub async fn connect_to_db(
     );
     let pool_result = PgPoolOptions::new()
         .max_connections(5)
-        .connect_timeout(std::time::Duration::from_secs(5)) // wait 5 seconds
+        .acquire_timeout(std::time::Duration::from_secs(5)) // wait 5 seconds
         .connect(dsn.as_str())
         .await;
 
@@ -169,7 +170,10 @@ impl ConnPool {
         }
     }
 
-    pub async fn fetch_table_data(&self, table_name: &str) -> Result<(), sqlx::Error> {
+    pub async fn fetch_table_data(
+        &self,
+        table_name: &str,
+    ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
@@ -188,13 +192,30 @@ impl ConnPool {
 
         match query_result {
             Ok(row) => {
-                for v in row {
-                    // let _val: ty = v.try_get(6).unwrap();
-
-                    // println!("Row Result: {:?}", *_val);
-                    // dbg!(_val.);
+                let mut result: Vec<Vec<String>> = Vec::new();
+                for r in row {
+                    let mut row_result: Vec<String> = Vec::new();
+                    for col in r.columns() {
+                        let value = r.try_get_raw(col.ordinal()).unwrap();
+                        let value = match value.is_null() {
+                            true => "NULL".to_string(),
+                            false => {
+                                let mat = value.as_str();
+                                match mat {
+                                    Ok(m) => m.to_string(),
+                                    Err(err) => {
+                                        dbg!(err);
+                                        "ERROR".to_string()
+                                    }
+                                }
+                            }
+                        };
+                        // println!("VALUE-- {:?}", value);
+                        row_result.push(value);
+                    }
+                    result.push(row_result);
                 }
-                return Ok(());
+                return Ok(result);
             }
             Err(e) => {
                 println!("{:#?}", e);

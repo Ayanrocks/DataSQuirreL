@@ -30,6 +30,7 @@ struct DBConnectionRequest {
 struct TableData<T> {
     columns: Vec<String>,
     rows: Option<Vec<Vec<T>>>,
+    row_count: Option<String>,
     table_type: String,
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -103,6 +104,7 @@ fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<Table
             Ok(t) => {
                 let table_data = TableData {
                     columns: vec![String::from("Table Name")],
+                    row_count: Some(t.len().to_string()),
                     rows: Some(vec![t]),
                     table_type: "fetch_tables".to_string(),
                 };
@@ -132,7 +134,7 @@ fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<Table
 fn fetch_table_data(
     req_payload: TableDataRequest,
     application_state: State<ApplicationState>,
-) -> IPCResponse<TableData<TableSchema>> {
+) -> IPCResponse<TableData<String>> {
     tauri::async_runtime::block_on(async {
         /*
            3 things needed to display table data
@@ -152,6 +154,7 @@ fn fetch_table_data(
             .fetch_table_columns(&req_payload.table_name)
             .await;
 
+        // fetch table columns
         match table_columns_result {
             Ok(table_columns) => {
                 let mut i = 0;
@@ -175,7 +178,8 @@ fn fetch_table_data(
             }
         };
 
-        let _ = application_state
+        // fetch table data
+        let table_data_result = application_state
             .dbpool
             .lock()
             .unwrap()
@@ -184,12 +188,60 @@ fn fetch_table_data(
             .fetch_table_data(&req_payload.table_name)
             .await;
 
-        return IPCResponse::<_> {
+        let mut table_data_rows: Vec<Vec<String>> = vec![vec!["".to_string()]];
+
+        match table_data_result {
+            Ok(mut table_data) => table_data_rows = table_data,
+            Err(e) => {
+                return IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(
+                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
+                    ),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                }
+            }
+        };
+
+        // fetch table rows
+        let table_rows_count_result = application_state
+            .dbpool
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .fetch_table_rows_count(&req_payload.table_name)
+            .await;
+
+        let mut row_count: String;
+        match table_rows_count_result {
+            Ok(mut table_row_count) => row_count = format!("{}", table_row_count.row_count),
+            Err(e) => {
+                return IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(
+                        constants::ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED.to_string(),
+                    ),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                }
+            }
+        };
+
+        return IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
-            error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string()),
-            sys_err: Some("".to_string()),
-            frontend_msg: Some("".to_string()),
-            data: None,
+            error_code: None,
+            sys_err: None,
+            frontend_msg: None,
+            data: Some(TableData {
+                columns: columns,
+                rows: Some(table_data_rows),
+                row_count: Some(row_count),
+                table_type: req_payload.table_name,
+            }),
         };
     })
 }

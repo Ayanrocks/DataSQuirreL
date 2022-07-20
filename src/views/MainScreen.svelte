@@ -5,8 +5,7 @@
     import {useFocus} from 'svelte-navigator';
     import Sidebar from '../components/Sidebar.svelte';
     import DataTable from '../components/DataTable.svelte';
-    import {notificationMsg, tableNames} from '../stores';
-    import {PhysicalSize} from '@tauri-apps/api/window';
+    import {notificationMsg, tableNames, windowWidth, windowHeight} from '../stores';
     import {
         NOTIFICATION_TYPE_ERROR,
         BORDER_SIZE,
@@ -15,8 +14,6 @@
     } from '../constants/constants';
 
     const registerFocus = useFocus();
-    let windowHeight;
-    let windowWidth;
 
     // on mousedown for the draggable
 
@@ -63,8 +60,22 @@
     onMount(() => {
         console.log('OnLoad');
 
-        appWindow.onResized(({payload: size}) => {
+        windowWidth.subscribe(val => {
+            // set initial width of sidebar and main content area
+            const leftSidebarContainer = document.getElementById('left-sidebar-container');
+            const rightMainContainer = document.getElementById('right-main-content');
+            let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width);
+            let computedWidthInPx = computedWidth + 'px'
+
+            leftSidebarContainer.style.width = computedWidthInPx;
+            rightMainContainer.style.width = (val - computedWidth) + 'px'
+            rightMainContainer.style.marginLeft = computedWidthInPx;
+        })
+
+        appWindow.onResized((size) => {
             console.log('Window resized', size);
+            windowWidth.set(size.width);
+            windowHeight.set(size.height);
         });
 
         appWindow.onMoved(({payload: position}) => {
@@ -76,20 +87,9 @@
         appWindow.innerSize().then(async w => {
             const factor = await appWindow.scaleFactor();
             let logicalSize = w.toLogical(factor);
-            console.log("Logical: ", logicalSize)
-            windowWidth = logicalSize.width
-            windowHeight = logicalSize.height
 
-            // set initial width of sidebar and main content area
-            const leftSidebarContainer = document.getElementById('left-sidebar-container');
-            const rightMainContainer = document.getElementById('right-main-content');
-            let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width);
-            let computedWidthInPx = computedWidth + 'px'
-
-            leftSidebarContainer.style.width = computedWidthInPx;
-            rightMainContainer.style.width = (windowWidth - computedWidth) + 'px'
-            rightMainContainer.style.marginLeft = computedWidthInPx;
-
+            windowWidth.set(logicalSize.width);
+            windowHeight.set(logicalSize.height);
         })
 
         invoke('fetch_tables')
