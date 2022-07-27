@@ -58,8 +58,6 @@
     })
 
     onMount(() => {
-        console.log('OnLoad');
-
         windowWidth.subscribe(val => {
             // set initial width of sidebar and main content area
             const leftSidebarContainer = document.getElementById('left-sidebar-container');
@@ -81,7 +79,6 @@
         appWindow.onMoved(({payload: position}) => {
             console.log('Window moved', position);
         });
-
 
         // setting the current window height
         appWindow.innerSize().then(async w => {

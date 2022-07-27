@@ -1,5 +1,6 @@
 <script>
     import {Grid} from 'ag-grid-community';
+    import AgGrid from "@budibase/svelte-ag-grid";
     import {onDestroy, onMount} from 'svelte';
     import {activeTable} from '../stores';
 
@@ -9,10 +10,12 @@
 
     let domNode;
     let grid;
+    let gridApi;
+    let gridColumnApi;
     let columnDefs = [];
     let rowDefs = [];
 
-    const gridOptions = {
+    let gridOptions = {
         defaultColDef: {
             editable: true,
             enableRowGroup: true,
@@ -27,7 +30,7 @@
         debounceVerticalScrollbar: true,
         autoSizePadding: 4,
         pagination: true,
-        paginationPageSize: 10,
+        paginationPageSize: 20,
         rowSelection: 'single',
         columnDefs: columnDefs,
         rowData: rowDefs,
@@ -35,42 +38,55 @@
         suppressRowVirtualisation: true,
     };
 
+
     onMount(() => {
-        new Grid(domNode, gridOptions);
+        grid = new Grid(domNode, gridOptions);
+        gridOptions.onGridReady = (params) => {
+            console.log('OnGridReady: ', params)
+            gridApi = params.api;
+            gridColumnApi = params.columnApi;
+        }
     });
 
     activeTable.subscribe(val => {
-        columnDefs.push({
-            headerName: 'Row ID', valueGetter: 'node.id',
-        });
-
-        // set the columns
-        val.columns.forEach(elem => {
-            console.log('COl: ', elem)
+        if (val !== null && val.tableName != "" && val.columns.length !== 0) {
+            columnDefs = []
+            rowDefs = []
             columnDefs.push({
-                field: elem
-            })
-        })
+                headerName: '#',
+                valueGetter: 'node.id',
+                pinned: 'left',
+                lockPinned: 'left'
+            });
 
-        // set the rows
-        val.rows.forEach(elem => {
-            let singleRowData = {}
-            console.log("Row: ", elem)
-            elem.forEach((subElem, index) => {
-                singleRowData[val.columns[index]] = subElem
+            // set the columns
+            val.columns.forEach(elem => {
+                columnDefs.push({
+                    field: elem,
+                    headerName: elem,
+                })
             })
-            rowDefs.push(singleRowData)
-        })
 
-        gridOptions.api.setColumnDefs(columnDefs);
-        gridOptions.api.setRowData(rowDefs);
+            // set the rows
+            val.rows.forEach(elem => {
+                let singleRowData = {}
+                elem.forEach((subElem, index) => {
+                    singleRowData[val.columns[index]] = subElem
+                })
+                rowDefs.push(singleRowData)
+            })
+
+            gridApi.setColumnDefs(columnDefs);
+            gridApi.setRowData(rowDefs);
+            gridColumnApi.autoSizeAllColumns();
+        }
 
     })
 
     onDestroy(() => {
-        if (grid) {
-            grid.destroy();
-        }
+        // if (grid) {
+        //     grid.destroy();
+        // }
     });
 </script>
 
