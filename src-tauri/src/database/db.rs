@@ -1,6 +1,8 @@
+use crate::constants;
 use serde::{Deserialize, Serialize};
 use sqlx::error::BoxDynError;
 use sqlx::postgres::{PgPoolOptions, PgRow};
+use sqlx::types::chrono::Utc;
 use sqlx::{query, query_as, Column, FromRow, Postgres, Row, ValueRef};
 use std::any::Any;
 use std::borrow::Borrow;
@@ -193,46 +195,70 @@ impl ConnPool {
         match query_result {
             Ok(row) => {
                 let mut result: Vec<Vec<String>> = Vec::new();
-                for r in row {
+
+                // looping through each row
+                for (rowIndex, r) in row.iter().enumerate() {
                     let mut row_result: Vec<String> = Vec::new();
-                    for col in r.columns() {
-                        let value = r.try_get_raw(col.ordinal()).unwrap();
-                        let value = match value.is_null() {
-                            true => "NULL".to_string(),
-                            false => {
-                                let mat = value.as_str();
-                                match mat {
-                                    Ok(m) => m.to_string(),
-                                    Err(err) => {
-                                        dbg!(err);
-                                        "ERROR".to_string()
-                                    }
-                                }
+                    // looping through each column
+                    for (colIndex, col) in r.columns().iter().enumerate() {
+                        let colType = col.type_info().to_string();
+                        dbg!(&colType, &colIndex);
+
+                        match colType.as_str() {
+                            constants::BOOL => {
+                                let value: bool = r.get(colIndex);
+                                row_result.push(value.to_string());
                             }
-                        };
-                        // println!("VALUE-- {:?}", value);
-                        row_result.push(value);
+                            constants::SMALLINT | constants::SMALLSERIAL | constants::INT2 => {
+                                let value: i16 = r.get(colIndex);
+                                row_result.push(value.to_string());
+                            }
+                            constants::INT | constants::SERIAL | constants::INT4 => {
+                                let value: i32 = r.get(colIndex);
+                                row_result.push(value.to_string());
+                            }
+                            constants::BIGINT | constants::BIGSERIAL | constants::INT8 => {
+                                let value: i64 = r.get(colIndex);
+                                row_result.push(value.to_string());
+                            }
+                            constants::FLOAT4 | constants::REAL => {
+                                let value: f32 = r.get(colIndex);
+                                row_result.push(value.to_string());
+                            }
+                            constants::FLOAT8 | constants::DOUBLE_PRECISION => {
+                                let value: f64 = r.get(colIndex);
+                                row_result.push(value.to_string());
+                            }
+                            constants::VARCHAR
+                            | constants::CHAR
+                            | constants::TEXT
+                            | constants::CITEXT
+                            | constants::NAME => {
+                                let value: &str = r.get(colIndex);
+                                row_result.push(value.to_string());
+                            }
+                            constants::TIMESTAMPTZ => {
+                                let value: Option<sqlx::types::chrono::DateTime<Utc>> =
+                                    r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("null".to_string());
+                                    }
+                                };
+                            }
+                            constants::TIMESTAMP => {
+                                let value: sqlx::types::chrono::NaiveDateTime = r.get(colIndex);
+                                row_result.push(value.to_string());
+                            }
+
+                            &_ => panic!("error"),
+                        }
                     }
                     result.push(row_result);
                 }
-                // for (rowIndex, r) in row.iter().enumerate() {
-                //     for (colIndex, col) in row.columns().iter().enumerate() {
-                //         let colType: String = col.type_().to_string();
-                //
-                //         if colType == "int4" {
-                //             //i32
-                //             let value: i32 = r.get(colIndex);
-                //             return value.to_string();
-                //         } else if colType == "text" {
-                //             let value: &str = row.get(colIndex);
-                //             return value; //TODO: escape characters
-                //         }
-                //         //TODO: more type support
-                //         else {
-                //             //TODO: raise error
-                //         }
-                //     }
-                // }
 
                 return Ok(result);
             }

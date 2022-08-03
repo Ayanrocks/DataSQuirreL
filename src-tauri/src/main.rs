@@ -3,6 +3,8 @@
     windows_subsystem = "windows"
 )]
 
+extern crate core;
+
 use crate::database::db::TableColumns;
 use database::db::{connect_to_db, ConnPool, TableSchema};
 use serde::{Deserialize, Serialize};
