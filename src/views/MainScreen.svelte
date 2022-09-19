@@ -51,11 +51,14 @@
         false
     );
 
-    var listen;
+
+    var unlisten;
 
     onDestroy(() => {
-        listen()
+        // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
+        unlisten();
     })
+
 
     onMount(() => {
         windowWidth.subscribe(val => {
@@ -66,18 +69,18 @@
             let computedWidthInPx = computedWidth + 'px'
 
             leftSidebarContainer.style.width = computedWidthInPx;
+            console.log("computedWidthInPx: ", computedWidthInPx, val)
             rightMainContainer.style.width = (val - computedWidth) + 'px'
             rightMainContainer.style.marginLeft = computedWidthInPx;
         })
 
-        appWindow.onResized((size) => {
+        unlisten = appWindow.onResized(async ({ payload: size }) => {
             console.log('Window resized', size);
-            windowWidth.set(size.width);
-            windowHeight.set(size.height);
-        });
+            const factor = await appWindow.scaleFactor();
+            let logicalSize = size.toLogical(factor);
 
-        appWindow.onMoved(({payload: position}) => {
-            console.log('Window moved', position);
+            windowWidth.set(logicalSize.width);
+            windowHeight.set(logicalSize.height);
         });
 
         // setting the current window height
@@ -89,6 +92,7 @@
             windowHeight.set(logicalSize.height);
         })
 
+        // fetch tables on load
         invoke('fetch_tables')
             .then((res) => {
                 console.log(res);

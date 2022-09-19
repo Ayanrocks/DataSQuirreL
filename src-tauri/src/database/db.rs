@@ -5,6 +5,7 @@ use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
 use sqlx::{query, query_as, Column, FromRow, Postgres, Row, ValueRef};
 use std::any::Any;
+use std::arch::aarch64::uint16x8x4_t;
 use std::borrow::Borrow;
 
 pub struct ConnPool {
@@ -206,36 +207,85 @@ impl ConnPool {
 
                         match colType.as_str() {
                             constants::BOOL => {
-                                let value: bool = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<bool> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
                             constants::SMALLINT | constants::SMALLSERIAL | constants::INT2 => {
-                                let value: i16 = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<i16> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
                             constants::INT | constants::SERIAL | constants::INT4 => {
-                                let value: i32 = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<i32> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
                             constants::BIGINT | constants::BIGSERIAL | constants::INT8 => {
-                                let value: i64 = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<i64> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
                             constants::FLOAT4 | constants::REAL => {
-                                let value: f32 = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<f32> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
                             constants::FLOAT8 | constants::DOUBLE_PRECISION => {
-                                let value: f64 = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<f64> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
                             constants::VARCHAR
                             | constants::CHAR
                             | constants::TEXT
                             | constants::CITEXT
                             | constants::NAME => {
-                                let value: &str = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<String> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val);
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
                             constants::TIMESTAMPTZ => {
                                 let value: Option<sqlx::types::chrono::DateTime<Utc>> =
@@ -245,16 +295,47 @@ impl ConnPool {
                                         row_result.push(val.to_string());
                                     }
                                     None => {
-                                        row_result.push("null".to_string());
+                                        row_result.push("NULL".to_string());
                                     }
                                 };
                             }
                             constants::TIMESTAMP => {
-                                let value: sqlx::types::chrono::NaiveDateTime = r.get(colIndex);
-                                row_result.push(value.to_string());
+                                let value: Option<sqlx::types::chrono::NaiveDateTime> =
+                                    r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                };
                             }
-
-                            &_ => panic!("error"),
+                            constants::JSON | constants::JSONB => {
+                                let value: Option<serde_json::Value> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                }
+                            }
+                            constants::UUID => {
+                                let value: Option<sqlx::types::uuid::Uuid> = r.get(colIndex);
+                                match value {
+                                    Some(val) => {
+                                        row_result.push(val.to_string());
+                                    }
+                                    None => {
+                                        row_result.push("NULL".to_string());
+                                    }
+                                }
+                            }
+                            &_ => {
+                                row_result.push("NULL".to_string());
+                            }
                         }
                     }
                     result.push(row_result);
