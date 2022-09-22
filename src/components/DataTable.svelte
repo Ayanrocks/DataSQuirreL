@@ -36,6 +36,7 @@
         rowData: rowDefs,
         suppressColumnVirtualisation: true,
         suppressRowVirtualisation: true,
+        animateRows: true
     };
 
 
@@ -56,7 +57,11 @@
                 headerName: '#',
                 valueGetter: 'node.id',
                 pinned: 'left',
-                lockPinned: 'left'
+                lockPinned: 'left',
+                sortable: true,
+                editable: false,
+                cellEditorPopup: false,
+                comparator: (valueA, valueB, nodeA, nodeB, isDescending) => valueA - valueB
             });
 
             // set the columns
@@ -64,6 +69,8 @@
                 columnDefs.push({
                     field: elem,
                     headerName: elem,
+                    sortable: true,
+                    comparator: (valueA, valueB, nodeA, nodeB, isDescending) => valueA - valueB
                 })
             })
 

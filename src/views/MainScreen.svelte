@@ -55,12 +55,12 @@
     var unlisten;
 
     onDestroy(() => {
-        // you need to call unlisten if your handler goes out of scope e.g. the component is unmounted
         unlisten();
     })
 
 
     onMount(() => {
+        // on change of width, check and set the width of the main and sidebar content
         windowWidth.subscribe(val => {
             // set initial width of sidebar and main content area
             const leftSidebarContainer = document.getElementById('left-sidebar-container');
