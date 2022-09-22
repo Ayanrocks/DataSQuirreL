@@ -69,15 +69,14 @@
             let computedWidthInPx = computedWidth + 'px'
 
             leftSidebarContainer.style.width = computedWidthInPx;
-            console.log("computedWidthInPx: ", computedWidthInPx, val)
             rightMainContainer.style.width = (val - computedWidth) + 'px'
             rightMainContainer.style.marginLeft = computedWidthInPx;
         })
 
-        unlisten = appWindow.onResized(async ({ payload: size }) => {
-            console.log('Window resized', size);
+        unlisten = appWindow.onResized(async () => {
             const factor = await appWindow.scaleFactor();
-            let logicalSize = size.toLogical(factor);
+            const position = await appWindow.innerSize();
+            let logicalSize = position.toLogical(factor);
 
             windowWidth.set(logicalSize.width);
             windowHeight.set(logicalSize.height);
