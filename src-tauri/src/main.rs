@@ -50,6 +50,12 @@ struct TableDataRequest {
     table_name: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct TableDataOffsetRequest {
+    table_name: String,
+    offset: u32,
+}
+
 #[tauri::command]
 async fn init_connection(
     req_payload: DBConnectionRequest,
@@ -164,8 +170,6 @@ fn fetch_table_data(
                     columns.push(t.column_name);
                     i += 1;
                 }
-
-                println!("Columns Data: {:?}", columns)
             }
             Err(e) => {
                 return IPCResponse::<_> {
@@ -248,6 +252,57 @@ fn fetch_table_data(
     })
 }
 
+#[tauri::command]
+fn fetch_table_data_with_offset(
+    req_payload: TableDataOffsetRequest,
+    application_state: State<ApplicationState>,
+) -> IPCResponse<TableData<String>> {
+    tauri::async_runtime::block_on(async {
+        /*
+           Pass the offset and the table name and return the additional data
+        */
+
+        let mut table_data_rows: Vec<Vec<String>> = vec![vec!["".to_string()]];
+
+        let table_data_result = application_state
+            .dbpool
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .fetch_table_data_with_offset(&req_payload.table_name, &req_payload.offset)
+            .await;
+
+        match table_data_result {
+            Ok(mut table_data) => table_data_rows = table_data,
+            Err(e) => {
+                return IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(
+                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
+                    ),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                }
+            }
+        };
+
+        return IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: None,
+            sys_err: None,
+            frontend_msg: None,
+            data: Some(TableData {
+                columns: vec![],
+                rows: Some(table_data_rows),
+                row_count: None,
+                table_type: req_payload.table_name,
+            }),
+        };
+    })
+}
+
 fn main() {
     let quit = CustomMenuItem::new("quit".to_string(), "Quit");
     let close = CustomMenuItem::new("close".to_string(), "Close");
@@ -266,6 +321,7 @@ fn main() {
             init_connection,
             fetch_tables,
             fetch_table_data,
+            fetch_table_data_with_offset
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

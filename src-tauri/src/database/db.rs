@@ -96,7 +96,6 @@ impl ConnPool {
 
         match query_result {
             Ok(row) => {
-                println!("{:?}", row);
                 return Ok(row);
             }
             Err(e) => {
@@ -131,7 +130,6 @@ impl ConnPool {
 
         match query_result {
             Ok(row) => {
-                println!("{:?}", row);
                 return Ok(row);
             }
             Err(e) => {
@@ -163,7 +161,6 @@ impl ConnPool {
 
         match query_result {
             Ok(row) => {
-                println!("{:?}", row);
                 return Ok(row);
             }
             Err(e) => {
@@ -182,7 +179,7 @@ impl ConnPool {
             r#"
                 SELECT *
                 FROM {}
-                LIMIT 600;
+                LIMIT 20;
             "#,
             table_name,
         );
@@ -195,152 +192,7 @@ impl ConnPool {
 
         match query_result {
             Ok(row) => {
-                let mut result: Vec<Vec<String>> = Vec::new();
-
-                // looping through each row
-                for (rowIndex, r) in row.iter().enumerate() {
-                    let mut row_result: Vec<String> = Vec::new();
-                    // looping through each column
-                    for (colIndex, col) in r.columns().iter().enumerate() {
-                        let colType = col.type_info().to_string();
-                        dbg!(&colType, &colIndex);
-
-                        match colType.as_str() {
-                            constants::BOOL => {
-                                let value: Option<bool> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::SMALLINT | constants::SMALLSERIAL | constants::INT2 => {
-                                let value: Option<i16> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::INT | constants::SERIAL | constants::INT4 => {
-                                let value: Option<i32> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::BIGINT | constants::BIGSERIAL | constants::INT8 => {
-                                let value: Option<i64> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::FLOAT4 | constants::REAL => {
-                                let value: Option<f32> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::FLOAT8 | constants::DOUBLE_PRECISION => {
-                                let value: Option<f64> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::VARCHAR
-                            | constants::CHAR
-                            | constants::TEXT
-                            | constants::CITEXT
-                            | constants::NAME => {
-                                let value: Option<String> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val);
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::TIMESTAMPTZ => {
-                                let value: Option<sqlx::types::chrono::DateTime<Utc>> =
-                                    r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::TIMESTAMP => {
-                                let value: Option<sqlx::types::chrono::NaiveDateTime> =
-                                    r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                };
-                            }
-                            constants::JSON | constants::JSONB => {
-                                let value: Option<serde_json::Value> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                }
-                            }
-                            constants::UUID => {
-                                let value: Option<sqlx::types::uuid::Uuid> = r.get(colIndex);
-                                match value {
-                                    Some(val) => {
-                                        row_result.push(val.to_string());
-                                    }
-                                    None => {
-                                        row_result.push("NULL".to_string());
-                                    }
-                                }
-                            }
-                            &_ => {
-                                row_result.push("NULL".to_string());
-                            }
-                        }
-                    }
-                    result.push(row_result);
-                }
-
+                let result = format_table_data(&row)?;
                 return Ok(result);
             }
             Err(e) => {
@@ -354,7 +206,7 @@ impl ConnPool {
         &self,
         table_name: &str,
         offset: &u32,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
@@ -371,10 +223,8 @@ impl ConnPool {
 
         match query_result {
             Ok(row) => {
-                for r in row {
-                    println!("{:#?}", r.len());
-                }
-                Ok(())
+                let result = format_table_data(&row)?;
+                return Ok(result);
             }
             Err(e) => {
                 println!("{:#?}", e);
@@ -383,4 +233,151 @@ impl ConnPool {
             }
         }
     }
+}
+
+fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> {
+    let mut result: Vec<Vec<String>> = Vec::new();
+
+    // looping through each row
+    for (rowIndex, r) in row.iter().enumerate() {
+        let mut row_result: Vec<String> = Vec::new();
+        // looping through each column
+        for (colIndex, col) in r.columns().iter().enumerate() {
+            let colType = col.type_info().to_string();
+
+            match colType.as_str() {
+                constants::BOOL => {
+                    let value: Option<bool> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::SMALLINT | constants::SMALLSERIAL | constants::INT2 => {
+                    let value: Option<i16> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::INT | constants::SERIAL | constants::INT4 => {
+                    let value: Option<i32> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::BIGINT | constants::BIGSERIAL | constants::INT8 => {
+                    let value: Option<i64> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::FLOAT4 | constants::REAL => {
+                    let value: Option<f32> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::FLOAT8 | constants::DOUBLE_PRECISION => {
+                    let value: Option<f64> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::VARCHAR
+                | constants::CHAR
+                | constants::TEXT
+                | constants::CITEXT
+                | constants::NAME => {
+                    let value: Option<String> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val);
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::TIMESTAMPTZ => {
+                    let value: Option<sqlx::types::chrono::DateTime<Utc>> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::TIMESTAMP => {
+                    let value: Option<sqlx::types::chrono::NaiveDateTime> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    };
+                }
+                constants::JSON | constants::JSONB => {
+                    let value: Option<serde_json::Value> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    }
+                }
+                constants::UUID => {
+                    let value: Option<sqlx::types::uuid::Uuid> = r.get(colIndex);
+                    match value {
+                        Some(val) => {
+                            row_result.push(val.to_string());
+                        }
+                        None => {
+                            row_result.push("NULL".to_string());
+                        }
+                    }
+                }
+                &_ => {
+                    row_result.push("NULL".to_string());
+                }
+            }
+        }
+        result.push(row_result);
+    }
+
+    return Ok(result);
 }

@@ -2,6 +2,7 @@
     import {Grid} from 'ag-grid-community';
     import AgGrid from "@budibase/svelte-ag-grid";
     import {onDestroy, onMount} from 'svelte';
+    import DataTableToolBar from "./DataTableToolBar.svelte";
     import {activeTable} from '../stores';
 
 
@@ -15,32 +16,37 @@
     let columnDefs = [];
     let rowDefs = [];
 
-    let gridOptions = {
-        defaultColDef: {
-            editable: true,
-            enableRowGroup: true,
-            enablePivot: true,
-            enableValue: true,
-            sortable: true,
-            resizable: true,
-            filter: true,
-            flex: 1,
-            minWidth: 100,
-        },
-        debounceVerticalScrollbar: true,
-        autoSizePadding: 4,
-        pagination: true,
-        paginationPageSize: 20,
-        rowSelection: 'single',
-        columnDefs: columnDefs,
-        rowData: rowDefs,
-        suppressColumnVirtualisation: true,
-        suppressRowVirtualisation: true,
-        animateRows: true
-    };
-
+    // props
+    export let tableData = {};
 
     onMount(() => {
+        console.log("Mounting DataTable")
+        let gridOptions = {
+            defaultColDef: {
+                editable: true,
+                enableRowGroup: true,
+                enablePivot: true,
+                enableValue: true,
+                sortable: true,
+                resizable: true,
+                filter: true,
+                flex: 1,
+                minWidth: 100,
+            },
+            debounceVerticalScrollbar: true,
+            autoSizePadding: 4,
+            pagination: true,
+            paginationPageSize: 20,
+            rowSelection: 'single',
+            columnDefs: columnDefs,
+            rowData: rowDefs,
+            suppressColumnVirtualisation: true,
+            suppressRowVirtualisation: true,
+            animateRows: true,
+            infiniteInitialRowCount: 1,
+            suppressPaginationPanel: true
+        };
+
         grid = new Grid(domNode, gridOptions);
         gridOptions.onGridReady = (params) => {
             console.log('OnGridReady: ', params)
@@ -49,8 +55,8 @@
         }
     });
 
-    activeTable.subscribe(val => {
-        if (val !== null && val.tableName != "" && val.columns.length !== 0) {
+    $: if (gridApi != null) {
+        if (tableData != null && tableData.tableName !== "" && tableData.columns.length !== 0) {
             columnDefs = []
             rowDefs = []
             columnDefs.push({
@@ -65,7 +71,7 @@
             });
 
             // set the columns
-            val.columns.forEach(elem => {
+            tableData.columns.forEach(elem => {
                 columnDefs.push({
                     field: elem,
                     headerName: elem,
@@ -75,10 +81,10 @@
             })
 
             // set the rows
-            val.rows.forEach(elem => {
+            tableData.rows.forEach(elem => {
                 let singleRowData = {}
                 elem.forEach((subElem, index) => {
-                    singleRowData[val.columns[index]] = subElem
+                    singleRowData[tableData.columns[index]] = subElem
                 })
                 rowDefs.push(singleRowData)
             })
@@ -87,8 +93,8 @@
             gridApi.setRowData(rowDefs);
             gridColumnApi.autoSizeAllColumns();
         }
+    }
 
-    })
 
     onDestroy(() => {
         // if (grid) {
@@ -99,6 +105,7 @@
 
 <div class="datatable-main-container">
     <div class="datagrid-container">
+        <DataTableToolBar/>
         <div id="datagrid" bind:this={domNode} class="ag-theme-material"></div>
     </div>
 </div>
@@ -115,10 +122,13 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100%;
+        height: 90%;
+        position: relative;
+        margin: 70px auto 10px auto;
     }
 
     #datagrid {
+        margin-top: 5%;
         height: 90%;
         width: 100%;
         --ag-header-foreground-color: var(--accentColor);

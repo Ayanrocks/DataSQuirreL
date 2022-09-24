@@ -5,7 +5,7 @@
     import {useFocus} from 'svelte-navigator';
     import Sidebar from '../components/Sidebar.svelte';
     import DataTable from '../components/DataTable.svelte';
-    import {notificationMsg, tableNames, windowWidth, windowHeight} from '../stores';
+    import {notificationMsg, tableNames, windowWidth, windowHeight, activeTable} from '../stores';
     import {
         NOTIFICATION_TYPE_ERROR,
         BORDER_SIZE,
@@ -53,11 +53,15 @@
 
 
     var unlisten;
+    let activeTableData = {}
 
     onDestroy(() => {
         unlisten();
     })
 
+    activeTable.subscribe(val => {
+        activeTableData = val
+    })
 
     onMount(() => {
         // on change of width, check and set the width of the main and sidebar content
@@ -90,6 +94,7 @@
             windowWidth.set(logicalSize.width);
             windowHeight.set(logicalSize.height);
         })
+
 
         // fetch tables on load
         invoke('fetch_tables')
@@ -138,7 +143,9 @@
         <Sidebar on:resizing={resizeSideBar}/>
     </div>
     <div class="columns split-main-content" id="right-main-content">
-        <DataTable/>
+        {#if activeTableData.tableName !== ""}
+            <DataTable tableData={activeTableData}/>
+        {/if}
     </div>
 </div>
 
