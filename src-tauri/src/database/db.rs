@@ -179,7 +179,7 @@ impl ConnPool {
             r#"
                 SELECT *
                 FROM {}
-                LIMIT 20;
+                LIMIT 600;
             "#,
             table_name,
         );

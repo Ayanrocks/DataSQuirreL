@@ -8,8 +8,12 @@
 <Notification/>
 <Router>
     <div id="router-view">
-        <Route path="/" component={InitConnection}/>
-        <Route path="dashboard" component={MainScreen}/>
+        <Route path="/">
+            <InitConnection/>
+        </Route>
+        <Route path="dashboard">
+            <MainScreen/>
+        </Route>
     </div>
 </Router>
 

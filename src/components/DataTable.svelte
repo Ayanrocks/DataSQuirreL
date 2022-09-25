@@ -15,6 +15,8 @@
     let gridColumnApi;
     let columnDefs = [];
     let rowDefs = [];
+    let rowCount = 0;
+    let paginationSize = 20
 
     // props
     export let tableData = {};
@@ -24,9 +26,6 @@
         let gridOptions = {
             defaultColDef: {
                 editable: true,
-                enableRowGroup: true,
-                enablePivot: true,
-                enableValue: true,
                 sortable: true,
                 resizable: true,
                 filter: true,
@@ -36,7 +35,7 @@
             debounceVerticalScrollbar: true,
             autoSizePadding: 4,
             pagination: true,
-            paginationPageSize: 20,
+            paginationPageSize: paginationSize,
             rowSelection: 'single',
             columnDefs: columnDefs,
             rowData: rowDefs,
@@ -55,10 +54,12 @@
         }
     });
 
-    $: if (gridApi != null) {
-        if (tableData != null && tableData.tableName !== "" && tableData.columns.length !== 0) {
+    $: if (gridApi != null && tableData != null) {
+        if (tableData.tableName !== "" && tableData.columns.length !== 0) {
             columnDefs = []
             rowDefs = []
+            rowCount = tableData.rowCount
+
             columnDefs.push({
                 headerName: '#',
                 valueGetter: 'node.id',
@@ -95,6 +96,14 @@
         }
     }
 
+    let gotoNext = () => {
+        gridApi.api.paginationGoToNextPage();
+    }
+
+    let gotoPrev = () => {
+        gridApi.api.paginationGoToPreviousPage();
+    }
+
 
     onDestroy(() => {
         // if (grid) {
@@ -105,7 +114,13 @@
 
 <div class="datatable-main-container">
     <div class="datagrid-container">
-        <DataTableToolBar/>
+        <DataTableToolBar
+                totalRowCount={rowCount}
+                paginationSize={paginationSize}
+                gotoNext={gotoNext}
+                gotoPrev={gotoPrev}
+        />
+
         <div id="datagrid" bind:this={domNode} class="ag-theme-material"></div>
     </div>
 </div>
@@ -124,7 +139,7 @@
         align-items: center;
         height: 90%;
         position: relative;
-        margin: 70px auto 10px auto;
+        margin: 55px auto 10px auto;
     }
 
     #datagrid {

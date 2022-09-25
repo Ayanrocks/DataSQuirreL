@@ -7,7 +7,7 @@
     "distDir": "../public"
   },
   "package": {
-    "productName": "datasquirrel",
+    "productName": "Data Squirrel",
     "version": "0.1.0"
   },
   "tauri": {
