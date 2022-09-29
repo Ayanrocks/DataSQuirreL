@@ -34,3 +34,5 @@ pub const INET: &str = "INET";
 pub const CIDR: &str = "CIDR";
 pub const JSON: &str = "JSON";
 pub const JSONB: &str = "JSONB";
+
+pub const INITIAL_PAGE_SIZE: u32 = 40;

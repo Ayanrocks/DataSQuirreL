@@ -3,11 +3,13 @@
     import AgGrid from "@budibase/svelte-ag-grid";
     import {onDestroy, onMount} from 'svelte';
     import DataTableToolBar from "./DataTableToolBar.svelte";
-    import {activeTable} from '../stores';
+    import {activeTable, notificationMsg} from '../stores';
 
 
     import 'ag-grid-community/dist/styles/ag-grid.css';
     import 'ag-grid-community/dist/styles/ag-theme-material.css';
+    import {invoke} from "@tauri-apps/api/tauri";
+    import {NOTIFICATION_TYPE_ERROR} from "../constants/constants";
 
     let domNode;
     let grid;
@@ -56,6 +58,7 @@
 
     $: if (gridApi != null && tableData != null) {
         if (tableData.tableName !== "" && tableData.columns.length !== 0) {
+            console.log("Refreshing table data")
             columnDefs = []
             rowDefs = []
             rowCount = tableData.rowCount
@@ -97,11 +100,47 @@
     }
 
     let gotoNext = () => {
-        gridApi.api.paginationGoToNextPage();
+        gridApi.paginationGoToNextPage();
+        let currentPage = gridApi.paginationGetCurrentPage() + 1;
+        let totalRowFetched = gridApi.paginationGetRowCount();
+        console.log("Paging size: ", currentPage, totalRowFetched, paginationSize)
+
+        // 40/20 - 2 = 2-2 = 0 => 1 > 0 && 1 && 152/20
+        if ((currentPage > ((totalRowFetched / paginationSize) - 2)) && totalRowFetched !== rowCount) {
+            // fetch more rows
+            console.log("Fetch More rows")
+            // Invoke the command
+            invoke('fetch_table_data_with_offset', {
+                reqPayload: {
+                    table_name: tableData.tableName,
+                    offset: 40 * (currentPage - 1),
+                },
+            }).then((res) => {
+                console.log(res);
+                let data = res.data;
+
+                // activeTable.set({
+                //     tableName: data.table_type,
+                //     columns: data.columns,
+                //     rows: data.rows,
+                //     rowCount: data.row_count,
+                // })
+
+                tableData.rows = [...tableData.rows, ...data.rows]
+                console.log("Data: ", tableData.rows)
+            }).catch(e => {
+                console.log(e)
+                notificationMsg.set({
+                    type: NOTIFICATION_TYPE_ERROR,
+                    message: e,
+                });
+            })
+        }
+
     }
 
     let gotoPrev = () => {
-        gridApi.api.paginationGoToPreviousPage();
+        gridApi.paginationGoToPreviousPage();
     }
 
 

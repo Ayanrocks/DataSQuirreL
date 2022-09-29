@@ -179,9 +179,10 @@ impl ConnPool {
             r#"
                 SELECT *
                 FROM {}
-                LIMIT 600;
+                LIMIT {};
             "#,
             table_name,
+            constants::INITIAL_PAGE_SIZE
         );
 
         println!("Printing Query: {}", &query);
@@ -212,9 +213,11 @@ impl ConnPool {
             r#"
                 SELECT *
                 FROM {}
-                LIMIT 600 OFFSET {};
+                LIMIT {} OFFSET {};
             "#,
-            table_name, offset
+            table_name,
+            constants::INITIAL_PAGE_SIZE,
+            offset
         );
 
         println!("Printing Query: {}", &query);

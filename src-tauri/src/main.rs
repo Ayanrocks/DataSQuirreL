@@ -288,7 +288,7 @@ fn fetch_table_data_with_offset(
             }
         };
 
-        return IPCResponse {
+        IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
             sys_err: None,
@@ -299,7 +299,7 @@ fn fetch_table_data_with_offset(
                 row_count: None,
                 table_type: req_payload.table_name,
             }),
-        };
+        }
     })
 }
 
