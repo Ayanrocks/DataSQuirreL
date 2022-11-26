@@ -6,6 +6,7 @@
 
 
     const dispatch = createEventDispatcher();
+    let activeTableName = "";
 
     function resize(e) {
         dispatch('resizing', {
@@ -21,7 +22,18 @@
         sideBarColumn = e.tableName;
     });
 
+    activeTable.subscribe((val) => {
+        activeTableName = val.tableName
+    })
+
     function clickedSidebar(e) {
+        console.log("TableName sidebar: ", e, activeTableName)
+        // checking if the same table is opened or not
+        if (activeTableName == e) {
+            console.log("Same Table name")
+            // no change needed
+            return
+        }
         // Invoke the command
         invoke('fetch_table_data', {
             reqPayload: {
@@ -30,9 +42,9 @@
         }).then((res) => {
             console.log(res);
             let data = res.data;
-
+            activeTableName = data.table_name
             activeTable.set({
-                tableName: data.table_type,
+                tableName: data.table_name,
                 columns: data.columns,
                 rows: data.rows,
                 rowCount: data.row_count,

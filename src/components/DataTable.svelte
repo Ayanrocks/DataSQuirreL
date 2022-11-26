@@ -7,9 +7,9 @@
 
 
     import 'ag-grid-community/dist/styles/ag-grid.css';
-    import 'ag-grid-community/dist/styles/ag-theme-material.css';
+    import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
     import {invoke} from "@tauri-apps/api/tauri";
-    import {NOTIFICATION_TYPE_ERROR} from "../constants/constants";
+    import {NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE} from "../constants/constants";
 
     let domNode;
     let grid;
@@ -18,7 +18,6 @@
     let columnDefs = [];
     let rowDefs = [];
     let rowCount = 0;
-    let paginationSize = 20
 
     // props
     export let tableData = {};
@@ -32,18 +31,18 @@
                 resizable: true,
                 filter: true,
                 flex: 1,
-                minWidth: 100,
+                minWidth: 150,
             },
             debounceVerticalScrollbar: true,
-            autoSizePadding: 4,
+            autoSizePadding: 2,
             pagination: true,
-            paginationPageSize: paginationSize,
+            paginationPageSize: PAGINATION_SIZE,
             rowSelection: 'single',
             columnDefs: columnDefs,
             rowData: rowDefs,
             suppressColumnVirtualisation: true,
             suppressRowVirtualisation: true,
-            animateRows: true,
+            animateRows: false,
             infiniteInitialRowCount: 1,
             suppressPaginationPanel: true
         };
@@ -95,59 +94,47 @@
 
             gridApi.setColumnDefs(columnDefs);
             gridApi.setRowData(rowDefs);
-            gridColumnApi.autoSizeAllColumns();
+            gridApi.sizeColumnsToFit();
         }
     }
 
     let gotoNext = () => {
+
+
+        gridApi.refreshClientSideRowModel('filter')
         gridApi.paginationGoToNextPage();
-        let currentPage = gridApi.paginationGetCurrentPage() + 1;
-        let totalRowFetched = gridApi.paginationGetRowCount();
-        console.log("Paging size: ", currentPage, totalRowFetched, paginationSize)
-
-        // 40/20 - 2 = 2-2 = 0 => 1 > 0 && 1 && 152/20
-        if ((currentPage > ((totalRowFetched / paginationSize) - 2)) && totalRowFetched !== rowCount) {
-            // fetch more rows
-            console.log("Fetch More rows")
-            // Invoke the command
-            invoke('fetch_table_data_with_offset', {
-                reqPayload: {
-                    table_name: tableData.tableName,
-                    offset: 40 * (currentPage - 1),
-                },
-            }).then((res) => {
-                console.log(res);
-                let data = res.data;
-
-                // activeTable.set({
-                //     tableName: data.table_type,
-                //     columns: data.columns,
-                //     rows: data.rows,
-                //     rowCount: data.row_count,
-                // })
-
-                tableData.rows = [...tableData.rows, ...data.rows]
-                console.log("Data: ", tableData.rows)
-            }).catch(e => {
-                console.log(e)
-                notificationMsg.set({
-                    type: NOTIFICATION_TYPE_ERROR,
-                    message: e,
-                });
-            })
-        }
-
     }
 
     let gotoPrev = () => {
         gridApi.paginationGoToPreviousPage();
     }
 
+    function fetchNextRecordBatch() {
+        invoke('fetch_table_data_with_offset', {
+            reqPayload: {
+                table_name: e,
+            },
+        }).then((res) => {
+            console.log(res);
+            let data = res.data;
+
+            activeTable.set({
+                tableName: data.table_name,
+                columns: data.columns,
+                rows: data.rows,
+                rowCount: data.row_count,
+            })
+        }).catch(e => {
+            console.log(e)
+            notificationMsg.set({
+                type: NOTIFICATION_TYPE_ERROR,
+                message: e,
+            });
+        })
+    }
+
 
     onDestroy(() => {
-        // if (grid) {
-        //     grid.destroy();
-        // }
     });
 </script>
 
@@ -155,12 +142,12 @@
     <div class="datagrid-container">
         <DataTableToolBar
                 totalRowCount={rowCount}
-                paginationSize={paginationSize}
+                paginationSize={PAGINATION_SIZE}
                 gotoNext={gotoNext}
                 gotoPrev={gotoPrev}
         />
 
-        <div id="datagrid" bind:this={domNode} class="ag-theme-material"></div>
+        <div id="datagrid" bind:this={domNode} class="ag-theme-alpine"></div>
     </div>
 </div>
 

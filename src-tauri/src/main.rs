@@ -9,6 +9,7 @@ use crate::database::db::TableColumns;
 use database::db::{connect_to_db, ConnPool, TableSchema};
 use serde::{Deserialize, Serialize};
 use sqlx::Error;
+use sqlx_core::encode::IsNull::No;
 use std::sync::Mutex;
 use tauri::{http, CustomMenuItem, Menu, MenuItem, State, Submenu};
 
@@ -33,7 +34,8 @@ struct TableData<T> {
     columns: Vec<String>,
     rows: Option<Vec<Vec<T>>>,
     row_count: Option<String>,
-    table_type: String,
+    table_name: Option<String>,
+    query_type: String,
 }
 #[derive(Debug, Serialize, Deserialize)]
 struct IPCResponse<T> {
@@ -114,7 +116,8 @@ fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<Table
                     columns: vec![String::from("Table Name")],
                     row_count: Some(t.len().to_string()),
                     rows: Some(vec![t]),
-                    table_type: "fetch_tables".to_string(),
+                    table_name: None,
+                    query_type: constants::QUERY_TYPE_FETCH_TABLES.to_string(),
                 };
 
                 return IPCResponse {
@@ -211,7 +214,7 @@ fn fetch_table_data(
             }
         };
 
-        // fetch table rows
+        // fetch table rows count
         let table_rows_count_result = application_state
             .dbpool
             .lock()
@@ -237,7 +240,7 @@ fn fetch_table_data(
             }
         };
 
-        return IPCResponse {
+        IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
             sys_err: None,
@@ -246,9 +249,10 @@ fn fetch_table_data(
                 columns: columns,
                 rows: Some(table_data_rows),
                 row_count: Some(row_count),
-                table_type: req_payload.table_name,
+                table_name: Some(req_payload.table_name),
+                query_type: constants::QUERY_TYPE_FETCH_INITIAL_TABLE_DATA.to_string(),
             }),
-        };
+        }
     })
 }
 
@@ -258,6 +262,65 @@ fn fetch_table_data_with_offset(
     application_state: State<ApplicationState>,
 ) -> IPCResponse<TableData<String>> {
     tauri::async_runtime::block_on(async {
+        let mut columns: Vec<String> = vec![];
+
+        let table_columns_result = application_state
+            .dbpool
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .fetch_table_columns(&req_payload.table_name)
+            .await;
+
+        // fetch table columns
+        match table_columns_result {
+            Ok(table_columns) => {
+                let mut i = 0;
+                for t in table_columns {
+                    columns.push(t.column_name);
+                    i += 1;
+                }
+            }
+            Err(e) => {
+                return IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(
+                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
+                    ),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                }
+            }
+        };
+
+        // fetch table rows count
+        let table_rows_count_result = application_state
+            .dbpool
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .fetch_table_rows_count(&req_payload.table_name)
+            .await;
+
+        let mut row_count: String;
+        match table_rows_count_result {
+            Ok(mut table_row_count) => row_count = format!("{}", table_row_count.row_count),
+            Err(e) => {
+                return IPCResponse::<_> {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(
+                        constants::ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED.to_string(),
+                    ),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(e.to_string()),
+                    data: None,
+                }
+            }
+        };
+
         /*
            Pass the offset and the table name and return the additional data
         */
@@ -294,10 +357,11 @@ fn fetch_table_data_with_offset(
             sys_err: None,
             frontend_msg: None,
             data: Some(TableData {
-                columns: vec![],
+                columns,
                 rows: Some(table_data_rows),
-                row_count: None,
-                table_type: req_payload.table_name,
+                row_count: Some(row_count),
+                table_name: Some(req_payload.table_name),
+                query_type: constants::QUERY_TYPE_FETCH_OFFSET_TABLE_DATA.to_string(),
             }),
         }
     })

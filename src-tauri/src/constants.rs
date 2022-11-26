@@ -36,3 +36,9 @@ pub const JSON: &str = "JSON";
 pub const JSONB: &str = "JSONB";
 
 pub const INITIAL_PAGE_SIZE: u32 = 40;
+
+// Query Types
+pub const QUERY_TYPE_FETCH_TABLES: &str = "fetch_tables";
+pub const QUERY_TYPE_FETCH_INITIAL_TABLE_DATA: &str = "fetch_initial_table_data";
+pub const QUERY_TYPE_FETCH_OFFSET_TABLE_DATA: &str = "fetch_offset_table_data";
+pub const QUERY_TYPE_CUSTOM: &str = "custom";
