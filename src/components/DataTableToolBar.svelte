@@ -2,11 +2,9 @@
     import {activeTable} from '../stores';
 
     let activeTableName = ''
-    let totalPages = 0
-    let currentPage = 1;
 
-    export let totalRowCount;
-    export let paginationSize;
+    export let currentPage = 1;
+    export let maxPage = 0;
     export let gotoNext;
     export let gotoPrev;
 
@@ -14,22 +12,14 @@
         activeTableName = value.tableName
     })
 
-    let getPageCount = (rowCount, paginationSize) => {
-        let totalPages = parseInt(rowCount / paginationSize)
-        if (rowCount % paginationSize !== 0) {
-            totalPages += 1
-        }
-
-        return totalPages
-    }
-
 
     let onClickNext = () => {
-        if (currentPage === totalPages) {
+        if (currentPage === maxPage) {
             return
         }
 
-        currentPage += 1;
+
+        activeTable.update(val => ({currentPage: val + 1}))
 
         // add logic to fetch more data
         gotoNext()
@@ -40,23 +30,17 @@
             return
         }
 
-        currentPage -= 1;
+        activeTable.set({currentPage: currentPage - 1})
         gotoPrev()
     }
 
-    $: {
-        totalPages = parseInt(getPageCount(totalRowCount, paginationSize))
-    }
 </script>
 
 <div class="data-table-toolbar__container">
-    <!--    <div class="data-table-toolbar__title&#45;&#45;left">-->
-    <!--        <h1>{activeTableName}</h1>-->
-    <!--    </div>-->
     <div class="data-table-toolbar-controls__container">
         <div class="data-table-toolbar__controls--left">
             <i class="fa fa-play" aria-hidden="true"></i>
-            <h1>Helloz</h1>
+            <h1>{activeTableName}</h1>
         </div>
         <div class="data-table-toolbar__controls--center">
             <h1>world</h1>
@@ -72,7 +56,7 @@
                 </button>
             </div>
             <div class="page--info">
-                <p>Page [{currentPage}] of [{totalPages}]</p>
+                <p>Page [{currentPage}] of [{maxPage}]</p>
             </div>
         </div>
     </div>

@@ -36,7 +36,6 @@
 
     function resizeSideBar(e) {
         e = e.detail.event;
-        console.log('Registering mousedown,', e.offsetX);
         if (e.offsetX < BORDER_SIZE) {
             m_pos = e.x;
             document.addEventListener('mousemove', resize, false);
@@ -144,7 +143,7 @@
     </div>
     <div class="columns split-main-content" id="right-main-content">
         {#if activeTableData.tableName !== ""}
-            <DataTable tableData={activeTableData}/>
+            <DataTable/>
         {/if}
     </div>
 </div>

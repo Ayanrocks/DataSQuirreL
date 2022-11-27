@@ -18,5 +18,7 @@ export const activeTable = writable({
     tableName: '',
     rows: [[]],
     columns: [''],
-    rowCount: 0
+    rowCount: 0,
+    currentPage: 0,
+    maxPage: 0
 })

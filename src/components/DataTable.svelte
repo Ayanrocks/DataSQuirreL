@@ -20,10 +20,14 @@
     let rowCount = 0;
 
     // props
-    export let tableData = {};
+    let tableData = {};
+
+    activeTable.subscribe(val => {
+        console.log("ActiveTable Subscribe", val)
+        tableData = val
+    })
 
     onMount(() => {
-        console.log("Mounting DataTable")
         let gridOptions = {
             defaultColDef: {
                 editable: true,
@@ -31,7 +35,7 @@
                 resizable: true,
                 filter: true,
                 flex: 1,
-                minWidth: 150,
+                minWidth: 65,
             },
             debounceVerticalScrollbar: true,
             autoSizePadding: 2,
@@ -49,7 +53,6 @@
 
         grid = new Grid(domNode, gridOptions);
         gridOptions.onGridReady = (params) => {
-            console.log('OnGridReady: ', params)
             gridApi = params.api;
             gridColumnApi = params.columnApi;
         }
@@ -57,7 +60,6 @@
 
     $: if (gridApi != null && tableData != null) {
         if (tableData.tableName !== "" && tableData.columns.length !== 0) {
-            console.log("Refreshing table data")
             columnDefs = []
             rowDefs = []
             rowCount = tableData.rowCount
@@ -79,6 +81,7 @@
                     field: elem,
                     headerName: elem,
                     sortable: true,
+                    minWidth: 150,
                     comparator: (valueA, valueB, nodeA, nodeB, isDescending) => valueA - valueB
                 })
             })
@@ -99,6 +102,10 @@
     }
 
     let gotoNext = () => {
+        // calculate offset value
+        let offsetVal = PAGINATION_SIZE * tableData.currentPage
+
+        fetchNextRecordBatch(tableData.tableName, offsetVal)
 
 
         gridApi.refreshClientSideRowModel('filter')
@@ -109,21 +116,21 @@
         gridApi.paginationGoToPreviousPage();
     }
 
-    function fetchNextRecordBatch() {
+    function fetchNextRecordBatch(tableName, offsetVal) {
+        console.log("TABLENAME: ", tableName)
         invoke('fetch_table_data_with_offset', {
             reqPayload: {
-                table_name: e,
+                table_name: tableName,
+                offset: offsetVal
             },
         }).then((res) => {
             console.log(res);
             let data = res.data;
 
-            activeTable.set({
-                tableName: data.table_name,
-                columns: data.columns,
-                rows: data.rows,
-                rowCount: data.row_count,
-            })
+            tableData.rows = [...tableData.rows, ...data.rows]
+            tableData.currentPage = tableData.currentPage + 1
+
+            activeTable.set(tableData)
         }).catch(e => {
             console.log(e)
             notificationMsg.set({
@@ -141,8 +148,8 @@
 <div class="datatable-main-container">
     <div class="datagrid-container">
         <DataTableToolBar
-                totalRowCount={rowCount}
-                paginationSize={PAGINATION_SIZE}
+                currentPage={tableData.currentPage}
+                maxPage={tableData.maxPage}
                 gotoNext={gotoNext}
                 gotoPrev={gotoPrev}
         />

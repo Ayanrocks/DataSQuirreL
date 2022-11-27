@@ -2,7 +2,7 @@
     import {activeTable, notificationMsg, tableNames} from '../stores';
     import {createEventDispatcher} from 'svelte';
     import {invoke} from '@tauri-apps/api/tauri';
-    import {NOTIFICATION_TYPE_ERROR} from "../constants/constants";
+    import {NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE} from "../constants/constants";
 
 
     const dispatch = createEventDispatcher();
@@ -27,10 +27,8 @@
     })
 
     function clickedSidebar(e) {
-        console.log("TableName sidebar: ", e, activeTableName)
         // checking if the same table is opened or not
         if (activeTableName == e) {
-            console.log("Same Table name")
             // no change needed
             return
         }
@@ -43,12 +41,22 @@
             console.log(res);
             let data = res.data;
             activeTableName = data.table_name
-            activeTable.set({
+            let activeTableData = {
                 tableName: data.table_name,
                 columns: data.columns,
                 rows: data.rows,
                 rowCount: data.row_count,
-            })
+                currentPage: 1,
+                maxPage: 0,
+            }
+
+            // calculate the last page
+            activeTableData.maxPage = parseInt(data.row_count / PAGINATION_SIZE)
+            if (data.row_count % PAGINATION_SIZE) {
+                activeTableData.maxPage++
+            }
+
+            activeTable.set(activeTableData)
         }).catch(e => {
             console.log(e)
             notificationMsg.set({
