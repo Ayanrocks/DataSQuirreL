@@ -1,12 +1,9 @@
 use crate::constants;
 use serde::{Deserialize, Serialize};
-use sqlx::error::BoxDynError;
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
 use sqlx::{query, query_as, Column, FromRow, Postgres, Row, ValueRef};
-use std::any::Any;
-use std::arch::aarch64::uint16x8x4_t;
-use std::borrow::Borrow;
+use std::collections::HashMap;
 
 pub struct ConnPool {
     pub conn_name: String,
@@ -236,6 +233,78 @@ impl ConnPool {
             }
         }
     }
+
+    // pub async fn update_table_data(
+    //     &self,
+    //     table_name: &str,
+    //     where_clause: &HashMap<String, String>,
+    //     update_map: &HashMap<String, String>,
+    // ) -> Result<TableRowCount, sqlx::Error> {
+    //     let mut db_conn = self.pool.acquire().await?;
+    //     let mut where_string: String = "".to_string();
+    //     let mut update_string: String = "".to_string();
+
+    //     for (key, val) in where_clause.into_iter() {
+    //         where_string = format!("{} AND {} = {}", where_string, key, val)
+    //     }
+
+    //     for (key, val) in update_map.into_iter() {
+    //         update_string = format!("{}, {} = {}", update_string, key, val)
+    //     }
+
+    //     // looping through the where map to form a where string.
+
+    //     let query_string = format!(
+    //         r#"
+    //             UPDATE {} SET {} WHERE {}
+    //         "#,
+    //         table_name, update_string, where_string
+    //     );
+
+    //     // println!("Printing Query: {}", &query);
+
+    //     let query_result = sqlx::query::Query(&query_string)
+    //         .execute(&mut db_conn)
+    //         .await;
+
+    //     match query_result {
+    //         Ok(row) => {
+    //             return Ok(row);
+    //         }
+    //         Err(e) => {
+    //             println!("{:#?}", e);
+    //             return Err(e);
+    //         }
+    //     }
+    // }
+
+    // pub async fn raw_query_runner(
+    //     &self,
+    //     table_name: &str,
+    //     query_string: &str,
+    // ) -> Result<Vec<Vec<String>>, sqlx::Error> {
+    //     let mut db_conn = self.pool.acquire().await?;
+
+    //     // looping through the where map to form a where string.
+
+    //     let query = query_string;
+
+    //     println!("Printing Query: {}", &query);
+
+    //     let query_result = query_as::<sqlx::Postgres, Any>(&query)
+    //         .fetch_one(&mut db_conn)
+    //         .await;
+
+    //     match query_result {
+    //         Ok(row) => {
+    //             return Ok(row);
+    //         }
+    //         Err(e) => {
+    //             println!("{:#?}", e);
+    //             return Err(e);
+    //         }
+    //     }
+    // }
 }
 
 fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> {
