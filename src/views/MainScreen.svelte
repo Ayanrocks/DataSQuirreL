@@ -19,6 +19,7 @@
 
     let m_pos;
 
+    /// to resize the window on drag
     function resize(e) {
         const dx = e.x - m_pos;
         m_pos = e.x;
@@ -34,6 +35,7 @@
         }
     }
 
+    /// to resize the sidebar
     function resizeSideBar(e) {
         e = e.detail.event;
         if (e.offsetX < BORDER_SIZE) {
@@ -42,6 +44,7 @@
         }
     }
 
+    /// adding mousemove and mouseup event listeners
     document.addEventListener(
         'mouseup',
         function () {
@@ -98,7 +101,6 @@
         // fetch tables on load
         invoke('fetch_tables')
             .then((res) => {
-                console.log(res);
                 if (res.error_code) {
                     notificationMsg.set({
                         type: NOTIFICATION_TYPE_ERROR,
