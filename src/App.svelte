@@ -1,24 +1,17 @@
 <script>
-    import {Router, Link, Route} from 'svelte-navigator';
-    import InitConnection from './views/InitConnection.svelte';
-    import MainScreen from './views/MainScreen.svelte';
-    import Notification from './components/Notification.svelte';
+  import InitConnection from './views/InitConnection.svelte';
+  import MainScreen from './views/MainScreen.svelte';
+  import Notification from './components/Notification.svelte';
 </script>
 
-<Notification/>
-<Router>
-    <div id="router-view">
-        <Route path="/">
-            <InitConnection/>
-        </Route>
-        <Route path="dashboard">
-            <MainScreen/>
-        </Route>
-    </div>
-</Router>
+<Notification />
+<div id="router-view">
+  <InitConnection />
+  <MainScreen />
+</div>
 
 <style>
-    #router-view {
-        overflow: hidden;
-    }
+  #router-view {
+    overflow: hidden;
+  }
 </style>

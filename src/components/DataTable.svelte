@@ -5,10 +5,9 @@
   import DataTableToolBar from './DataTableToolBar.svelte';
   import { activeTable, notificationMsg } from '../stores';
 
-  import 'ag-grid-community/dist/styles/ag-grid.css';
-  import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
   import { invoke } from '@tauri-apps/api/tauri';
   import { NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE } from '../constants/constants';
+  import DataTablePaginationBar from './DataTablePaginationBar.svelte';
 
   let domNode;
   let grid;
@@ -115,7 +114,7 @@
   };
 
   function fetchNextRecordBatch(tableName, offsetVal) {
-    console.log('TABLENAME: ', tableName);
+    console.debug('TABLENAME: ', tableName);
     invoke('fetch_table_data_with_offset', {
       reqPayload: {
         table_name: tableName,
@@ -148,6 +147,7 @@
     <DataTableToolBar currentPage={tableData.currentPage} maxPage={tableData.maxPage} {gotoNext} {gotoPrev} />
 
     <div id="datagrid" bind:this={domNode} class="ag-theme-alpine"></div>
+    <DataTablePaginationBar currentPage={tableData.currentPage} maxPage={tableData.maxPage} {gotoNext} {gotoPrev} />
   </div>
 </div>
 
@@ -162,6 +162,7 @@
   .datagrid-container {
     display: flex;
     justify-content: center;
+    flex-direction: row;
     align-items: center;
     height: 90%;
     position: relative;
