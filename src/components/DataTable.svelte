@@ -1,6 +1,5 @@
 <script>
   import { Grid } from 'ag-grid-community';
-  import AgGrid from '@budibase/svelte-ag-grid';
   import { onDestroy, onMount } from 'svelte';
   import DataTableToolBar from './DataTableToolBar.svelte';
   import { activeTable, notificationMsg } from '../stores';

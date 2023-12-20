@@ -1,13 +1,14 @@
 <script>
-  import InitConnection from './views/InitConnection.svelte';
-  import MainScreen from './views/MainScreen.svelte';
-  import Notification from './components/Notification.svelte';
+  import InitConnection from "./views/InitConnection.svelte";
+  import MainScreen from "./views/MainScreen.svelte";
+  import Notification from "./components/Notification.svelte";
+  import "./tailwind.css"
 </script>
 
 <Notification />
 <div id="router-view">
   <InitConnection />
-  <MainScreen />
+  <!-- <MainScreen /> -->
 </div>
 
 <style>
