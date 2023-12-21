@@ -16,22 +16,13 @@ module.exports = {
     project: ["tsconfig.json"],
     sourceType: "module",
   },
+  overrides: [
+    {
+      files: ["*.svelte"],
+      parser: "svelte-eslint-parser",
+    },
+    // ...
+  ],
   rules: {
-    quotes: ["error", "double"],
-    "import/no-unresolved": 0,
-    "linebreak-style": ["error", "windows"],
-    indent: "off",
-    "object-curly-spacing": "off",
-    "no-tabs": 0,
-    "max-len": "off",
-    "require-jsdoc": 0,
-    "no-empty": [0, "allow-empty-functions", "allow-empty-catch"],
-    "@typescript-eslint/no-explicit-any": ["off"],
-    "@typescript-eslint/naming-convention": ["off"],
-    "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-var-requires": "off",
-    "no-mixed-spaces-and-tabs": 0,
-    camelcase: 0,
   },
 };
