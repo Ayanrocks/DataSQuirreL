@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // With the Tauri API npm package:
   import { invoke } from "@tauri-apps/api/tauri";
   import { notificationMsg } from "../stores";
@@ -10,15 +10,15 @@
 
   // Reactive variables
   // TODO: Set this to default empty strings
-  let connName = "test";
-  let hostName = "localhost";
-  let port = 5432;
-  let userName = "dev";
-  let password = "password";
-  let dbName = "multipl-local";
-  let loaderActive = false;
+  let connName: String = "test";
+  let hostName: String = "localhost";
+  let port: Number = 5432;
+  let userName: String = "dev";
+  let password: String = "password";
+  let dbName: String = "multipl-local";
+  let loaderActive: boolean = false;
 
-  function OnClickConnect(e) {
+  function OnClickConnect(_: any) {
     if (
       connName === "" ||
       hostName === "" ||
@@ -36,7 +36,7 @@
         conn_name: connName,
         host_name: hostName,
         database_name: dbName,
-        port: parseInt(port),
+        port: port,
         user_name: userName,
         password: password,
       },
@@ -117,10 +117,12 @@
           type="text"
           value={port}
           on:input={(e) => {
-            if (!isNaN(e.target.value)) {
-              port = e.target.value;
-            } else {
-              e.target.value = port;
+            if(e.target !== null) {
+              if (!isNaN(e.target.value)) {
+                port = e.target.value;
+              } else {
+                e.target.value = port;
+              }
             }
           }}
           placeholder="Enter Port"
@@ -160,7 +162,7 @@
     </div>
   </div>
 
-  <div class="columns my-4">
+  <div class="columns my-2">
     <div class="field">
       <label class="label font-bold" for="dbName">Database Name</label>
       <div class="control my-2">
@@ -176,7 +178,10 @@
     </div>
   </div>
 
-  <button class="connect-button p-2 px-5 rounded-lg w-fit" on:click={OnClickConnect}>
+  <button
+    class="connect-button p-2 px-5 rounded-lg w-fit"
+    on:click={OnClickConnect}
+  >
     <span class="connect-btn-text"> Connect </span>
     <Loader {loaderActive} color="#1363df" />
   </button>
