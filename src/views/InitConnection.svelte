@@ -41,7 +41,7 @@
         password: password,
       },
     })
-      .then((res) => {
+      .then((res: { error_code: any; frontend_msg: any }) => {
         loaderActive = false;
         console.log(res);
         if (res.error_code) {
@@ -96,7 +96,7 @@
           <input
             bind:value={connName}
             id="connName"
-            class="input border-solid border-2 w-full p-2 rounded-md"
+            class="input input-bordered border-solid border-2 w-full p-2 rounded-md"
             type="text"
             placeholder="Enter connection name"
             autocomplete="off"
@@ -110,7 +110,7 @@
         <div class="control my-2">
           <input
             id="hostName"
-            class="input border-solid border-2 w-full p-2 rounded-md"
+            class="input input-bordered border-solid border-2 w-full p-2 rounded-md"
             type="text"
             bind:value={hostName}
             placeholder="Enter Host"
@@ -124,7 +124,7 @@
         <div class="control my-2">
           <input
             id="port"
-            class="input border-solid border-2 w-full p-2 rounded-md"
+            class="input input-bordered border-solid border-2 w-full p-2 rounded-md"
             type="text"
             value={port}
             on:input={(e) => {
@@ -143,7 +143,7 @@
         <div class="control my-2">
           <input
             id="userName"
-            class="input border-solid border-2 w-full p-2 rounded-md"
+            class="input input-bordered border-solid border-2 w-full p-2 rounded-md"
             type="text"
             bind:value={userName}
             placeholder="Enter Username"
@@ -157,7 +157,7 @@
         <div class="control my-2">
           <input
             id="password"
-            class="input border-solid border-2 w-full p-2 rounded-md"
+            class="input input-bordered border-solid border-2 w-full p-2 rounded-md"
             type="password"
             bind:value={password}
             placeholder="Enter Password"
@@ -173,7 +173,7 @@
         <div class="control my-2">
           <input
             id="dbName"
-            class="input border-solid border-2 w-full p-2 rounded-md"
+            class="input input-bordered border-solid border-2 w-full p-2 rounded-md"
             type="text"
             bind:value={dbName}
             placeholder="Enter database name"
@@ -183,10 +183,7 @@
       </div>
     </div>
 
-    <button
-      class="connect-button p-2 px-5 rounded-lg w-fit flex flex-row"
-      on:click={OnClickConnect}
-    >
+    <button class="btn connect-button" on:click={OnClickConnect}>
       <span class="connect-btn-text"> Connect </span>
       <Loader {loaderActive} color="#dff6ff" />
     </button>
@@ -209,9 +206,12 @@
     color: #e9e9e9;
   }
 
+  .connect-button:hover {
+    background-color: var(--primaryColor);
+    color: #e9e9e9;
+  }
   .connect-btn-text {
     font-weight: 600;
     text-transform: none;
-    font-size: 1.2rem;
   }
 </style>

@@ -6,12 +6,7 @@
 </script>
 
 {#if loaderActive === true}
-  <div class="loader-container mx-4">
-    <div
-      class="lds-dual-ring"
-      style="height:{height};--width:{width}; --color:{color}"
-    ></div>
-  </div>
+  <span class="loading loading-spinner loading-xs"></span>
 {/if}
 
 <style>
