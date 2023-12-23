@@ -6,7 +6,7 @@
 </script>
 
 <Notification />
-<div id="router-view">
+<div id="router-view container">
   <InitConnection />
   <!-- <MainScreen /> -->
 </div>

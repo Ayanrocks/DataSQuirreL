@@ -16,7 +16,7 @@
   let userName: String = "dev";
   let password: String = "password";
   let dbName: String = "multipl-local";
-  let loaderActive: boolean = false;
+  let loaderActive: boolean = true;
 
   function OnClickConnect(_: any) {
     if (
@@ -70,121 +70,127 @@
         });
       });
   }
+
+  const validatePort = (e: HTMLInputElement) => {
+    if (e.target !== null) {
+      if (!isNaN(e.target.value)) {
+        port = e.target.value;
+      } else {
+        e.target.value = port;
+      }
+    }
+  };
 </script>
 
-<div class="form-container container grid grid-cols-1 w-full">
-  <div class="columns place-content-center w-full text-2xl my-8">
-    <div class="heading-label">
-      <h2 class="text-center font-light">New Database Connection</h2>
-    </div>
-  </div>
-  <div class="columns my-4">
-    <div class="field">
-      <label class="label font-bold" for="connName">Connection Name</label>
-      <div class="control my-2">
-        <input
-          bind:value={connName}
-          id="connName"
-          class="input border-solid border-2 w-full p-2 rounded-md"
-          type="text"
-          placeholder="Enter connection name"
-          autocomplete="off"
-        />
+<div class="container">
+  <div class="form-container container grid grid-cols-1 w-full">
+    <div class="columns place-content-center w-full text-2xl my-8">
+      <div class="heading-label">
+        <h2 class="text-center font-light">New Database Connection</h2>
       </div>
     </div>
-  </div>
-  <div class="columns-2">
-    <div class="field">
-      <label class="label font-bold" for="hostName">Host</label>
-      <div class="control my-2">
-        <input
-          id="hostName"
-          class="input border-solid border-2 w-full p-2 rounded-md"
-          type="text"
-          bind:value={hostName}
-          placeholder="Enter Host"
-          autocomplete="off"
-        />
+    <div class="columns my-4">
+      <div class="field">
+        <label class="label font-bold" for="connName">Connection Name</label>
+        <div class="control my-2">
+          <input
+            bind:value={connName}
+            id="connName"
+            class="input border-solid border-2 w-full p-2 rounded-md"
+            type="text"
+            placeholder="Enter connection name"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="columns-2">
+      <div class="field">
+        <label class="label font-bold" for="hostName">Host</label>
+        <div class="control my-2">
+          <input
+            id="hostName"
+            class="input border-solid border-2 w-full p-2 rounded-md"
+            type="text"
+            bind:value={hostName}
+            placeholder="Enter Host"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label font-bold" for="port">Port</label>
+        <div class="control my-2">
+          <input
+            id="port"
+            class="input border-solid border-2 w-full p-2 rounded-md"
+            type="text"
+            value={port}
+            on:input={(e) => {
+              validatePort(e);
+            }}
+            placeholder="Enter Port"
+            autocomplete="off"
+          />
+        </div>
       </div>
     </div>
 
-    <div class="field">
-      <label class="label font-bold" for="port">Port</label>
-      <div class="control my-2">
-        <input
-          id="port"
-          class="input border-solid border-2 w-full p-2 rounded-md"
-          type="text"
-          value={port}
-          on:input={(e) => {
-            if(e.target !== null) {
-              if (!isNaN(e.target.value)) {
-                port = e.target.value;
-              } else {
-                e.target.value = port;
-              }
-            }
-          }}
-          placeholder="Enter Port"
-          autocomplete="off"
-        />
+    <div class="columns-2 my-4">
+      <div class="field">
+        <label class="label font-bold" for="userName">Username</label>
+        <div class="control my-2">
+          <input
+            id="userName"
+            class="input border-solid border-2 w-full p-2 rounded-md"
+            type="text"
+            bind:value={userName}
+            placeholder="Enter Username"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label font-bold" for="password">Password</label>
+        <div class="control my-2">
+          <input
+            id="password"
+            class="input border-solid border-2 w-full p-2 rounded-md"
+            type="password"
+            bind:value={password}
+            placeholder="Enter Password"
+            autocomplete="off"
+          />
+        </div>
       </div>
     </div>
+
+    <div class="columns my-2">
+      <div class="field">
+        <label class="label font-bold" for="dbName">Database Name</label>
+        <div class="control my-2">
+          <input
+            id="dbName"
+            class="input border-solid border-2 w-full p-2 rounded-md"
+            type="text"
+            bind:value={dbName}
+            placeholder="Enter database name"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+    </div>
+
+    <button
+      class="connect-button p-2 px-5 rounded-lg w-fit flex flex-row"
+      on:click={OnClickConnect}
+    >
+      <span class="connect-btn-text"> Connect </span>
+      <Loader {loaderActive} color="#dff6ff" />
+    </button>
   </div>
-
-  <div class="columns-2 my-4">
-    <div class="field">
-      <label class="label font-bold" for="userName">Username</label>
-      <div class="control my-2">
-        <input
-          id="userName"
-          class="input border-solid border-2 w-full p-2 rounded-md"
-          type="text"
-          bind:value={userName}
-          placeholder="Enter Username"
-          autocomplete="off"
-        />
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="label font-bold" for="password">Password</label>
-      <div class="control my-2">
-        <input
-          id="password"
-          class="input border-solid border-2 w-full p-2 rounded-md"
-          type="password"
-          bind:value={password}
-          placeholder="Enter Password"
-          autocomplete="off"
-        />
-      </div>
-    </div>
-  </div>
-
-  <div class="columns my-2">
-    <div class="field">
-      <label class="label font-bold" for="dbName">Database Name</label>
-      <div class="control my-2">
-        <input
-          id="dbName"
-          class="input border-solid border-2 w-full p-2 rounded-md"
-          type="text"
-          bind:value={dbName}
-          placeholder="Enter database name"
-          autocomplete="off"
-        />
-      </div>
-    </div>
-  </div>
-
-  <button
-    class="connect-button p-2 px-5 rounded-lg w-fit"
-    on:click={OnClickConnect}
-  >
-    <span class="connect-btn-text"> Connect </span>
-    <Loader {loaderActive} color="#1363df" />
-  </button>
 </div>
 
 <style>

@@ -13,13 +13,17 @@ module.exports = {
   ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: ["tsconfig.json"],
+    project: "./tsconfig.json",
     sourceType: "module",
+    extraFileExtensions: ['.svelte']
   },
   overrides: [
     {
       files: ["*.svelte"],
       parser: "svelte-eslint-parser",
+      parserOptions: {
+        parser: '@typescript-eslint/parser'
+      }
     },
     // ...
   ],
