@@ -1,28 +1,40 @@
-<script>
-  import { notificationMsg } from '../stores';
-  import { onMount } from 'svelte';
-  import { slide } from 'svelte/transition';
+<script lang="ts">
+  import { notificationMsg } from "../stores";
+  // eslint-disable-next-line import/no-unresolved
+  import { slide } from "svelte/transition";
   import {
     NOTIFICATION_TYPE_ERROR,
     NOTIFICATION_TYPE_SUCCESS,
     NOTIFICATION_TYPE_WARNING,
-  } from '../constants/constants.js';
+  } from "../constants/constants.js";
 
-  let msg = '';
-  let type = '';
+  let msg = "";
+  let type = "";
   let alreadyRegistered = false;
-  let notificationClearTimeout;
+  let notificationClearTimeout: number = 0;
+
+  // TODO: add stack to show multiple notifications
 
   notificationMsg.subscribe((val) => {
-    if (msg == '' && !alreadyRegistered && val.message != '') {
-      console.log('Registering Clear Event');
+    if (msg == "" && !alreadyRegistered && val.message != "") {
       let timeout = 3 * 1000; // 3 sec for success messages
       if (val.type != NOTIFICATION_TYPE_SUCCESS) {
         timeout = 6 * 1000;
       }
       notificationClearTimeout = setTimeout(() => {
-        console.log('Cleared after ', timeout, 's');
-        notificationMsg.set({ type: '', message: '' });
+        notificationMsg.set({ type: "", message: "" });
+        alreadyRegistered = false;
+      }, timeout);
+      alreadyRegistered = true;
+    } else {
+      // clear current timeout and set a new message overwriting the previous one
+      clearTimeout(notificationClearTimeout);
+      let timeout = 3 * 1000; // 3 sec for success messages
+      if (val.type != NOTIFICATION_TYPE_SUCCESS) {
+        timeout = 6 * 1000;
+      }
+      notificationClearTimeout = setTimeout(() => {
+        notificationMsg.set({ type: "", message: "" });
         alreadyRegistered = false;
       }, timeout);
       alreadyRegistered = true;
@@ -33,41 +45,50 @@
 
   function getShadowClass() {
     if (type == NOTIFICATION_TYPE_SUCCESS) {
-      return 'notification-container success-shadow';
+      return "notification-container success-shadow";
     } else if (type == NOTIFICATION_TYPE_WARNING) {
-      return 'notification-container warning-shadow';
+      return "notification-container warning-shadow";
     } else if (type == NOTIFICATION_TYPE_ERROR) {
-      return 'notification-container error-shadow';
+      return "notification-container error-shadow";
     } else {
-      return 'notification-container';
+      return "notification-container";
     }
   }
 
   function hideMsg() {
-    notificationMsg.set({ type: '', message: '' });
+    notificationMsg.set({ type: "", message: "" });
     alreadyRegistered = false;
     clearTimeout(notificationClearTimeout);
   }
 </script>
 
-{#if msg != ''}
+{#if msg != ""}
   <div class={getShadowClass()} transition:slide>
     {#if type == NOTIFICATION_TYPE_SUCCESS}
-      <div class="notification is-primary" id="primary-notification">
+      <div
+        class="bg-green-500 notification rounded-md py-6 px-4 text-slate-50"
+        id="primary-notification"
+      >
         <button class="delete" on:click={hideMsg} />
         <div class="notification-body">
           {msg}
         </div>
       </div>
     {:else if type == NOTIFICATION_TYPE_WARNING}
-      <div class="notification is-warning" id="primary-notification">
+      <div
+        class="bg-yellow-500 notification rounded-md py-6 px-4 text-slate-50"
+        id="primary-notification"
+      >
         <button class="delete" on:click={hideMsg} />
         <div class="notification-body">
           {msg}
         </div>
       </div>
     {:else if type == NOTIFICATION_TYPE_ERROR}
-      <div class="notification is-danger" id="primary-notification">
+      <div
+        class="bg-red-500 notification rounded-md py-6 px-4 text-slate-50"
+        id="primary-notification"
+      >
         <button class="delete" on:click={hideMsg} />
         <div class="notification-body">
           {msg}
@@ -109,7 +130,6 @@
   }
 
   .notification-body {
-    padding: 1rem;
     word-wrap: break-word;
   }
 </style>
