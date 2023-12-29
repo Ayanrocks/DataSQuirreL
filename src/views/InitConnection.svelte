@@ -2,9 +2,9 @@
   // With the Tauri API npm package:
   import { invoke } from '@tauri-apps/api/tauri';
   import { replace } from 'svelte-spa-router';
+  import * as i from '../types/interface.ts';
   import { notificationMsg } from '../stores';
   import { NOTIFICATION_TYPE_SUCCESS, NOTIFICATION_TYPE_ERROR } from '../constants/constants';
-  import { IPCResponse } from '../types/interface';
   import Loader from '../components/Loader.svelte';
 
   // Reactive variables
@@ -17,7 +17,9 @@
   let dbName: string = 'multipl-local';
   let loaderActive: boolean = false;
 
-  function OnClickConnect() {
+  /// OnClickConnect is the function that is called when the user clicks on the connect button
+  async function OnClickConnect() {
+    // check if fields are empty
     if (connName === '' || hostName === '' || port === 0 || userName === '' || password === '') {
       notificationMsg.set({
         type: NOTIFICATION_TYPE_ERROR,
@@ -25,54 +27,63 @@
       });
       return;
     }
+    // setting the loader to active
     loaderActive = true;
-    // Invoke the command
-    invoke('init_connection', {
-      reqPayload: {
-        conn_name: connName,
-        host_name: hostName,
-        database_name: dbName,
-        port: port,
-        user_name: userName,
-        password: password,
-      },
-    })
-      .then((res: IPCResponse) => {
-        loaderActive = false;
-        if (res.error_code) {
-          notificationMsg.set({
-            type: NOTIFICATION_TYPE_ERROR,
-            message: res.frontend_msg,
-          });
-          return;
-        }
+    try {
+      // send ipc request to rust backend
+      const res: i.IPCResponse = await invoke('init_connection', {
+        reqPayload: {
+          conn_name: connName,
+          host_name: hostName,
+          database_name: dbName,
+          port: port,
+          user_name: userName,
+          password: password,
+        },
+      });
 
-        notificationMsg.set({
-          type: NOTIFICATION_TYPE_SUCCESS,
-          message: res.frontend_msg,
-        });
-
-        setTimeout(() => {
-          replace('/dashboard');
-        }, 500);
-      })
-      .catch((e: string) => {
-        loaderActive = false;
-        console.log(e);
+      // if there is an error, show the error message
+      if (res.error_code) {
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
-          message: 'Something went wrong. Check console for more information',
+          message: res.frontend_msg,
         });
+        return;
+      }
+
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_SUCCESS,
+        message: res.frontend_msg,
       });
+
+      loaderActive = false;
+
+      // if all well, then navigate to the dashboard
+      setTimeout(() => {
+        replace('/dashboard');
+      }, 500);
+    } catch (err) {
+      // if there is an error, show the error message
+      loaderActive = false;
+      console.log(err);
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_ERROR,
+        message: 'Something went wrong. Check console for more information',
+      });
+    }
   }
 
-  const validatePort = (e: HTMLInputElement) => {
-    if (e.target !== null) {
-      if (!isNaN(e.target.value)) {
-        port = e.target.value;
-      } else {
-        e.target.value = port;
-      }
+  // validate if the user entered value is a number or not, else set the value to the previous value
+  const validatePort = (
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) => {
+    let inputValue = parseInt(e.currentTarget.value);
+    if (!isNaN(inputValue)) {
+      port = inputValue;
+    } else {
+      inputValue = port;
     }
   };
 </script>
@@ -122,9 +133,7 @@
             class="input input-bordered border-solid border-2 w-full p-2 rounded-md"
             type="text"
             value={port}
-            on:input={(e) => {
-              validatePort(e);
-            }}
+            on:input={validatePort}
             placeholder="Enter Port"
             autocomplete="off"
           />
