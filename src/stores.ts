@@ -1,4 +1,4 @@
-import {writable} from 'svelte/store';
+import {Writable, writable} from 'svelte/store';
 
 export const notificationMsg = writable({
     type: '',
@@ -10,7 +10,7 @@ export const tableNames = writable({
     tables: [],
 });
 
-export const windowWidth = writable(0);
+export const windowWidth: Writable<number> = writable(0);
 export const windowHeight = writable(0);
 
 // setting state for one tab

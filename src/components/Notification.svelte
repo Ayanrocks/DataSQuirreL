@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { notificationMsg } from "../stores";
+  import { notificationMsg } from "../stores.js";
   // eslint-disable-next-line import/no-unresolved
   import { slide } from "svelte/transition";
   import {

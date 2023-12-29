@@ -3,7 +3,7 @@
   import { invoke } from '@tauri-apps/api/tauri';
   import { replace } from 'svelte-spa-router';
   import * as i from '../types/interface.ts';
-  import { notificationMsg } from '../stores';
+  import { notificationMsg } from '../stores.ts';
   import { NOTIFICATION_TYPE_SUCCESS, NOTIFICATION_TYPE_ERROR } from '../constants/constants';
   import Loader from '../components/Loader.svelte';
 

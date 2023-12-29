@@ -1,34 +1,41 @@
-<script>
+<script lang="ts">
   import { invoke } from '@tauri-apps/api/tauri';
   import { appWindow } from '@tauri-apps/api/window';
   import { onDestroy, onMount } from 'svelte';
   import Sidebar from '../components/Sidebar.svelte';
   import DataTable from '../components/DataTable.svelte';
-  import { notificationMsg, tableNames, windowWidth, windowHeight, activeTable } from '../stores';
+  import { notificationMsg, tableNames, windowWidth, windowHeight, activeTable } from '../stores.ts';
   import {
     NOTIFICATION_TYPE_ERROR,
     BORDER_SIZE,
     MAX_RESIZE_EXPANDABLE_SIZE,
     MIN_RESIZE_EXPANDABLE_SIZE,
   } from '../constants/constants';
+  import { UnlistenFn } from '@tauri-apps/api/event';
 
   // on mousedown for the draggable
 
-  let m_pos;
+  let m_pos: number;
+  const activeTableSubscription = activeTable.subscribe((val) => {
+    activeTableData = val;
+  });
 
   /// to resize the window on drag
-  function resize(e) {
+  function resize(e: MouseEvent) {
     const dx = e.x - m_pos;
     m_pos = e.x;
     const leftSidebarContainer = document.getElementById('left-sidebar-container');
     const rightMainContainer = document.getElementById('right-main-content');
-    let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width) + dx;
-    let computedWidthInPx = computedWidth + 'px';
+    if (leftSidebarContainer !== null && rightMainContainer != null) {
+      let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width) + dx;
+      let computedWidthInPx = computedWidth + 'px';
 
-    if (computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE && computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE) {
-      leftSidebarContainer.style.width = computedWidthInPx;
-      rightMainContainer.style.width = windowWidth - computedWidth + 'px';
-      rightMainContainer.style.marginLeft = computedWidthInPx;
+      if (computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE && computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE) {
+        leftSidebarContainer.style.width = computedWidthInPx;
+        let diffWidth: number = Number(windowWidth) - computedWidth;
+        rightMainContainer.style.width = diffWidth.toString() + 'px';
+        rightMainContainer.style.marginLeft = computedWidthInPx;
+      }
     }
   }
 
@@ -50,16 +57,8 @@
     false,
   );
 
-  var unlisten;
+  let unlisten: Promise<UnlistenFn>;
   let activeTableData = {};
-
-  onDestroy(() => {
-    unlisten();
-  });
-
-  activeTable.subscribe((val) => {
-    activeTableData = val;
-  });
 
   onMount(() => {
     // on change of width, check and set the width of the main and sidebar content
@@ -131,6 +130,11 @@
           message: 'Something went wrong. Check console for more information',
         });
       });
+  });
+
+  onDestroy(activeTableSubscription);
+  onDestroy(async () => {
+    (await unlisten)();
   });
 </script>
 
