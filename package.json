@@ -28,6 +28,7 @@
     "@tauri-apps/api": "^1.1.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "ag-grid-community": "^31.0",
+    "svelte-spa-router": "^4.0.0",
     "vite-plugin-checker": "^0.6.2"
   }
 }

@@ -10,6 +10,9 @@ const config = {
   kit: {
     adapter: adapter(),
   },
+  files: {
+    routes: 'src/views',
+  }
 }
 
 export default config

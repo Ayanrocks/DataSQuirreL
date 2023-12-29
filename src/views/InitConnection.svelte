@@ -1,37 +1,33 @@
 <script lang="ts">
   // With the Tauri API npm package:
-  import { invoke } from "@tauri-apps/api/tauri";
-  import { notificationMsg } from "../stores";
-  import {
-    NOTIFICATION_TYPE_SUCCESS,
-    NOTIFICATION_TYPE_ERROR,
-  } from "../constants/constants";
-  import Loader from "../components/Loader.svelte";
+  import { invoke } from '@tauri-apps/api/tauri';
+  import { replace } from 'svelte-spa-router';
+  import { notificationMsg } from '../stores';
+  import { NOTIFICATION_TYPE_SUCCESS, NOTIFICATION_TYPE_ERROR } from '../constants/constants';
+  import { IPCResponse } from '../types/interface';
+  import Loader from '../components/Loader.svelte';
 
   // Reactive variables
   // TODO: Set this to default empty strings
-  let connName: String = "test";
-  let hostName: String = "localhost";
-  let port: Number = 5432;
-  let userName: String = "dev";
-  let password: String = "password";
-  let dbName: String = "multipl-local";
-  let loaderActive: boolean = true;
+  let connName: string = 'test';
+  let hostName: string = 'localhost';
+  let port: number = 5432;
+  let userName: string = 'dev';
+  let password: string = 'password';
+  let dbName: string = 'multipl-local';
+  let loaderActive: boolean = false;
 
-  function OnClickConnect(_: any) {
-    if (
-      connName === "" ||
-      hostName === "" ||
-      port === 0 ||
-      userName === "" ||
-      password === ""
-    ) {
-      alert("Please enter all details");
+  function OnClickConnect() {
+    if (connName === '' || hostName === '' || port === 0 || userName === '' || password === '') {
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_ERROR,
+        message: 'Please fill all the fields',
+      });
       return;
     }
     loaderActive = true;
     // Invoke the command
-    invoke("init_connection", {
+    invoke('init_connection', {
       reqPayload: {
         conn_name: connName,
         host_name: hostName,
@@ -41,9 +37,8 @@
         password: password,
       },
     })
-      .then((res: { error_code: any; frontend_msg: any }) => {
+      .then((res: IPCResponse) => {
         loaderActive = false;
-        console.log(res);
         if (res.error_code) {
           notificationMsg.set({
             type: NOTIFICATION_TYPE_ERROR,
@@ -58,15 +53,15 @@
         });
 
         setTimeout(() => {
-          // navigate("/dashboard");
+          replace('/dashboard');
         }, 500);
       })
-      .catch((e) => {
+      .catch((e: string) => {
         loaderActive = false;
         console.log(e);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
-          message: "Something went wrong. Check console for more information",
+          message: 'Something went wrong. Check console for more information',
         });
       });
   }
