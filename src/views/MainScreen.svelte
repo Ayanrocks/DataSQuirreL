@@ -12,6 +12,7 @@
     MIN_RESIZE_EXPANDABLE_SIZE,
   } from '../constants/constants';
   import { UnlistenFn } from '@tauri-apps/api/event';
+  import { FetchTableNamesResponse, IActiveTable } from '../types/interface.ts';
 
   // on mousedown for the draggable
 
@@ -40,8 +41,8 @@
   }
 
   /// to resize the sidebar
-  function resizeSideBar(e) {
-    e = e.detail.event;
+  function resizeSideBar(resizeEvent: CustomEvent) {
+    let e = resizeEvent.detail.event;
     if (e.offsetX < BORDER_SIZE) {
       m_pos = e.x;
       document.addEventListener('mousemove', resize, false);
@@ -58,20 +59,29 @@
   );
 
   let unlisten: Promise<UnlistenFn>;
-  let activeTableData = {};
+  let activeTableData: IActiveTable = {
+    tableName: '',
+    rows: [],
+    columns: [],
+    rowCount: 0,
+    currentPage: 0,
+    maxPage: 0,
+  };
 
-  onMount(() => {
+  onMount(async () => {
     // on change of width, check and set the width of the main and sidebar content
     windowWidth.subscribe((val) => {
       // set initial width of sidebar and main content area
       const leftSidebarContainer = document.getElementById('left-sidebar-container');
       const rightMainContainer = document.getElementById('right-main-content');
-      let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width);
-      let computedWidthInPx = computedWidth + 'px';
+      if (leftSidebarContainer !== null && rightMainContainer != null) {
+        let computedWidth = parseInt(getComputedStyle(leftSidebarContainer, '').width);
+        let computedWidthInPx = computedWidth + 'px';
 
-      leftSidebarContainer.style.width = computedWidthInPx;
-      rightMainContainer.style.width = val - computedWidth + 'px';
-      rightMainContainer.style.marginLeft = computedWidthInPx;
+        leftSidebarContainer.style.width = computedWidthInPx;
+        rightMainContainer.style.width = val - computedWidth + 'px';
+        rightMainContainer.style.marginLeft = computedWidthInPx;
+      }
     });
 
     unlisten = appWindow.onResized(async () => {
@@ -92,44 +102,47 @@
       windowHeight.set(logicalSize.height);
     });
 
-    // fetch tables on load
-    invoke('fetch_tables')
-      .then((res) => {
-        if (res.error_code) {
-          notificationMsg.set({
-            type: NOTIFICATION_TYPE_ERROR,
-            message: res.frontend_msg,
-          });
-          return;
-        }
-
-        if (res.data) {
-          if (res.data.rows.length > 0) {
-            let tablesResult = [];
-            let entityName = '';
-            for (const i of res.data.rows[0]) {
-              entityName = i.table_catalog;
-              tablesResult.push(i.table_name);
-            }
-
-            // sort tablenames
-
-            tablesResult = tablesResult.sort((a, b) => a > b);
-
-            tableNames.set({
-              tableName: entityName,
-              tables: tablesResult,
-            });
-          }
-        }
-      })
-      .catch((e) => {
-        console.log(e);
+    try {
+      // fetch tables on load
+      let res: FetchTableNamesResponse = await invoke('fetch_tables');
+      if (res.error_code) {
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
-          message: 'Something went wrong. Check console for more information',
+          message: res.frontend_msg,
         });
+        return;
+      }
+
+      if (res.data) {
+        if (res.data.rows.length > 0) {
+          let tablesResult = [];
+          let entityName = '';
+          for (const i of res.data.rows[0]) {
+            entityName = i.table_catalog;
+            tablesResult.push(i.table_name);
+          }
+
+          // sort tablenames
+
+          tablesResult = tablesResult.sort((a, b) => {
+            if (a > b) return 1;
+            else if (a < b) return -1;
+            else return 0;
+          });
+
+          tableNames.set({
+            tableName: entityName,
+            tables: tablesResult,
+          });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_ERROR,
+        message: 'Something went wrong. Check console for more information',
       });
+    }
   });
 
   onDestroy(activeTableSubscription);
@@ -138,7 +151,7 @@
   });
 </script>
 
-<div class="main-container" use:registerFocus>
+<div class="main-container">
   <div class="columns split-view-container" id="left-sidebar-container">
     <Sidebar on:resizing={resizeSideBar} />
   </div>
