@@ -1,5 +1,5 @@
-import { Writable, writable } from 'svelte/store';
-import { IActiveTable } from './types/interface';
+import { type Writable, writable } from 'svelte/store';
+import { type IActiveTable } from './types/interface';
 
 export const notificationMsg = writable({
   type: '',

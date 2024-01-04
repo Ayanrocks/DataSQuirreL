@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { invoke } from '@tauri-apps/api/tauri';
+  import tauriapi from '@tauri-apps/api';
+  const { invoke } = tauriapi.tauri;
   import { appWindow } from '@tauri-apps/api/window';
   import { onDestroy, onMount } from 'svelte';
   import Sidebar from '../components/Sidebar.svelte';
@@ -11,8 +12,7 @@
     MAX_RESIZE_EXPANDABLE_SIZE,
     MIN_RESIZE_EXPANDABLE_SIZE,
   } from '../constants/constants';
-  import { UnlistenFn } from '@tauri-apps/api/event';
-  import { FetchTableNamesResponse, IActiveTable } from '../types/interface.ts';
+  import { type FetchTableNamesResponse, type IActiveTable } from '../types/interface.ts';
 
   // on mousedown for the draggable
 
@@ -58,7 +58,7 @@
     false,
   );
 
-  let unlisten: Promise<UnlistenFn>;
+  let unlisten: Promise<tauriapi.event.UnlistenFn>;
   let activeTableData: IActiveTable = {
     tableName: '',
     rows: [],

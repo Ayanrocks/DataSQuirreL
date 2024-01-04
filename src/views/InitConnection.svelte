@@ -2,7 +2,7 @@
   // With the Tauri API npm package:
   import { invoke } from '@tauri-apps/api/tauri';
   import { replace } from 'svelte-spa-router';
-  import * as i from '../types/interface.ts';
+  import { type IPCResponse } from '../types/interface.ts';
   import { notificationMsg } from '../stores.ts';
   import { NOTIFICATION_TYPE_SUCCESS, NOTIFICATION_TYPE_ERROR } from '../constants/constants';
   import Loader from '../components/Loader.svelte';
@@ -31,7 +31,7 @@
     loaderActive = true;
     try {
       // send ipc request to rust backend
-      const res: i.IPCResponse = await invoke('init_connection', {
+      const res: IPCResponse = await invoke('init_connection', {
         reqPayload: {
           conn_name: connName,
           host_name: hostName,
