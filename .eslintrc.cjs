@@ -29,4 +29,12 @@ module.exports = {
   ],
   rules: {
   },
+  settings: {
+    "import/resolver": {
+      "node": {
+        "extensions": [".ts", ".tsx"],
+        "moduleDirectory": ["src", "node_modules"]
+      }
+    }
+  }
 };
