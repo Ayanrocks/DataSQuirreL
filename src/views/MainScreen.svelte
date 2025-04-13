@@ -1,6 +1,6 @@
 <script>
-    import {invoke} from '@tauri-apps/api/tauri';
-    import {appWindow} from "@tauri-apps/api/window";
+    import {invoke} from '@tauri-apps/api/core';
+    import {getCurrentWebviewWindow} from "@tauri-apps/api/webviewWindow";
     import {onDestroy, onMount} from 'svelte';
     import {useFocus} from 'svelte-navigator';
     import Sidebar from '../components/Sidebar.svelte';
@@ -12,6 +12,7 @@
         MAX_RESIZE_EXPANDABLE_SIZE,
         MIN_RESIZE_EXPANDABLE_SIZE,
     } from '../constants/constants';
+const appWindow = getCurrentWebviewWindow()
 
     const registerFocus = useFocus();
 

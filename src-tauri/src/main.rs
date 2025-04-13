@@ -11,7 +11,14 @@ use serde::{Deserialize, Serialize};
 use sqlx::Error;
 use sqlx_core::encode::IsNull::No;
 use std::sync::Mutex;
-use tauri::{http, CustomMenuItem, Menu, MenuItem, State, Submenu};
+use tauri::{
+    State,
+    http,
+};
+// use tauri::menu::{CustomMenuItem, Menu, MenuItem, Submenu};
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder},
+};
 
 pub mod constants;
 mod database;
@@ -37,7 +44,7 @@ struct TableData<T> {
     table_name: Option<String>,
     query_type: String,
 }
-#[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Serialize, Deserialize)]
 struct IPCResponse<T> {
     status: u16,
     error_code: Option<String>,
@@ -368,19 +375,41 @@ fn fetch_table_data_with_offset(
 }
 
 fn main() {
-    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-    let close = CustomMenuItem::new("close".to_string(), "Close");
-    let submenu = Submenu::new("File", Menu::new().add_item(quit).add_item(close));
-    let menu = Menu::new()
-        .add_native_item(MenuItem::Copy)
-        .add_item(CustomMenuItem::new("hide", "Hide"))
-        .add_submenu(submenu);
+    // let quit: MenuItemBuilder = MenuItemBuilder::new("quit".to_string(), "Quit");
+    // let close = MenuItemBuilder::new("close".to_string(), "Close");
+    // let submenu = Submenu::new("File", Menu::new().add_item(quit).add_item(close));
+    // let menu = Menu::new()
+    //     .add_native_item(MenuItem::Copy)
+    //     .add_item(MenuItemBuilder::new("hide", "Hide"))
+    //     .add_submenu(submenu);
 
     tauri::Builder::default()
+        .setup(|app| {
+        let menu = MenuBuilder::new(app)
+            .copy()
+            .paste()
+            .separator()
+            .undo()
+            .redo()
+            .text("open-url", "Open URL")
+            .check("toggle", "Toggle")
+            .icon("show-app", "Show App", app.default_window_icon().cloned().unwrap())
+            .build()?;
+        Ok(())
+    })
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .manage(ApplicationState {
             dbpool: Default::default(),
         })
-        .menu(menu)
+        // .menu(menu)
         .invoke_handler(tauri::generate_handler![
             init_connection,
             fetch_tables,

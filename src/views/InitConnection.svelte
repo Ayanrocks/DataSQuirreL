@@ -1,6 +1,6 @@
 <script>
     // With the Tauri API npm package:
-    import {invoke} from "@tauri-apps/api/tauri";
+    import {invoke} from "@tauri-apps/api/core";
     import {navigate} from "svelte-navigator";
     import {notificationMsg} from "../stores";
     import {
