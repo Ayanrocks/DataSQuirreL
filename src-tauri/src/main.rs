@@ -5,20 +5,12 @@
 
 extern crate core;
 
-use crate::database::db::TableColumns;
-use database::db::{connect_to_db, ConnPool, TableSchema};
+use database::db::{ConnPool, TableSchema, connect_to_db};
 use serde::{Deserialize, Serialize};
-use sqlx::Error;
-use sqlx_core::encode::IsNull::No;
 use std::sync::Mutex;
-use tauri::{
-    State,
-    http,
-};
+use tauri::{http, Manager, State};
 // use tauri::menu::{CustomMenuItem, Menu, MenuItem, Submenu};
-use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder},
-};
+use tauri::menu::MenuBuilder;
 
 pub mod constants;
 mod database;
@@ -44,7 +36,7 @@ struct TableData<T> {
     table_name: Option<String>,
     query_type: String,
 }
-    #[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct IPCResponse<T> {
     status: u16,
     error_code: Option<String>,
@@ -99,7 +91,7 @@ async fn init_connection(
                 sys_err: Some(e.to_string()),
                 frontend_msg: Some(e.to_string()),
                 data: None,
-            })
+            });
         }
     }
     // })
@@ -142,7 +134,7 @@ fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<Table
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                }
+                };
             }
         }
     })
@@ -190,7 +182,7 @@ fn fetch_table_data(
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                }
+                };
             }
         };
 
@@ -207,7 +199,7 @@ fn fetch_table_data(
         let mut table_data_rows: Vec<Vec<String>> = vec![vec!["".to_string()]];
 
         match table_data_result {
-            Ok(mut table_data) => table_data_rows = table_data,
+            Ok(table_data) => table_data_rows = table_data,
             Err(e) => {
                 return IPCResponse::<_> {
                     status: http::status::StatusCode::OK.as_u16(),
@@ -217,7 +209,7 @@ fn fetch_table_data(
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                }
+                };
             }
         };
 
@@ -231,9 +223,9 @@ fn fetch_table_data(
             .fetch_table_rows_count(&req_payload.table_name)
             .await;
 
-        let mut row_count: String;
+        let row_count: String;
         match table_rows_count_result {
-            Ok(mut table_row_count) => row_count = format!("{}", table_row_count.row_count),
+            Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
             Err(e) => {
                 return IPCResponse::<_> {
                     status: http::status::StatusCode::OK.as_u16(),
@@ -243,7 +235,7 @@ fn fetch_table_data(
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                }
+                };
             }
         };
 
@@ -298,7 +290,7 @@ fn fetch_table_data_with_offset(
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                }
+                };
             }
         };
 
@@ -312,9 +304,9 @@ fn fetch_table_data_with_offset(
             .fetch_table_rows_count(&req_payload.table_name)
             .await;
 
-        let mut row_count: String;
+        let row_count: String;
         match table_rows_count_result {
-            Ok(mut table_row_count) => row_count = format!("{}", table_row_count.row_count),
+            Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
             Err(e) => {
                 return IPCResponse::<_> {
                     status: http::status::StatusCode::OK.as_u16(),
@@ -324,7 +316,7 @@ fn fetch_table_data_with_offset(
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                }
+                };
             }
         };
 
@@ -344,7 +336,7 @@ fn fetch_table_data_with_offset(
             .await;
 
         match table_data_result {
-            Ok(mut table_data) => table_data_rows = table_data,
+            Ok(table_data) => table_data_rows = table_data,
             Err(e) => {
                 return IPCResponse::<_> {
                     status: http::status::StatusCode::OK.as_u16(),
@@ -354,7 +346,7 @@ fn fetch_table_data_with_offset(
                     sys_err: Some(e.to_string()),
                     frontend_msg: Some(e.to_string()),
                     data: None,
-                }
+                };
             }
         };
 
@@ -382,34 +374,48 @@ fn main() {
     //     .add_native_item(MenuItem::Copy)
     //     .add_item(MenuItemBuilder::new("hide", "Hide"))
     //     .add_submenu(submenu);
+    println!("Starting Tauri App!");
+
 
     tauri::Builder::default()
         .setup(|app| {
-        let menu = MenuBuilder::new(app)
-            .copy()
-            .paste()
-            .separator()
-            .undo()
-            .redo()
-            .text("open-url", "Open URL")
-            .check("toggle", "Toggle")
-            .icon("show-app", "Show App", app.default_window_icon().cloned().unwrap())
-            .build()?;
-        Ok(())
-    })
-        .plugin(tauri_plugin_clipboard_manager::init())
-        .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .plugin(tauri_plugin_notification::init())
+            /*
+            let menu = MenuBuilder::new(app.handle())
+                .copy()
+                .paste()
+                .separator()
+                .undo()
+                .redo()
+                .text("open-url", "Open URL")
+                .check("toggle", "Toggle")
+                .icon(
+                    "show-app",
+                    "Show App",
+                    app.handle().default_window_icon().cloned().unwrap(),
+                )
+                .build()
+                .expect("Failed to build menu");
+
+            let window = app.get_webview_window("main").unwrap();
+            window.set_menu(menu);
+            window.set_title("Tauri Database Client");
+            */
+            
+            // window.open_devtools();
+            Ok(())
+        })
+        // .plugin(tauri_plugin_clipboard_manager::init())
+        // .plugin(tauri_plugin_http::init())
+        // .plugin(tauri_plugin_process::init())
+        // .plugin(tauri_plugin_os::init())
+        // .plugin(tauri_plugin_fs::init())
+        // .plugin(tauri_plugin_shell::init())
+        // .plugin(tauri_plugin_dialog::init())
+        // .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        // .plugin(tauri_plugin_notification::init())
         .manage(ApplicationState {
             dbpool: Default::default(),
         })
-        // .menu(menu)
         .invoke_handler(tauri::generate_handler![
             init_connection,
             fetch_tables,

@@ -2,8 +2,7 @@ use crate::constants;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
-use sqlx::{query, query_as, Column, FromRow, Postgres, Row, ValueRef};
-use std::collections::HashMap;
+use sqlx::{query_as, Column, FromRow, Postgres, Row, ValueRef};
 
 pub struct ConnPool {
     pub conn_name: String,
@@ -68,7 +67,7 @@ pub async fn connect_to_db(
 
 impl ConnPool {
     pub async fn fetch_tables(&self) -> Result<Vec<TableSchema>, sqlx::Error> {
-        let mut db_conn = self.pool.acquire().await?;
+        // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             "
                     SELECT
@@ -87,8 +86,9 @@ impl ConnPool {
 
         println!("Printing Query: {}", &query);
 
+        // Execute directly on the pool
         let query_result = query_as::<sqlx::Postgres, TableSchema>(&query)
-            .fetch_all(&mut db_conn)
+            .fetch_all(&self.pool)
             .await;
 
         match query_result {
@@ -106,7 +106,7 @@ impl ConnPool {
         &self,
         table_name: &str,
     ) -> Result<Vec<TableColumns>, sqlx::Error> {
-        let mut db_conn = self.pool.acquire().await?;
+        // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             "
                 SELECT COLUMN_NAME,
@@ -121,8 +121,9 @@ impl ConnPool {
 
         println!("Printing Query: {}", &query);
 
+        // Execute directly on the pool
         let query_result = query_as::<sqlx::Postgres, TableColumns>(&query)
-            .fetch_all(&mut db_conn)
+            .fetch_all(&self.pool)
             .await;
 
         match query_result {
@@ -140,7 +141,7 @@ impl ConnPool {
         &self,
         table_name: &str,
     ) -> Result<TableRowCount, sqlx::Error> {
-        let mut db_conn = self.pool.acquire().await?;
+        // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
                 SELECT reltuples::bigint AS row_count
@@ -152,8 +153,9 @@ impl ConnPool {
 
         println!("Printing Query: {}", &query);
 
+        // Execute directly on the pool
         let query_result = query_as::<sqlx::Postgres, TableRowCount>(&query)
-            .fetch_one(&mut db_conn)
+            .fetch_one(&self.pool)
             .await;
 
         match query_result {
@@ -171,7 +173,7 @@ impl ConnPool {
         &self,
         table_name: &str,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
-        let mut db_conn = self.pool.acquire().await?;
+        // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
                 SELECT *
@@ -184,8 +186,9 @@ impl ConnPool {
 
         println!("Printing Query: {}", &query);
 
+        // Execute directly on the pool
         let query_result = sqlx::query::<sqlx::Postgres>(&query)
-            .fetch_all(&mut db_conn)
+            .fetch_all(&self.pool)
             .await;
 
         match query_result {
@@ -205,7 +208,7 @@ impl ConnPool {
         table_name: &str,
         offset: &u32,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
-        let mut db_conn = self.pool.acquire().await?;
+        // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
                 SELECT *
@@ -219,7 +222,8 @@ impl ConnPool {
 
         println!("Printing Query: {}", &query);
 
-        let query_result = sqlx::query(&query).fetch_all(&mut db_conn).await;
+        // Execute directly on the pool
+        let query_result = sqlx::query(&query).fetch_all(&self.pool).await;
 
         match query_result {
             Ok(row) => {
