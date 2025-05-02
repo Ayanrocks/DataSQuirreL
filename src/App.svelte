@@ -1,5 +1,5 @@
 <script>
-    import {Router, Link, Route} from 'svelte-navigator';
+    import { Router, Route } from 'svelte-routing';
     import InitConnection from './views/InitConnection.svelte';
     import MainScreen from './views/MainScreen.svelte';
     import Notification from './components/Notification.svelte';

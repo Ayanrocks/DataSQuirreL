@@ -2,7 +2,6 @@
     import {invoke} from '@tauri-apps/api/core';
     import {getCurrentWebviewWindow} from "@tauri-apps/api/webviewWindow";
     import {onDestroy, onMount} from 'svelte';
-    import {useFocus} from 'svelte-navigator';
     import Sidebar from '../components/Sidebar.svelte';
     import DataTable from '../components/DataTable.svelte';
     import {notificationMsg, tableNames, windowWidth, windowHeight, activeTable} from '../stores';
@@ -140,7 +139,7 @@ const appWindow = getCurrentWebviewWindow()
     });
 </script>
 
-<div class="main-container" use:registerFocus>
+<div class="main-container">
     <div class="columns split-view-container" id="left-sidebar-container">
         <Sidebar on:resizing={resizeSideBar}/>
     </div>

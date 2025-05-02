@@ -1,0 +1,34 @@
+@import url("https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap");
+
+* {
+    font-family: "Poppins", sans-serif;
+}
+
+:not(input) {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none;
+}
+
+html,
+body {
+    box-sizing: border-box;
+    width: 100vw;
+    min-width: 1200px;
+    overflow: hidden;
+}
+
+:root {
+    --primaryColor: #06283d;
+    --secondaryColor: #1363df;
+    --accentColor: #47b5ff;
+    --tertiaryColor: #dff6ff;
+    --offWhite: #e9e9e9;
+    --offBlue: #c4ddff;
+    --disabled: #858585;
+    --yellowPrimary: #ecb365;
+}
