@@ -1,17 +1,23 @@
-<script lang="ts">
-  import tauriapi from '@tauri-apps/api';
-  const { invoke } = tauriapi.tauri;
+<script>
+    import {invoke} from '@tauri-apps/api/core';
+    import {getCurrentWebviewWindow} from "@tauri-apps/api/webviewWindow";
+    import {onDestroy, onMount} from 'svelte';
+    import {useFocus} from 'svelte-navigator';
+    import Sidebar from '../components/Sidebar.svelte';
+    import DataTable from '../components/DataTable.svelte';
+    import {notificationMsg, tableNames, windowWidth, windowHeight, activeTable} from '../stores';
+    import {
+        NOTIFICATION_TYPE_ERROR,
+        BORDER_SIZE,
+        MAX_RESIZE_EXPANDABLE_SIZE,
+        MIN_RESIZE_EXPANDABLE_SIZE,
+    } from '../constants/constants';
+const appWindow = getCurrentWebviewWindow()
+
+    const registerFocus = useFocus();
+
   import { appWindow } from '@tauri-apps/api/window';
-  import { onDestroy, onMount } from 'svelte';
-  import Sidebar from '../components/Sidebar.svelte';
-  import DataTable from '../components/DataTable.svelte';
   import { notificationMsg, tableNames, windowWidth, windowHeight, activeTable } from '../stores.ts';
-  import {
-    NOTIFICATION_TYPE_ERROR,
-    BORDER_SIZE,
-    MAX_RESIZE_EXPANDABLE_SIZE,
-    MIN_RESIZE_EXPANDABLE_SIZE,
-  } from '../constants/constants';
   import { type FetchTableNamesResponse, type IActiveTable } from '../types/interface.ts';
 
   // on mousedown for the draggable

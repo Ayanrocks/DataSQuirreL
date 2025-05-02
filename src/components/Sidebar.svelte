@@ -1,7 +1,7 @@
 <script>
   import { activeTable, notificationMsg, tableNames } from '../stores';
   import { createEventDispatcher } from 'svelte';
-  import { invoke } from '@tauri-apps/api/tauri';
+  import { invoke } from '@tauri-apps/api/core';
   import { NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE } from '../constants/constants';
 
   const dispatch = createEventDispatcher();

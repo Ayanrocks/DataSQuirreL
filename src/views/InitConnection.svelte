@@ -1,6 +1,14 @@
-<script lang="ts">
-  // With the Tauri API npm package:
-  import { invoke } from '@tauri-apps/api/tauri';
+<script>
+    // With the Tauri API npm package:
+    import {invoke} from "@tauri-apps/api/core";
+    import {navigate} from "svelte-navigator";
+    import {notificationMsg} from "../stores";
+    import {
+        NOTIFICATION_TYPE_SUCCESS,
+        NOTIFICATION_TYPE_ERROR,
+    } from "../constants/constants";
+    import Loader from "../components/Loader.svelte";
+
   import { replace } from 'svelte-spa-router';
   import { type IPCResponse } from '../types/interface.ts';
   import { notificationMsg } from '../stores.ts';
