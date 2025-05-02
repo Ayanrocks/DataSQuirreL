@@ -1,6 +1,6 @@
 {
   "name": "datasquirrel",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "rollup -c",
@@ -11,7 +11,9 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-node-resolve": "^11.0.0",
-    "@tauri-apps/cli": "^1.1.1",
+    "@tauri-apps/cli": "^2.4.1",
+    "husky": "^9.1.7",
+    "is-ci": "^4.1.0",
     "rollup": "^2.3.4",
     "rollup-plugin-css-only": "^3.1.0",
     "rollup-plugin-livereload": "^2.0.0",
@@ -22,7 +24,16 @@
   "dependencies": {
     "@budibase/svelte-ag-grid": "^1.0.4",
     "@rollup/plugin-json": "^4.1.0",
-    "@tauri-apps/api": "^1.1.0",
+    "@tauri-apps/api": "^2.4.1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
+    "@tauri-apps/plugin-dialog": "^2.2.1",
+    "@tauri-apps/plugin-fs": "^2.2.1",
+    "@tauri-apps/plugin-global-shortcut": "^2.2.0",
+    "@tauri-apps/plugin-http": "^2.4.3",
+    "@tauri-apps/plugin-notification": "^2.2.2",
+    "@tauri-apps/plugin-os": "^2.2.1",
+    "@tauri-apps/plugin-process": "^2.2.1",
+    "@tauri-apps/plugin-shell": "^2.2.1",
     "ag-grid-community": "^31.3.0",
     "bulma": "^0.9.4",
     "sirv-cli": "^2.0.0",

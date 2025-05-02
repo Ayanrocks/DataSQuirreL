@@ -5,9 +5,9 @@
   import DataTableToolBar from './DataTableToolBar.svelte';
   import { activeTable, notificationMsg } from '../stores';
 
-  import 'ag-grid-community/dist/styles/ag-grid.css';
-  import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
-  import { invoke } from '@tauri-apps/api/tauri';
+  // import 'ag-grid-community/dist/styles/ag-grid.css';
+  // import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
+  import { invoke } from '@tauri-apps/api/core';
   import { NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE } from '../constants/constants';
 
   let domNode;
