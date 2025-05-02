@@ -2,6 +2,18 @@
 
 An lightweight, full fledged database viewer with a modern and sleek UI
 
+
+# Running
+
+To run the project, use the following commands
+
+```sh
+# Install Cargo tauri CLI
+cargo install tauri-cli
+npm i
+cargo tauri dev
+```
+
 ## Fetaures In v1.0.X
 
 - View Tables
