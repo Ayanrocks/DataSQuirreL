@@ -14,8 +14,8 @@
     let hostName = "localhost";
     let port = 5432;
     let userName = "dev";
-    let password = "password";
-    let dbName = "multipl-local";
+    let password = "1234";
+    let dbName = "datasquirrel";
     let loaderActive = false;
 
     function OnClickConnect(e) {

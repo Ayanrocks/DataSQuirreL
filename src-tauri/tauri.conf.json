@@ -1,5 +1,5 @@
   {
-    "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+    "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
     "build": {
       "beforeBuildCommand": "npm run build",
       "beforeDevCommand": "npm run dev",
@@ -20,12 +20,12 @@
         {
           "label": "main",
           "title": "DataSquirrel",
-          "width": 900,
-          "height": 700,
+          "width": 1250,
+          "height": 800,
           "visible": true,
           "resizable": true,
           "fullscreen": false,
-          "url": "/index.html"
+          "url": "http://localhost:3001"
         }
       ],
       "security": {
