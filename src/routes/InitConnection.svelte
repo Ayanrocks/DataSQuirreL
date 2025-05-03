@@ -1,8 +1,10 @@
 <script>
+    export const ssr = false;
+
     // With the Tauri API npm package:
-    import {invoke} from "@tauri-apps/api/core";
-    import {navigate} from "svelte-routing";
-    import {notificationMsg} from "../stores";
+    import { invoke } from "@tauri-apps/api/core";
+    import { navigate } from "svelte-routing";
+    import { notificationMsg } from "../stores";
     import {
         NOTIFICATION_TYPE_SUCCESS,
         NOTIFICATION_TYPE_ERROR,
@@ -58,7 +60,7 @@
                 });
 
                 setTimeout(() => {
-                    navigate("/dashboard");
+                    navigate("/dashboard", {replace: true});
                 }, 500);
             })
             .catch((e) => {
@@ -66,7 +68,8 @@
                 console.log(e);
                 notificationMsg.set({
                     type: NOTIFICATION_TYPE_ERROR,
-                    message: "Something went wrong. Check console for more information",
+                    message:
+                        "Something went wrong. Check console for more information",
                 });
             });
     }
@@ -84,12 +87,12 @@
                 <label class="label" for="connName">Connection Name</label>
                 <div class="control">
                     <input
-                            bind:value={connName}
-                            id="connName"
-                            class="input"
-                            type="text"
-                            placeholder="Enter connection name"
-                            autocomplete="off"
+                        bind:value={connName}
+                        id="connName"
+                        class="input"
+                        type="text"
+                        placeholder="Enter connection name"
+                        autocomplete="off"
                     />
                 </div>
             </div>
@@ -101,12 +104,12 @@
                 <label class="label" for="hostName">Host</label>
                 <div class="control">
                     <input
-                            id="hostName"
-                            class="input"
-                            type="text"
-                            bind:value={hostName}
-                            placeholder="Enter Host"
-                            autocomplete="off"
+                        id="hostName"
+                        class="input"
+                        type="text"
+                        bind:value={hostName}
+                        placeholder="Enter Host"
+                        autocomplete="off"
                     />
                 </div>
             </div>
@@ -117,19 +120,19 @@
                 <label class="label" for="port">Port</label>
                 <div class="control">
                     <input
-                            id="port"
-                            class="input"
-                            type="text"
-                            value={port}
-                            on:input={e => {
-                                if(!isNaN(e.target.value)) {
-                                  port = e.target.value
-                                } else {
-                                  e.target.value = port
-                                }
-                            }}
-                            placeholder="Enter Port"
-                            autocomplete="off"
+                        id="port"
+                        class="input"
+                        type="text"
+                        value={port}
+                        on:input={(e) => {
+                            if (!isNaN(e.target.value)) {
+                                port = e.target.value;
+                            } else {
+                                e.target.value = port;
+                            }
+                        }}
+                        placeholder="Enter Port"
+                        autocomplete="off"
                     />
                 </div>
             </div>
@@ -142,12 +145,12 @@
                 <label class="label" for="userName">Username</label>
                 <div class="control">
                     <input
-                            id="userName"
-                            class="input"
-                            type="text"
-                            bind:value={userName}
-                            placeholder="Enter Username"
-                            autocomplete="off"
+                        id="userName"
+                        class="input"
+                        type="text"
+                        bind:value={userName}
+                        placeholder="Enter Username"
+                        autocomplete="off"
                     />
                 </div>
             </div>
@@ -158,12 +161,12 @@
                 <label class="label" for="password">Password</label>
                 <div class="control">
                     <input
-                            id="password"
-                            class="input"
-                            type="password"
-                            bind:value={password}
-                            placeholder="Enter Password"
-                            autocomplete="off"
+                        id="password"
+                        class="input"
+                        type="password"
+                        bind:value={password}
+                        placeholder="Enter Password"
+                        autocomplete="off"
                     />
                 </div>
             </div>
@@ -176,12 +179,12 @@
                 <label class="label" for="connName">Database Name</label>
                 <div class="control">
                     <input
-                            id="dbName"
-                            class="input"
-                            type="text"
-                            bind:value={dbName}
-                            placeholder="Enter database name"
-                            autocomplete="off"
+                        id="dbName"
+                        class="input"
+                        type="text"
+                        bind:value={dbName}
+                        placeholder="Enter database name"
+                        autocomplete="off"
                     />
                 </div>
             </div>
@@ -190,7 +193,7 @@
 
     <button class="button is-primary" on:click={OnClickConnect}>
         <span class="connect-btn-text"> Connect </span>
-        <Loader {loaderActive} color="#1363df"/>
+        <Loader {loaderActive} color="#1363df" />
     </button>
 </div>
 

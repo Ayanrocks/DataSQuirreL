@@ -1,7 +1,8 @@
 <script>
+    export const ssr = false;
     import { Router, Route } from 'svelte-routing';
-    import InitConnection from './views/InitConnection.svelte';
-    import MainScreen from './views/MainScreen.svelte';
+    import InitConnection from './routes/InitConnection.svelte';
+    import MainScreen from './routes/MainScreen.svelte';
     import Notification from './components/Notification.svelte';
 </script>
 
@@ -11,11 +12,12 @@
         <Route path="/">
             <InitConnection/>
         </Route>
-        <Route path="dashboard">
+        <Route path="/dashboard">
             <MainScreen/>
         </Route>
     </div>
 </Router>
+
 
 <style>
     #router-view {
