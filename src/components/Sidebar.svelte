@@ -1,20 +1,20 @@
-<script>
+<script lang="ts">
   import { activeTable, notificationMsg, tableNames } from '../stores';
   import { createEventDispatcher } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE } from '../constants/constants';
 
   const dispatch = createEventDispatcher();
-  let activeTableName = '';
+  let activeTableName: string = '';
 
-  function resize(e) {
+  function resize(e: MouseEvent) {
     dispatch('resizing', {
       event: e,
     });
   }
 
-  let sideBarColumn = 'Table Names';
-  let tables = [];
+  let sideBarColumn: string = 'Table Names';
+  let tables: string[] = [];
 
   tableNames.subscribe((e) => {
     tables = e.tables;
@@ -25,19 +25,19 @@
     activeTableName = val.tableName;
   });
 
-  function clickedSidebar(e) {
+  function clickedSidebar(tableName: string) {
     // checking if the same table is opened or not
-    if (activeTableName == e) {
+    if (activeTableName == tableName) {
       // no change needed
       return;
     }
     // Invoke the command
     invoke('fetch_table_data', {
       reqPayload: {
-        table_name: e,
+        table_name: tableName,
       },
     })
-      .then((res) => {
+      .then((res: any) => { // TODO: Define a proper type for res
         console.log(res);
         activeTableName = res.data.table_name;
         let activeTableData = {
@@ -50,14 +50,14 @@
         };
 
         // calculate the total page numbers
-        activeTableData.maxPage = parseInt(res.data.row_count / PAGINATION_SIZE);
+        activeTableData.maxPage = Math.floor(res.data.row_count / PAGINATION_SIZE);
         if (res.data.row_count % PAGINATION_SIZE) {
             activeTableData.maxPage++;
         }
 
         activeTable.set(activeTableData);
       })
-      .catch((e) => {
+      .catch((e: any) => { // TODO: Define a proper type for e
         console.log(e);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
@@ -92,7 +92,7 @@
       <h1>Tables</h1>
       <ul class="table-list-ul">
         {#each tables as t (t)}
-          <li class="rounded-rectangle" on:click={clickedSidebar(t)} on:keydown={clickedSidebar(t)}>
+          <li class="rounded-rectangle" on:click={() => clickedSidebar(t)} on:keydown={() => clickedSidebar(t)}>
             <span class="icon is-left">
               <i class="fas fa-thin fa-table"></i>
             </span>

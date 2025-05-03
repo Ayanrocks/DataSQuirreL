@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     export const ssr = false;
 
     import { invoke } from "@tauri-apps/api/core";
@@ -12,6 +12,7 @@
         windowWidth,
         windowHeight,
         activeTable,
+        type ActiveTable, // Import ActiveTable interface
     } from "../stores";
     import {
         NOTIFICATION_TYPE_ERROR,
@@ -23,10 +24,11 @@
 
     // on mousedown for the draggable
 
-    let m_pos;
+    let m_pos: number | undefined;
 
     /// to resize the window on drag
-    function resize(e) {
+    function resize(e: MouseEvent) {
+        if (m_pos === undefined) return; // Add null check
         const dx = e.x - m_pos;
         m_pos = e.x;
         const leftSidebarContainer = document.getElementById(
@@ -34,25 +36,28 @@
         );
         const rightMainContainer =
             document.getElementById("right-main-content");
-        let computedWidth =
-            parseInt(getComputedStyle(leftSidebarContainer, "").width) + dx;
-        let computedWidthInPx = computedWidth + "px";
 
-        if (
-            computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE &&
-            computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE
-        ) {
-            leftSidebarContainer.style.width = computedWidthInPx;
-            rightMainContainer.style.width = windowWidth - computedWidth + "px";
-            rightMainContainer.style.marginLeft = computedWidthInPx;
+        if (leftSidebarContainer && rightMainContainer) { // Add null checks
+            let computedWidth =
+                parseInt(getComputedStyle(leftSidebarContainer, "").width) + dx;
+            let computedWidthInPx = computedWidth + "px";
+
+            if (
+                computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE &&
+                computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE
+            ) {
+                leftSidebarContainer.style.width = computedWidthInPx;
+                rightMainContainer.style.width = $windowWidth - computedWidth + "px";
+                rightMainContainer.style.marginLeft = computedWidthInPx;
+            }
         }
     }
 
     /// to resize the sidebar
-    function resizeSideBar(e) {
-        e = e.detail.event;
-        if (e.offsetX < BORDER_SIZE) {
-            m_pos = e.x;
+    function resizeSideBar(e: CustomEvent) {
+        const event = e.detail.event;
+        if (event.offsetX < BORDER_SIZE) {
+            m_pos = event.x;
             document.addEventListener("mousemove", resize, false);
         }
     }
@@ -66,11 +71,20 @@
         false,
     );
 
-    var unlisten;
-    let activeTableData = {};
+    var unlisten: any; // TODO: Find a more specific type for unlisten
+    let activeTableData: ActiveTable = { // Initialize with the correct type
+        tableName: '',
+        rows: [[]],
+        columns: [''],
+        rowCount: 0,
+        currentPage: 0,
+        maxPage: 0
+    };
 
     onDestroy(() => {
-        unlisten();
+        if (unlisten) { // Add null check
+            unlisten();
+        }
     });
 
     activeTable.subscribe((val) => {
@@ -86,14 +100,17 @@
             );
             const rightMainContainer =
                 document.getElementById("right-main-content");
-            let computedWidth = parseInt(
-                getComputedStyle(leftSidebarContainer, "").width,
-            );
-            let computedWidthInPx = computedWidth + "px";
 
-            leftSidebarContainer.style.width = computedWidthInPx;
-            rightMainContainer.style.width = val - computedWidth + "px";
-            rightMainContainer.style.marginLeft = computedWidthInPx;
+            if (leftSidebarContainer && rightMainContainer) { // Add null checks
+                let computedWidth = parseInt(
+                    getComputedStyle(leftSidebarContainer, "").width,
+                );
+                let computedWidthInPx = computedWidth + "px";
+
+                leftSidebarContainer.style.width = computedWidthInPx;
+                rightMainContainer.style.width = val - computedWidth + "px";
+                rightMainContainer.style.marginLeft = computedWidthInPx;
+            }
         });
 
         unlisten = appWindow.onResized(async () => {
@@ -116,7 +133,7 @@
 
         // fetch tables on load
         invoke("fetch_tables")
-            .then((res) => {
+            .then((res: any) => { // TODO: Define a proper type for res
                 if (res.error_code) {
                     notificationMsg.set({
                         type: NOTIFICATION_TYPE_ERROR,
@@ -127,8 +144,8 @@
 
                 if (res.data) {
                     if (res.data.rows.length > 0) {
-                        let tablesResult = [];
-                        let entityName = "";
+                        let tablesResult: string[] = []; // Add type annotation
+                        let entityName: string = ""; // Add type annotation
                         for (const i of res.data.rows[0]) {
                             entityName = i.table_catalog;
                             tablesResult.push(i.table_name);
@@ -136,7 +153,7 @@
 
                         // sort tablenames
 
-                        tablesResult = tablesResult.sort((a, b) => a > b);
+                        tablesResult = tablesResult.sort((a: string, b: string) => a.localeCompare(b)); // Add type annotation and use localeCompare for string comparison
 
                         tableNames.set({
                             tableName: entityName,
@@ -145,7 +162,7 @@
                     }
                 }
             })
-            .catch((e) => {
+            .catch((e: any) => { // TODO: Define a proper type for e
                 console.log(e);
                 notificationMsg.set({
                     type: NOTIFICATION_TYPE_ERROR,
