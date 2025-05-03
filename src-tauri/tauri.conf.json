@@ -1,37 +1,37 @@
   {
-    "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+    "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
     "build": {
       "beforeBuildCommand": "npm run build",
       "beforeDevCommand": "npm run dev",
-      "frontendDist": "../public",
+      "frontendDist": "../dist",
       "devUrl": "http://localhost:3001"
     },
     "bundle": {
       "icon": [
         "icons/32x32.png",
-        "icons/128x12   8.png",
+        "icons/128x128.png",
         "icons/128x128@2x.png",
         "icons/icon.icns",
-      "icons/icon.ico"
+        "icons/icon.ico"
       ]
     },
-   "app": {
-    "windows": [
-      {
-        "label": "main", 
-        "title": "DataSquirrel", 
-        "width": 900,
-        "height": 700,
-        "visible": true, 
-        "resizable": true,
-        "fullscreen": false
-        
+    "app": {
+      "windows": [
+        {
+          "label": "main",
+          "title": "DataSquirrel",
+          "width": 1250,
+          "height": 800,
+          "visible": true,
+          "resizable": true,
+          "fullscreen": false,
+          "url": "http://localhost:3001"
+        }
+      ],
+      "security": {
+        "csp": null
       }
-    ],
-    "security": {
-      "csp": null
-    }
-  },
+    },
     "identifier": "com.example.myapp",
     "plugins": {},
     "productName": "TauriApp",
