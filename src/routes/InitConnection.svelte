@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     export const ssr = false;
 
     // With the Tauri API npm package:
@@ -12,15 +12,15 @@
     import Loader from "../components/Loader.svelte";
 
     // Reactive variables
-    let connName = "test";
-    let hostName = "localhost";
-    let port = 5432;
-    let userName = "dev";
-    let password = "1234";
-    let dbName = "datasquirrel";
-    let loaderActive = false;
+    let connName: string = "test";
+    let hostName: string = "localhost";
+    let port: number = 5432;
+    let userName: string = "dev";
+    let password: string = "1234";
+    let dbName: string = "datasquirrel";
+    let loaderActive: boolean = false;
 
-    function OnClickConnect(e) {
+    function OnClickConnect(e: MouseEvent) {
         if (
             connName === "" ||
             hostName === "" ||
@@ -38,12 +38,12 @@
                 conn_name: connName,
                 host_name: hostName,
                 database_name: dbName,
-                port: parseInt(port),
+                port: parseInt(port as any), // TODO: Fix this type assertion if possible
                 user_name: userName,
                 password: password,
             },
         })
-            .then((res) => {
+            .then((res: any) => { // TODO: Define a proper type for res
                 loaderActive = false;
                 console.log(res);
                 if (res.error_code) {
@@ -63,7 +63,7 @@
                     navigate("/dashboard", {replace: true});
                 }, 500);
             })
-            .catch((e) => {
+            .catch((e: any) => { // TODO: Define a proper type for e
                 loaderActive = false;
                 console.log(e);
                 notificationMsg.set({
@@ -124,11 +124,12 @@
                         class="input"
                         type="text"
                         value={port}
-                        on:input={(e) => {
-                            if (!isNaN(e.target.value)) {
-                                port = e.target.value;
-                            } else {
-                                e.target.value = port;
+                        on:input={(e: Event) => {
+                            const target = e.target as HTMLInputElement;
+                            if (target && !isNaN(parseInt(target.value))) {
+                                port = parseInt(target.value);
+                            } else if (target) {
+                                target.value = port.toString();
                             }
                         }}
                         placeholder="Enter Port"

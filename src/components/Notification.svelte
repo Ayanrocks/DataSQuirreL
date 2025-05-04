@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { notificationMsg } from '../stores';
   import { onMount } from 'svelte';
   import { slide } from 'svelte/transition';
@@ -11,7 +11,7 @@
   let msg = '';
   let type = '';
   let alreadyRegistered = false;
-  let notificationClearTimeout;
+  let notificationClearTimeout: number;
 
   notificationMsg.subscribe((val) => {
     if (msg == '' && !alreadyRegistered && val.message != '') {

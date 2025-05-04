@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import {activeTable} from '../stores';
 
     let activeTableName = ''
@@ -19,7 +19,7 @@
         }
 
 
-        activeTable.update(val => ({currentPage: val + 1}))
+        // activeTable.update(val => ({currentPage: val + 1}))
 
         // add logic to fetch more data
         gotoNext()
@@ -30,7 +30,7 @@
             return
         }
 
-        activeTable.set({currentPage: currentPage - 1})
+        // activeTable.set({currentPage: currentPage - 1})
         gotoPrev()
     }
 
