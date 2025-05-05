@@ -1,19 +1,22 @@
 <script lang="ts">
-  import { activeTable, notificationMsg, tableNames } from '../stores';
-  import { createEventDispatcher } from 'svelte';
-  import { invoke } from '@tauri-apps/api/core';
-  import { NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE } from '../constants/constants';
+  import { activeTable, notificationMsg, tableNames } from "../stores";
+  import { createEventDispatcher } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
+  import {
+    NOTIFICATION_TYPE_ERROR,
+    PAGINATION_SIZE,
+  } from "../constants/constants";
 
   const dispatch = createEventDispatcher();
-  let activeTableName: string = '';
+  let activeTableName: string = "";
 
   function resize(e: MouseEvent) {
-    dispatch('resizing', {
+    dispatch("resizing", {
       event: e,
     });
   }
 
-  let sideBarColumn: string = 'Table Names';
+  let sideBarColumn: string = "Table Names";
   let tables: string[] = [];
 
   tableNames.subscribe((e) => {
@@ -32,12 +35,13 @@
       return;
     }
     // Invoke the command
-    invoke('fetch_table_data', {
+    invoke("fetch_table_data", {
       reqPayload: {
         table_name: tableName,
       },
     })
-      .then((res: any) => { // TODO: Define a proper type for res
+      .then((res: any) => {
+        // TODO: Define a proper type for res
         console.log(res);
         activeTableName = res.data.table_name;
         let activeTableData = {
@@ -50,14 +54,17 @@
         };
 
         // calculate the total page numbers
-        activeTableData.maxPage = Math.floor(res.data.row_count / PAGINATION_SIZE);
+        activeTableData.maxPage = Math.floor(
+          res.data.row_count / PAGINATION_SIZE,
+        );
         if (res.data.row_count % PAGINATION_SIZE) {
-            activeTableData.maxPage++;
+          activeTableData.maxPage++;
         }
 
         activeTable.set(activeTableData);
       })
-      .catch((e: any) => { // TODO: Define a proper type for e
+      .catch((e: any) => {
+        // TODO: Define a proper type for e
         console.log(e);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
@@ -68,11 +75,15 @@
 </script>
 
 <div class="column is-one-quarter split-sidebar" id="left-sidebar">
-  <div class="split-sidebar-draggable-div" on:mousedown={resize}>
+  <button
+    class="split-sidebar-draggable-div"
+    aria-label="Resize sidebar"
+    onmousedown={resize}
+  >
     <span id="resize-icon">
-      <i class="fas fa-solid fa-grip-lines-vertical" />
+      <i class="fas fa-solid fa-grip-lines-vertical"></i>
     </span>
-  </div>
+  </button>
   <div class="sidebar-content">
     <div class="db-selector-dropdown">
       <div class="control has-icons-left">
@@ -92,12 +103,16 @@
       <h1>Tables</h1>
       <ul class="table-list-ul">
         {#each tables as t (t)}
-          <li class="rounded-rectangle" on:click={() => clickedSidebar(t)} on:keydown={() => clickedSidebar(t)}>
+          <button
+            class="rounded-rectangle table-list-button"
+            onclick={() => clickedSidebar(t)}
+            onkeydown={() => clickedSidebar(t)}
+          >
             <span class="icon is-left">
               <i class="fas fa-thin fa-table"></i>
             </span>
             {t}
-          </li>
+          </button>
         {/each}
       </ul>
     </div>
@@ -158,13 +173,13 @@
     border-radius: 7px;
   }
 
-  .table-list-ul li {
+  .table-list-ul .table-list-button {
     cursor: pointer;
     transition: cubic-bezier(0.95, 0.05, 0.795, 0.035);
     padding: 1px;
   }
 
-  .table-list-ul li:hover {
+  .table-list-ul button:hover {
     background-color: var(--secondaryColor);
   }
 

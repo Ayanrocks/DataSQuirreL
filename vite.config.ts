@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import tailwindcss from '@tailwindcss/vite';
 
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({
   clearScreen: false,
   base: "./",
-  plugins: [svelte()],
+  plugins: [svelte(), tailwindcss(),],
   // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`.
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {

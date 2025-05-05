@@ -54,21 +54,21 @@
   <div class={getShadowClass()} transition:slide>
     {#if type == NOTIFICATION_TYPE_SUCCESS}
       <div class="notification is-primary" id="primary-notification">
-        <button class="delete" on:click={hideMsg} />
+        <button class="delete" onclick={hideMsg} aria-label="Close notification"></button>
         <div class="notification-body">
           {msg}
         </div>
       </div>
     {:else if type == NOTIFICATION_TYPE_WARNING}
       <div class="notification is-warning" id="primary-notification">
-        <button class="delete" on:click={hideMsg} />
+        <button class="delete" onclick={hideMsg} aria-label="Close notification"></button>
         <div class="notification-body">
           {msg}
         </div>
       </div>
     {:else if type == NOTIFICATION_TYPE_ERROR}
       <div class="notification is-danger" id="primary-notification">
-        <button class="delete" on:click={hideMsg} />
+        <button class="delete" onclick={hideMsg} aria-label="Close notification"></button>
         <div class="notification-body">
           {msg}
         </div>

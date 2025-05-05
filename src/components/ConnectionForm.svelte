@@ -10,12 +10,14 @@
     userName,
     password,
     dbName,
+    dbType,
     loaderActive,
     OnClickConnect,
   }: {
     projectName: string;
     hostName: string;
     port: number;
+    dbType: string;
     userName: string;
     password: string;
     dbName: string;
@@ -23,24 +25,34 @@
     OnClickConnect: (e: MouseEvent) => void;
   } = $props();
 
-  $inspect("In ConnectionFormSvelte: ", projectName, hostName, port, userName, password, dbName, loaderActive);
+  $inspect(
+    "In ConnectionFormSvelte: ",
+    projectName,
+    hostName,
+    port,
+    dbType,
+    userName,
+    password,
+    dbName,
+    loaderActive,
+  );
 </script>
 
-<div class="form-container">
-  <div class="columns">
-    <div class="column is-full">
-      <h2 class="is-size-4 has-text-centered">New Database Connection</h2>
+<div class="max-w-lg mx-auto my-20 border border-gray-200 rounded-lg p-4">
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full px-3">
+      <h2 class="text-2xl text-center">New Database Connection</h2>
     </div>
   </div>
-  <div class="columns">
-    <div class="column is-full">
-      <div class="field">
-        <label class="label" for="projectName">Project Name</label>
-        <div class="control">
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full px-3">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="projectName">Project Name</label>
+        <div class="relative">
           <input
             bind:value={projectName}
             id="projectName"
-            class="input"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             type="text"
             placeholder="Enter Project name"
             autocomplete="off"
@@ -49,14 +61,34 @@
       </div>
     </div>
   </div>
-  <div class="columns">
-    <div class="column is-half">
-      <div class="field">
-        <label class="label" for="hostName">Host</label>
-        <div class="control">
+  <!-- Add a option to select wshich database type like mysql postgresq  -->
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full px-3">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="dbType">Database Type</label>
+        <div class="relative">
+          <div class="inline-block relative w-full">
+            <select id="dbType" bind:value={dbType} class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+              <option value="postgres">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+              <!-- Add more database types as needed -->
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full md:w-1/2 px-3">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="hostName">Host</label>
+        <div class="relative">
           <input
             id="hostName"
-            class="input"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             type="text"
             bind:value={hostName}
             placeholder="Enter Host"
@@ -66,13 +98,13 @@
       </div>
     </div>
 
-    <div class="column is-half">
-      <div class="field">
-        <label class="label" for="port">Port</label>
-        <div class="control">
+    <div class="w-full md:w-1/2 px-3">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="port">Port</label>
+        <div class="relative">
           <input
             id="port"
-            class="input"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             type="text"
             value={port}
             oninput={(e: Event) => {
@@ -91,14 +123,14 @@
     </div>
   </div>
 
-  <div class="columns">
-    <div class="column is-half">
-      <div class="field">
-        <label class="label" for="userName">Username</label>
-        <div class="control">
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full md:w-1/2 px-3">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="userName">Username</label>
+        <div class="relative">
           <input
             id="userName"
-            class="input"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             type="text"
             bind:value={userName}
             placeholder="Enter Username"
@@ -108,13 +140,13 @@
       </div>
     </div>
 
-    <div class="column is-half">
-      <div class="field">
-        <label class="label" for="password">Password</label>
-        <div class="control">
+    <div class="w-full md:w-1/2 px-3">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">Password</label>
+        <div class="relative">
           <input
             id="password"
-            class="input"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             type="password"
             bind:value={password}
             placeholder="Enter Password"
@@ -125,14 +157,14 @@
     </div>
   </div>
 
-  <div class="columns">
-    <div class="column is-full">
-      <div class="field">
-        <label class="label" for="projectName">Database Name</label>
-        <div class="control">
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full px-3">
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="projectName">Database Name</label>
+        <div class="relative">
           <input
             id="dbName"
-            class="input"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             type="text"
             bind:value={dbName}
             placeholder="Enter database name"
@@ -143,25 +175,8 @@
     </div>
   </div>
 
-  <button class="button is-primary" onclick={OnClickConnect}>
-    <span class="connect-btn-text"> Connect </span>
+  <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" onclick={OnClickConnect}>
+    <span class="font-semibold text-base"> Connect </span>
     <Loader {loaderActive} color="#1363df" />
   </button>
 </div>
-
-<style>
-  .form-container {
-    width: 40%;
-    margin: 5rem auto;
-    border: 1px solid #e9e9e9;
-    border-radius: 7px;
-    perspective: 1px;
-    padding: 1rem;
-  }
-
-  .connect-btn-text {
-    font-weight: 600;
-    text-transform: none;
-    font-size: 1rem;
-  }
-</style>
