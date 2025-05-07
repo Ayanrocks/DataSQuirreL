@@ -7,7 +7,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig({
   clearScreen: false,
   base: "./",
-  plugins: [svelte(), tailwindcss(),],
+  plugins: [tailwindcss(), svelte()],
   // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`.
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {

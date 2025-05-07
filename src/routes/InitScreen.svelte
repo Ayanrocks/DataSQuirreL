@@ -10,6 +10,7 @@
     NOTIFICATION_TYPE_ERROR,
   } from "../constants/constants";
   import ConnectionForm from "../components/ConnectionForm.svelte";
+  import RecentProjects from "../components/RecentProjects.svelte";
 
   let projectName: string = $state("test");
   let hostName: string = $state("localhost");
@@ -119,32 +120,23 @@
 </script>
 
 <div id="init-connection-container">
-  <div class="columns-2 flex">
-    <div id="recent-projects-container">
-      <div class="recent-projects">
-        <h3>Recent Projects</h3>
-        <ul>
-          {#each recentProjects as project}
-            <li>
-              <button onclick={() => loadRecentProject(project)}>
-                {project.name}
-              </button>
-            </li>
-          {/each}
-        </ul>
-      </div>
+  <div class="columns-2 flex w-5/6 justify-evenly">
+    <div id="recent-projects-container" class="w-1/2 grid grid-flow-col text-center">
+        <RecentProjects />
     </div>
-    <ConnectionForm
-      {projectName}
-      {hostName}
-      {port}
-      {userName}
-      {password}
-      {dbName}
-      {dbType}
-      {loaderActive}
-      {OnClickConnect}
-    />
+    <div class="connection-form-container w-1/2">
+      <ConnectionForm
+        {projectName}
+        {hostName}
+        {port}
+        {userName}
+        {password}
+        {dbName}
+        {dbType}
+        {loaderActive}
+        {OnClickConnect}
+      />
+    </div>
   </div>
 </div>
 
@@ -152,15 +144,17 @@
   @reference "tailwindcss";
   #init-connection-container {
     display: flex;
-    justify-content: center;
+    justify-content: space-evenly;
     align-items: center;
     height: 100vh;
-    width: 100vw;
+    width: 100%;
+    min-width: 1200px;
     background-color: #f0f0f0;
   }
 
   .recent-projects {
     margin-top: 2rem;
+    width: 50%;
   }
 
   .recent-projects h3 {

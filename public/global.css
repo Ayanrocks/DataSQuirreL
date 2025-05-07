@@ -1,21 +1,18 @@
-@import url("https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css");
+@import "tailwindcss"; /* Keep only Tailwind for now */
+
+
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-@import "tailwindcss";
+
 * {
     font-family: "Outfit", sans-serif;
 }
 
 :not(input) {
     -webkit-touch-callout: none;
-    /* iOS Safari */
     -webkit-user-select: none;
-    /* Safari */
     -khtml-user-select: none;
-    /* Konqueror HTML */
     -moz-user-select: none;
-    /* Old versions of Firefox */
     -ms-user-select: none;
-    /* Internet Explorer/Edge */
     user-select: none;
 }
 
@@ -38,3 +35,4 @@ body {
     --disabled: #858585;
     --yellowPrimary: #ecb365;
 }
+
