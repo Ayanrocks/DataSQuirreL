@@ -149,6 +149,7 @@
     height: 100vh;
     width: 100%;
     min-width: 1200px;
+    min-height: 1000px;
     background-color: #f0f0f0;
   }
 
