@@ -38,9 +38,9 @@
   );
 </script>
 
-<div class="max-w-lg mx-auto my-20 border border-gray-200 rounded-lg p-4">
-  <div class="flex flex-wrap -mx-3">
-    <div class="w-full px-3">
+<div class="max-w-lg mx-auto  border border-gray-200 rounded-lg p-4">
+  <div class="flex flex-wrap mx-3 mb-5">
+    <div class="w-full px-3 my-5">
       <h2 class="text-2xl text-center">New Database Connection</h2>
     </div>
   </div>

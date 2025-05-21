@@ -143,46 +143,16 @@
 <style lang="postcss">
   @reference "tailwindcss";
   #init-connection-container {
+    font-size: 1rem;
     display: flex;
     justify-content: space-evenly;
     align-items: center;
-    height: 100vh;
+    height: 100%;
     width: 100%;
     min-width: 1200px;
     min-height: 1000px;
     background-color: #f0f0f0;
   }
 
-  .recent-projects {
-    margin-top: 2rem;
-    width: 50%;
-  }
-
-  .recent-projects h3 {
-    margin-bottom: 0.5rem;
-  }
-
-  .recent-projects ul {
-    list-style: none;
-    padding: 0;
-  }
-
-  .recent-projects li {
-    margin-bottom: 0.5rem;
-  }
-
-  .recent-projects button {
-    background: none;
-    border: none;
-    color: var(--color-link);
-    cursor: pointer;
-    text-align: left;
-    width: 100%;
-    padding: 0.5rem;
-    border-radius: 4px;
-  }
-
-  .recent-projects button:hover {
-    background-color: var(--color-bg-hover);
-  }
+ 
 </style>

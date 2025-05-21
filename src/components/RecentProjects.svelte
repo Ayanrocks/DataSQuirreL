@@ -12,30 +12,55 @@
   ];
 </script>
 
-<div class="recent-projects w-full py-25">
-  <div class="recent-projects-header w-full">
-    <h2 class="text-3xl w-full">Recent Projects</h2>
-  </div>
+<div class="recent-projects w-full border border-gray-200 rounded-lg">
+  <div class="">
+    <div class="recent-projects-header w-full my-5">
+      <h2 class="text-2xl w-full">Recent Projects</h2>
+    </div>
 
-  <div class="col-start-1 my-5">
-    {#if recentProjects.length > 0}
-      <ul class="list-none p-0 m-0 w-full overflow-scroll h-100">
-        {#each recentProjects as project}
-          <li
-            class="p-5 mb-5 border border-gray-400 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md"
-          >
-            {project.name}
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <div class="flex items-center justify-center h-32 text-gray-500">
-        No recent Project
-      </div>
-    {/if}
+    <div class="col-start-1 my-5 recent-projects-list">
+      {#if recentProjects.length > 0}
+        <ul class="list-none p-0 m-0 w-full overflow-scroll h-120">
+          {#each recentProjects as project}
+            <li
+              class="p-5 mb-5 border border-gray-400 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md"
+            >
+              {project.name}
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <div class="flex items-center justify-center h-32 text-gray-500">
+          No recent Project
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
 
 <style>
   /* No component-specific styles needed with Tailwind */
+  .recent-projects {
+    width: 100%;
+  }
+
+  .recent-projects ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .recent-projects li {
+    margin-bottom: 1rem;
+  }
+
+  .recent-projects-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .recent-projects-list {
+    max-height: 30rem;
+    overflow-y: auto;
+    width: 80%;
+    margin: 0 auto;
+  }
 </style>
