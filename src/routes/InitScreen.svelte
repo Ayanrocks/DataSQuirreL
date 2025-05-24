@@ -11,6 +11,7 @@
   } from "../constants/constants";
   import ConnectionForm from "../components/ConnectionForm.svelte";
   import RecentProjects from "../components/RecentProjects.svelte";
+  import InitWaveSVG from '../assets/InitWave.svg?raw';
 
   let projectName: string = $state("test");
   let hostName: string = $state("localhost");
@@ -120,23 +121,29 @@
 </script>
 
 <div id="init-connection-container">
-  <div class="columns-2 flex w-5/6 justify-evenly">
+  <div class="columns-2 flex w-5/6 justify-evenly z-1">
     <div id="recent-projects-container" class="w-1/2 grid grid-flow-col text-center">
-        <RecentProjects />
+      <RecentProjects />
     </div>
     <div class="connection-form-container w-1/2">
       <ConnectionForm
-        {projectName}
-        {hostName}
-        {port}
-        {userName}
-        {password}
-        {dbName}
-        {dbType}
-        {loaderActive}
-        {OnClickConnect}
+      {projectName}
+      {hostName}
+      {port}
+      {userName}
+      {password}
+      {dbName}
+      {dbType}
+      {loaderActive}
+      {OnClickConnect}
       />
     </div>
+  </div>
+  <div
+    class="init-connection-container--background absolute"
+  >
+  {@html InitWaveSVG}
+    <!-- background handled by background-image style -->
   </div>
 </div>
 
@@ -147,12 +154,23 @@
     display: flex;
     justify-content: space-evenly;
     align-items: center;
-    height: 100%;
+    height: 100vh; /* Changed from 100% */
     width: 100%;
     min-width: 1200px;
     min-height: 1000px;
     background-color: #f0f0f0;
+    position: relative;
   }
 
- 
+.init-connection-container--background {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  bottom: 20%;
+  width: 100%;
+  height: 300px; /* Adjust height as needed for your wave SVG */
+  background-size: cover; /* Ensures the SVG covers the width while maintaining aspect ratio */
+  background-repeat: no-repeat;
+}
 </style>

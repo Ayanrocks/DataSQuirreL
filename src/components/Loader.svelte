@@ -16,7 +16,7 @@
         display: inline-block;
         width: var(--width);
         height: var(--height);
-        margin: 8px;
+        margin: 0px;
         border-radius: 50%;
         border: 2px solid var(--color);
         border-color: var(--color) transparent var(--color) transparent;

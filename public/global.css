@@ -1,8 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @import "tailwindcss";
 /* Keep only Tailwind for now */
 
-
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
 * {
     font-family: "Outfit", sans-serif;
@@ -33,7 +32,7 @@ body {
     --secondaryColor: #57D7CA;
     --accentColor: #77BC6C;
     --tertiaryColor: #AEF4A1;
-    --offWhite: #e9e9e9;
+    --offWhite: #f0f0f0;
     --offBlue: #c4ddff;
     --offBlack: #333333;
     --disabled: #858585;

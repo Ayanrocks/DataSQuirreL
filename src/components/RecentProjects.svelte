@@ -12,7 +12,7 @@
   ];
 </script>
 
-<div class="recent-projects w-full border border-gray-200 rounded-lg">
+<div class="recent-projects w-full ">
   <div class="">
     <div class="recent-projects-header w-full my-5">
       <h2 class="text-2xl w-full">Recent Projects</h2>
@@ -23,7 +23,7 @@
         <ul class="list-none p-0 m-0 w-full overflow-scroll h-120">
           {#each recentProjects as project}
             <li
-              class="p-5 mb-5 border border-gray-400 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md"
+              class="p-5 mb-5 bg-[#fff] border border-gray-200 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md shadow-sm"
             >
               {project.name}
             </li>

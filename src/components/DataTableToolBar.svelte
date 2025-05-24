@@ -47,11 +47,11 @@
         </div>
         <div class="data-table-toolbar__controls--right">
             <div class="controls__right--buttons">
-                <button class="controls__right__prev" on:click={onClickPrev}>
+                <button class="controls__right__prev" on:click={onClickPrev} aria-label="Previous Page">
                     <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
                 </button>
 
-                <button class="controls__right__next" on:click={onClickNext}>
+                <button class="controls__right__next" on:click={onClickNext} aria-label="Next Page">
                     <i class="fa fa-arrow-circle-right" aria-hidden="true"></i>
                 </button>
             </div>
@@ -85,10 +85,6 @@
         justify-content: space-between;
     }
 
-    .data-table-toolbar__title--left {
-        width: 100%;
-        padding: 10px;
-    }
 
     .data-table-toolbar__controls--left,
     .data-table-toolbar__controls--center,
