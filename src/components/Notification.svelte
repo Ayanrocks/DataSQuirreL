@@ -11,7 +11,7 @@
   let msg = '';
   let type = '';
   let alreadyRegistered = false;
-  let notificationClearTimeout: number;
+  let notificationClearTimeout: any;
 
   notificationMsg.subscribe((val) => {
     if (msg == '' && !alreadyRegistered && val.message != '') {
@@ -111,5 +111,20 @@
   .notification-body {
     padding: 1rem;
     word-wrap: break-word;
+  }
+
+  .is-primary {
+    background-color: rgb(26, 214, 186); /* Teal/Green for success */
+    color: white;
+  }
+
+  .is-warning {
+    background-color: rgb(255, 227, 150); /* Yellow/Orange for warning */
+    color: black; /* Or a dark color for contrast */
+  }
+
+  .is-danger {
+    background-color: rgb(242, 89, 119); /* Red for error */
+    color: white;
   }
 </style>
