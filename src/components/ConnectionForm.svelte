@@ -207,7 +207,7 @@
   </div>
 
   <button
-    class="bg-blue-500 hover:bg-blue-700 text-white font-bold w-35 h-10 rounded focus:outline-none focus:shadow-outline flex items-center justify-center gap-2"
+    class="bg-(--secondaryColor) hover:bg-(--secondaryColor) text-white font-bold w-35 h-10 rounded focus:outline-none focus:shadow-outline flex items-center justify-center gap-2"
     onclick={OnClickConnect}
     disabled={loaderActive}
   >

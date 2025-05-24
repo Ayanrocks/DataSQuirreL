@@ -11,8 +11,9 @@
   } from "../constants/constants";
   import ConnectionForm from "../components/ConnectionForm.svelte";
   import RecentProjects from "../components/RecentProjects.svelte";
-  import InitWaveSVG from '../assets/InitWave.svg?raw';
-
+  import InitWaveSVG from "../assets/InitWave.svg?raw";
+  import InitScreenEclipse from "../assets/InitScreenEclipse.svg?raw";
+  import MainLogo from "../assets/MainLogo.svg?raw";
   let projectName: string = $state("test");
   let hostName: string = $state("localhost");
   let port: number = $state(5432);
@@ -121,56 +122,82 @@
 </script>
 
 <div id="init-connection-container">
-  <div class="columns-2 flex w-5/6 justify-evenly z-1">
-    <div id="recent-projects-container" class="w-1/2 grid grid-flow-col text-center">
+  <div class="main-logo-container " title="DataSquirrel">
+    {@html MainLogo}
+  </div>
+  <div class="columns-2 flex w-5/6 justify-evenly z-1 mt-20">
+    <div
+      id="recent-projects-container"
+      class="w-1/2 grid grid-flow-col text-center"
+    >
       <RecentProjects />
     </div>
     <div class="connection-form-container w-1/2">
       <ConnectionForm
-      {projectName}
-      {hostName}
-      {port}
-      {userName}
-      {password}
-      {dbName}
-      {dbType}
-      {loaderActive}
-      {OnClickConnect}
+        {projectName}
+        {hostName}
+        {port}
+        {userName}
+        {password}
+        {dbName}
+        {dbType}
+        {loaderActive}
+        {OnClickConnect}
       />
     </div>
   </div>
-  <div
-    class="init-connection-container--background absolute"
-  >
-  {@html InitWaveSVG}
-    <!-- background handled by background-image style -->
+  <div class="init-connection-container--top-eclipse absolute">
+    {@html InitScreenEclipse}
+  </div>
+  <div class="init-connection-container--background absolute">
+    {@html InitWaveSVG}
   </div>
 </div>
 
 <style lang="postcss">
   @reference "tailwindcss";
+
+  .main-logo-container {
+    position: absolute;
+    top: -3%; 
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10; 
+  }
+
   #init-connection-container {
-    font-size: 1rem;
+    font-size: 0.9rem;
     display: flex;
     justify-content: space-evenly;
     align-items: center;
-    height: 100vh; /* Changed from 100% */
+    height: 100vh; 
     width: 100%;
-    min-width: 1200px;
-    min-height: 1000px;
+    min-width: 1080px;
+    min-height: 900px;
     background-color: #f0f0f0;
     position: relative;
   }
 
-.init-connection-container--background {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  bottom: 20%;
-  width: 100%;
-  height: 300px; /* Adjust height as needed for your wave SVG */
-  background-size: cover; /* Ensures the SVG covers the width while maintaining aspect ratio */
-  background-repeat: no-repeat;
-}
+  .init-connection-container--background {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    bottom: 10%;
+    width: 100%;
+    height: 300px; 
+    background-size: cover; 
+    background-repeat: no-repeat;
+  }
+
+  .init-connection-container--top-eclipse {
+    position: absolute;
+    top: -5%;
+    left: -5%;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover; 
+    background-repeat: no-repeat;
+  }
 </style>
