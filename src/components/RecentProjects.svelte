@@ -1,4 +1,8 @@
 <script lang="ts">
+  import connectIcon from "../assets/icons/connect.svg?raw";
+  import deleteIcon from "../assets/icons/delete.svg?raw";
+  import editIcon from "../assets/icons/edit.svg?raw";
+
   // Placeholder data for recent projects
   const recentProjects = [
     { id: 1, name: "Project Alpha" },
@@ -12,7 +16,7 @@
   ];
 </script>
 
-<div class="recent-projects w-full ">
+<div class="recent-projects w-full">
   <div class="">
     <div class="recent-projects-header w-full my-5">
       <h2 class="text-2xl w-full">Recent Projects</h2>
@@ -23,9 +27,28 @@
         <ul class="list-none p-0 m-0 w-full overflow-scroll h-120">
           {#each recentProjects as project}
             <li
-              class="p-5 mb-5 bg-[#fff] border border-gray-200 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md shadow-sm"
+              class="p-5 mb-5 bg-[#fff] border border-gray-200 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md shadow-sm flex flex-column items-center justify-between hover:bg-gray-50"
             >
-              {project.name}
+              <div class="project-name">
+                {project.name}
+              </div>
+              <div class="icon-container flex">
+                <div class="connectIcon-container text-gray-500 hover:text-blue-700" title="Connect to Project">
+                  {@html connectIcon}
+                </div>
+                <div
+                  class="ml-2 text-gray-500 hover:text-blue-500 cursor-pointer"
+                  title="Edit Project"
+                >
+                  {@html editIcon}
+                </div>
+                <div
+                  class="ml-2 text-gray-500 hover:text-red-500 cursor-pointer"
+                  title="Delete Project"
+                >
+                  {@html deleteIcon}
+                </div>
+              </div>
             </li>
           {/each}
         </ul>
