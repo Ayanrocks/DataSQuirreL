@@ -208,14 +208,12 @@
   </div>
 
   <button
-    class="bg-(--secondaryColor) hover:bg-(--secondaryColor) text-white w-35 h-10 rounded focus:outline-none focus:shadow-outline flex items-center justify-center gap-2"
+    class="bg-(--secondaryColor) hover:bg-(--secondaryColor) text-white w-35 h-10 rounded focus:outline-none focus:shadow-outline flex items-center justify-center gap-2 cursor-pointer transition duration-300 ease-in-out"
     onclick={OnClickConnect}
     disabled={loaderActive}
   >
     {#if !loaderActive}
-      <span
-        class=" text-base flex items-center justify-center gap-2"
-      >
+      <span class="text-base flex items-center justify-center gap-2">
         Connect <span class="text-white scale-70">{@html ArrowRight}</span>
       </span>
     {/if}

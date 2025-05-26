@@ -2,6 +2,7 @@
   import connectIcon from "../assets/icons/connect.svg?raw";
   import deleteIcon from "../assets/icons/delete.svg?raw";
   import editIcon from "../assets/icons/edit.svg?raw";
+  import folderIcon from "../assets/icons/folder.svg?raw";
 
   // Placeholder data for recent projects
   const recentProjects = [
@@ -29,21 +30,27 @@
             <li
               class="p-5 mb-5 bg-[#fff] border border-gray-200 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md shadow-sm flex flex-column items-center justify-between hover:bg-gray-50"
             >
-              <div class="project-name">
+              <div class="project-name flex items-center gap-2">
+                <span class="icon-container scale-75">
+                  {@html folderIcon}
+                </span>
                 {project.name}
               </div>
               <div class="icon-container flex">
-                <div class="connectIcon-container text-gray-500 hover:text-blue-700" title="Connect to Project">
+                <div
+                  class="connectIcon-container text-gray-500 hover:text-green-400 scale-75 cursor-pointer"
+                  title="Connect to Project"
+                >
                   {@html connectIcon}
                 </div>
                 <div
-                  class="ml-2 text-gray-500 hover:text-blue-500 cursor-pointer"
+                  class="ml-2 text-gray-500 hover:text-blue-400 cursor-pointer scale-75 cursor-pointer"
                   title="Edit Project"
                 >
                   {@html editIcon}
                 </div>
                 <div
-                  class="ml-2 text-gray-500 hover:text-red-500 cursor-pointer"
+                  class="ml-2 text-gray-500 hover:text-red-400 cursor-pointer scale-75 cursor-pointer"
                   title="Delete Project"
                 >
                   {@html deleteIcon}
