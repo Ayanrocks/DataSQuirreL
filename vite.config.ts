@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
-import svg from 'vite-plugin-svelte-svg';
+// import svg from 'vite-plugin-svelte-svg';
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -9,10 +9,10 @@ export default defineConfig({
   clearScreen: false,
   base: "./",
   plugins: [tailwindcss(), svelte(),
-  svg({
-    svgoConfig: {}, // optional SVGO config
-    requireSuffix: true, // generates Icon and IconUrl exports
-  }),
+  // svg({
+  //   svgoConfig: {}, // optional SVGO config
+  //   requireSuffix: true, // generates Icon and IconUrl exports
+  // }),
   ],
   // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`.
   envPrefix: ['VITE_', 'TAURI_ENV_*'],

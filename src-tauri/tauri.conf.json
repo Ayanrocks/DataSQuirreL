@@ -1,4 +1,4 @@
-  {
+{
     "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
     "build": {
       "beforeBuildCommand": "npm run build",
@@ -25,6 +25,8 @@
           "visible": true,
           "resizable": true,
           "fullscreen": false,
+          "decorations": false,
+          "titleBarStyle": "Transparent",
           "url": "http://localhost:3001"
         }
       ],

@@ -4,9 +4,11 @@
   import InitScreen from "./routes/InitScreen.svelte";
   import MainScreen from "./routes/MainScreen.svelte";
   import Notification from "./components/Notification.svelte";
+  import WindowControls from "./components/WindowControls.svelte";
   import "./App.css";
 </script>
 
+<WindowControls />
 <Notification />
 <Router>
   <div id="router-view">

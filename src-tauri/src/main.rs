@@ -422,6 +422,7 @@ fn main() {
             fetch_table_data,
             fetch_table_data_with_offset
         ])
+        .plugin(tauri_plugin_os::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
