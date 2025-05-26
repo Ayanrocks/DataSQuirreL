@@ -1,5 +1,6 @@
 <script lang="ts">
   import Loader from "./Loader.svelte";
+  import ArrowRight from "../assets/icons/arrowRight.svg?raw";
 
   // take props from the parent component
 
@@ -207,13 +208,17 @@
   </div>
 
   <button
-    class="bg-(--secondaryColor) hover:bg-(--secondaryColor) text-white font-bold w-35 h-10 rounded focus:outline-none focus:shadow-outline flex items-center justify-center gap-2"
+    class="bg-(--secondaryColor) hover:bg-(--secondaryColor) text-white w-35 h-10 rounded focus:outline-none focus:shadow-outline flex items-center justify-center gap-2"
     onclick={OnClickConnect}
     disabled={loaderActive}
   >
     {#if !loaderActive}
-      <span class="font-semibold text-base"> Connect </span>
+      <span
+        class=" text-base flex items-center justify-center gap-2"
+      >
+        Connect <span class="text-white scale-70">{@html ArrowRight}</span>
+      </span>
     {/if}
-    <Loader loaderActive={loaderActive} color="#1363df" />
+    <Loader {loaderActive} color="#1363df" />
   </button>
 </div>
