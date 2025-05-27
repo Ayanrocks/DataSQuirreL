@@ -25,8 +25,8 @@
           "visible": true,
           "resizable": true,
           "fullscreen": false,
-          "decorations": false,
-          "titleBarStyle": "Transparent",
+          "decorations": true,
+          "titleBarStyle": "overlay",
           "url": "http://localhost:3001"
         }
       ],
@@ -34,8 +34,8 @@
         "csp": null
       }
     },
-    "identifier": "com.example.myapp",
+    "identifier": "com.bayan.datasquirrel",
     "plugins": {},
-    "productName": "TauriApp",
+    "productName": "DataSquirrel",
     "version": "0.1.2"
   }
