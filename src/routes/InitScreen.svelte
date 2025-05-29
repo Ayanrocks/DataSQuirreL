@@ -15,6 +15,7 @@
   import InitScreenEclipse from "../assets/InitScreenEclipse.svg?raw";
   import MainLogo from "../assets/MainLogo.svg?raw";
   import type { RecentProjects as RecentProjectsType } from "../types/props";
+  import { v4 as uuidv4 } from "uuid";
 
   let projectName: string = $state("test");
   let hostName: string = $state("localhost");
@@ -27,6 +28,7 @@
   let recentProjectsLoader: boolean = $state(false);
   let recentProjects: RecentProjectsType[] = $state([
     {
+      id: uuidv4(),
       name: "Project 2",
       hostName: "localhost",
       port: 5432,
@@ -36,6 +38,7 @@
       dbType: "postgres",
     },
     {
+      id: uuidv4(),
       name: "Project 3",
       hostName: "localhost",
       port: 5432,
@@ -45,6 +48,7 @@
       dbType: "postgres",
     },
     {
+      id: uuidv4(),
       name: "Project 4",
       hostName: "localhost",
       port: 5432,
@@ -54,6 +58,20 @@
       dbType: "postgres",
     },
   ]);
+
+  // Function to check if a project with the same connection details already exists
+  function findExistingProjectId(
+    project: Omit<RecentProjectsType, "id">,
+  ): string | undefined {
+    return recentProjects.find(
+      (p) =>
+        p.hostName === project.hostName &&
+        p.port === project.port &&
+        p.userName === project.userName &&
+        p.dbName === project.dbName &&
+        p.dbType === project.dbType,
+    )?.id;
+  }
 
   onMount(() => {
     const savedProjects = localStorage.getItem("recentProjects");
@@ -92,6 +110,36 @@
         switch (_loaderActive) {
           case connectionFormConnectLoader:
             connectionFormConnectLoader = false;
+            // Check if project with same connection details exists
+            const existingId = findExistingProjectId({
+              name: projectName,
+              hostName,
+              port,
+              userName,
+              password,
+              dbName,
+              dbType,
+            });
+
+            if (!existingId) {
+              // Only add new project if it doesn't exist
+              const newProject: RecentProjectsType = {
+                id: uuidv4(),
+                name: projectName,
+                hostName,
+                port,
+                userName,
+                password,
+                dbName,
+                dbType,
+              };
+              recentProjects = [newProject, ...recentProjects];
+              // FIXME: Instead of localStorage, see if tauri provides a way to store data in the app
+              localStorage.setItem(
+                "recentProjects",
+                JSON.stringify(recentProjects),
+              );
+            }
             break;
           case recentProjectsLoader:
             recentProjectsLoader = false;
@@ -132,7 +180,7 @@
       });
   }
 
-  function onConnectRecentProject(project: any) {
+  function onConnectRecentProject(project: RecentProjectsType) {
     projectName = project.name;
     hostName = project.hostName;
     port = project.port;

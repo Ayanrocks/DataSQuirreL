@@ -17,12 +17,14 @@
     }>();
 
   // Add state to track which project is being connected
-  let connectingProjectName = $state<string | null>(null);
+  let connectingProjectId = $state<string | null>(null);
 
   // Modify the connect handler
   function handleConnect(project: RecentProjectsType) {
-    connectingProjectName = project.name;
-    onConnect(project);
+    if (project.id) {
+      connectingProjectId = project.id;
+      onConnect(project);
+    }
   }
 </script>
 
@@ -48,7 +50,7 @@
               <div class="icon-container flex items-center">
                 <div class="loader-container mr-2 scale-75 h-5 w-5">
                   <Loader
-                    loaderActive={recentProjectsLoading && connectingProjectName === project.name}
+                    loaderActive={recentProjectsLoading && project.id && connectingProjectId === project.id}
                     color="#1363df"
                   />
                 </div>
