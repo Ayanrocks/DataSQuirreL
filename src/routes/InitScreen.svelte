@@ -14,6 +14,8 @@
   import InitWaveSVG from "../assets/InitWave.svg?raw";
   import InitScreenEclipse from "../assets/InitScreenEclipse.svg?raw";
   import MainLogo from "../assets/MainLogo.svg?raw";
+  import type { RecentProjects as RecentProjectsType } from "../types/props";
+
   let projectName: string = $state("test");
   let hostName: string = $state("localhost");
   let port: number = $state(5432);
@@ -21,8 +23,9 @@
   let password: string = $state("1234");
   let dbName: string = $state("datasquirrel");
   let dbType: string = $state("postgres");
-  let loaderActive: boolean = $state(false);
-  let recentProjects: any[] = $state([
+  let connectionFormConnectLoader: boolean = $state(false);
+  let recentProjectsLoader: boolean = $state(false);
+  let recentProjects: RecentProjectsType[] = $state([
     {
       name: "Project 2",
       hostName: "localhost",
@@ -59,15 +62,6 @@
     }
   });
 
-  function loadRecentProject(project: any) {
-    projectName = project.name;
-    hostName = project.hostName;
-    port = project.port;
-    userName = project.userName;
-    password = project.password;
-    dbName = project.dbName;
-  }
-
   function OnClickConnect(e: MouseEvent) {
     if (
       projectName === "" ||
@@ -79,7 +73,11 @@
       alert("Please enter all details");
       return;
     }
-    loaderActive = true;
+    connectionFormConnectLoader = true;
+    connect(connectionFormConnectLoader);
+  }
+
+  function connect(_loaderActive: boolean) {
     invoke("init_connection", {
       reqPayload: {
         conn_name: projectName,
@@ -91,7 +89,14 @@
       },
     })
       .then((res: any) => {
-        loaderActive = false;
+        switch (_loaderActive) {
+          case connectionFormConnectLoader:
+            connectionFormConnectLoader = false;
+            break;
+          case recentProjectsLoader:
+            recentProjectsLoader = false;
+            break;
+        }
         console.log(res);
         if (res.error_code) {
           notificationMsg.set({
@@ -111,7 +116,14 @@
         }, 500);
       })
       .catch((e: any) => {
-        loaderActive = false;
+        switch (_loaderActive) {
+          case connectionFormConnectLoader:
+            connectionFormConnectLoader = false;
+            break;
+          case recentProjectsLoader:
+            recentProjectsLoader = false;
+            break;
+        }
         console.log(e);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
@@ -119,10 +131,21 @@
         });
       });
   }
+
+  function onConnectRecentProject(project: any) {
+    projectName = project.name;
+    hostName = project.hostName;
+    port = project.port;
+    userName = project.userName;
+    password = project.password;
+    dbName = project.dbName;
+    recentProjectsLoader = true;
+    connect(recentProjectsLoader);
+  }
 </script>
 
 <div id="init-connection-container">
-  <div class="main-logo-container " title="DataSquirrel">
+  <div class="main-logo-container" title="DataSquirrel">
     {@html MainLogo}
   </div>
   <div class="columns-2 flex w-5/6 justify-evenly z-1 mt-20">
@@ -130,7 +153,13 @@
       id="recent-projects-container"
       class="w-1/2 grid grid-flow-col text-center"
     >
-      <RecentProjects />
+      <RecentProjects
+        projects={recentProjects}
+        onConnect={onConnectRecentProject}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        recentProjectsLoading={recentProjectsLoader}
+      />
     </div>
     <div class="connection-form-container w-1/2">
       <ConnectionForm
@@ -141,7 +170,7 @@
         {password}
         {dbName}
         {dbType}
-        {loaderActive}
+        loaderActive={connectionFormConnectLoader}
         {OnClickConnect}
       />
     </div>
@@ -159,10 +188,10 @@
 
   .main-logo-container {
     position: absolute;
-    top: -3%; 
+    top: -3%;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 10; 
+    z-index: 10;
   }
 
   #init-connection-container {
@@ -170,7 +199,7 @@
     display: flex;
     justify-content: space-evenly;
     align-items: center;
-    height: 100vh; 
+    height: 100vh;
     width: 100%;
     min-width: 1080px;
     min-height: 900px;
@@ -185,8 +214,8 @@
     right: 0;
     bottom: 10%;
     width: 100%;
-    height: 300px; 
-    background-size: cover; 
+    height: 300px;
+    background-size: cover;
     background-repeat: no-repeat;
   }
 
@@ -197,7 +226,7 @@
     right: 0;
     width: 100%;
     height: 100%;
-    background-size: cover; 
+    background-size: cover;
     background-repeat: no-repeat;
   }
 </style>
