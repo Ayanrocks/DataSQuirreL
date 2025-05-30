@@ -8,7 +8,6 @@
 
   async function getPlatform(): Promise<string> {
     const platformName = await platform();
-    console.log(platformName); // "windows", "macos", "linux", etc.
     return platformName;
   }
 
@@ -42,7 +41,6 @@
   };
 </script>
 
-<!-- FIXME: Window is not draggable yet -->
 <div
   class="window-controls"
   class:mac-layout={currentPlatform === "darwin" || currentPlatform === "macos"}
