@@ -5,3 +5,6 @@
 dist/
 .idea/
 .vscode/
+debug/
+target/
+.rustc_*

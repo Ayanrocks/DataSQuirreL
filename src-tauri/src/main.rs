@@ -8,22 +8,28 @@ extern crate core;
 use database::db::{ConnPool, TableSchema, connect_to_db};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::{http, Manager, State};
+use tauri::{AppHandle, Manager, State, http};
 // use tauri::menu::{CustomMenuItem, Menu, MenuItem, Submenu};
+use storage::{ConnectionStorage, StoredConnection};
 use tauri::menu::MenuBuilder;
 
+pub mod config;
 pub mod constants;
 mod database;
+mod storage;
 
 struct ApplicationState {
     dbpool: Mutex<Option<ConnPool>>,
+    connection_storage: ConnectionStorage,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct DBConnectionRequest {
+    id: String,
     conn_name: String,
     host_name: String,
     database_name: String,
+    database_type: String,
     port: i32,
     user_name: String,
     password: String,
@@ -59,10 +65,10 @@ struct TableDataOffsetRequest {
 
 #[tauri::command]
 async fn init_connection(
+    app: AppHandle,
     req_payload: DBConnectionRequest,
     application_state: State<'_, ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
-    // tauri::async_runtime::block_on(async {
     let conn_result = connect_to_db(
         &req_payload.user_name,
         &req_payload.password,
@@ -76,6 +82,32 @@ async fn init_connection(
     match conn_result {
         Ok(conn_pool) => {
             *application_state.dbpool.lock().unwrap() = Some(conn_pool);
+
+            let stored_conn = StoredConnection {
+                id: req_payload.id.clone(),
+                conn_name: req_payload.conn_name.clone(),
+                host_name: req_payload.host_name,
+                database_name: req_payload.database_name,
+                database_type: req_payload.database_type.to_string(),
+                port: req_payload.port,
+                user_name: req_payload.user_name,
+            };
+
+            if let Err(e) = application_state.connection_storage.save_connection(
+                &app,
+                &stored_conn,
+                &req_payload.password,
+            ) {
+                println!("Error {:?}", e);
+                return Ok(IPCResponse {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some("Failed to store connection details".to_string()),
+                    data: None,
+                });
+            }
+
             return Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: None,
@@ -94,7 +126,59 @@ async fn init_connection(
             });
         }
     }
-    // })
+}
+
+#[tauri::command]
+fn get_saved_connections(
+    app: AppHandle,
+    application_state: State<ApplicationState>,
+) -> Result<IPCResponse<Vec<StoredConnection>>, ()> {
+    match application_state
+        .connection_storage
+        .get_all_connections(&app)
+    {
+        Ok(connections) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: None,
+            sys_err: None,
+            frontend_msg: None,
+            data: Some(connections),
+        }),
+        Err(e) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
+            sys_err: Some(e.to_string()),
+            frontend_msg: Some("Failed to retrieve saved connections".to_string()),
+            data: None,
+        }),
+    }
+}
+
+#[tauri::command]
+fn delete_saved_connection(
+    app: AppHandle,
+    conn_name: String,
+    application_state: State<ApplicationState>,
+) -> Result<IPCResponse<String>, ()> {
+    match application_state
+        .connection_storage
+        .delete_connection(&app, &conn_name)
+    {
+        Ok(_) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: None,
+            sys_err: None,
+            frontend_msg: Some("Connection deleted successfully".to_string()),
+            data: None,
+        }),
+        Err(e) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
+            sys_err: Some(e.to_string()),
+            frontend_msg: Some("Failed to delete connection".to_string()),
+            data: None,
+        }),
+    }
 }
 
 #[tauri::command]
@@ -376,7 +460,6 @@ fn main() {
     //     .add_submenu(submenu);
     println!("Starting Tauri App!");
 
-
     tauri::Builder::default()
         .setup(|app| {
             /*
@@ -400,7 +483,7 @@ fn main() {
             window.set_menu(menu);
             window.set_title("Tauri Database Client");
             */
-            
+
             // window.open_devtools();
             Ok(())
         })
@@ -408,21 +491,25 @@ fn main() {
         // .plugin(tauri_plugin_http::init())
         // .plugin(tauri_plugin_process::init())
         // .plugin(tauri_plugin_os::init())
-        // .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_fs::init())
         // .plugin(tauri_plugin_shell::init())
         // .plugin(tauri_plugin_dialog::init())
         // .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         // .plugin(tauri_plugin_notification::init())
         .manage(ApplicationState {
             dbpool: Default::default(),
+            connection_storage: ConnectionStorage::new(),
         })
         .invoke_handler(tauri::generate_handler![
             init_connection,
             fetch_tables,
             fetch_table_data,
-            fetch_table_data_with_offset
+            fetch_table_data_with_offset,
+            get_saved_connections,
+            delete_saved_connection
         ])
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_fs::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

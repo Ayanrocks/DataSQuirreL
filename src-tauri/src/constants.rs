@@ -1,8 +1,9 @@
 // ErrCodeDatabaseConnFailed - database
-pub const ERR_CODE_DATABASE_CONN_FAILED: &str = "2001A";
-pub const ERR_CODE_DATABASE_FETCH_TABLES_FAILED: &str = "2002A";
-pub const ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED: &str = "2002B";
-pub const ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED: &str = "2002C";
+pub const ERR_CODE_DATABASE_CONN_FAILED: &str = "ERR_DB_CONN_FAILED";
+pub const ERR_CODE_DATABASE_FETCH_TABLES_FAILED: &str = "ERR_DB_FETCH_TABLES_FAILED";
+pub const ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED: &str = "ERR_DB_FETCH_TABLE_DATA_FAILED";
+pub const ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED: &str = "ERR_DB_FETCH_TABLE_ROW_COUNT_FAILED";
+pub const ERR_CODE_STORAGE_FAILED: &str = "ERR_STORAGE_FAILED";
 
 // PG Types
 pub const BOOL: &str = "BOOL";
@@ -38,7 +39,7 @@ pub const JSONB: &str = "JSONB";
 pub const INITIAL_PAGE_SIZE: u32 = 40;
 
 // Query Types
-pub const QUERY_TYPE_FETCH_TABLES: &str = "fetch_tables";
-pub const QUERY_TYPE_FETCH_INITIAL_TABLE_DATA: &str = "fetch_initial_table_data";
-pub const QUERY_TYPE_FETCH_OFFSET_TABLE_DATA: &str = "fetch_offset_table_data";
+pub const QUERY_TYPE_FETCH_TABLES: &str = "FETCH_TABLES";
+pub const QUERY_TYPE_FETCH_INITIAL_TABLE_DATA: &str = "FETCH_INITIAL_TABLE_DATA";
+pub const QUERY_TYPE_FETCH_OFFSET_TABLE_DATA: &str = "FETCH_OFFSET_TABLE_DATA";
 pub const QUERY_TYPE_CUSTOM: &str = "custom";

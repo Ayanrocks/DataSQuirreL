@@ -16,6 +16,7 @@
   import MainLogo from "../assets/MainLogo.svg?raw";
   import type { RecentProjects as RecentProjectsType } from "../types/props";
   import { v4 as uuidv4 } from "uuid";
+  import type { IPCResponse, StoredConnection } from "../types/response";
 
   let projectName: string = $state("test");
   let hostName: string = $state("localhost");
@@ -26,38 +27,7 @@
   let dbType: string = $state("postgres");
   let connectionFormConnectLoader: boolean = $state(false);
   let recentProjectsLoader: boolean = $state(false);
-  let recentProjects: RecentProjectsType[] = $state([
-    {
-      id: uuidv4(),
-      name: "Project 2",
-      hostName: "localhost",
-      port: 5432,
-      userName: "dev",
-      password: "1234",
-      dbName: "datasquirrel",
-      dbType: "postgres",
-    },
-    {
-      id: uuidv4(),
-      name: "Project 3",
-      hostName: "localhost",
-      port: 5432,
-      userName: "dev",
-      password: "1234",
-      dbName: "datasquirrel",
-      dbType: "postgres",
-    },
-    {
-      id: uuidv4(),
-      name: "Project 4",
-      hostName: "localhost",
-      port: 5432,
-      userName: "dev",
-      password: "1234",
-      dbName: "datasquirrel",
-      dbType: "postgres",
-    },
-  ]);
+  let recentProjects: RecentProjectsType[] = $state([]);
 
   // Function to check if a project with the same connection details already exists
   function findExistingProjectId(
@@ -74,10 +44,7 @@
   }
 
   onMount(() => {
-    const savedProjects = localStorage.getItem("recentProjects");
-    if (savedProjects) {
-      recentProjects = JSON.parse(savedProjects);
-    }
+    loadRecentProjects();
   });
 
   function OnClickConnect(e: MouseEvent) {
@@ -110,36 +77,6 @@
         switch (_loaderActive) {
           case connectionFormConnectLoader:
             connectionFormConnectLoader = false;
-            // Check if project with same connection details exists
-            const existingId = findExistingProjectId({
-              name: projectName,
-              hostName,
-              port,
-              userName,
-              password,
-              dbName,
-              dbType,
-            });
-
-            if (!existingId) {
-              // Only add new project if it doesn't exist
-              const newProject: RecentProjectsType = {
-                id: uuidv4(),
-                name: projectName,
-                hostName,
-                port,
-                userName,
-                password,
-                dbName,
-                dbType,
-              };
-              recentProjects = [newProject, ...recentProjects];
-              // FIXME: Instead of localStorage, see if tauri provides a way to store data in the app
-              localStorage.setItem(
-                "recentProjects",
-                JSON.stringify(recentProjects),
-              );
-            }
             break;
           case recentProjectsLoader:
             recentProjectsLoader = false;
@@ -159,31 +96,85 @@
           message: res.frontend_msg,
         });
 
-        setTimeout(() => {
-          navigate("/dashboard", { replace: true });
-        }, 500);
+        // Refresh the recent projects list
+        loadRecentProjects();
       })
-      .catch((e: any) => {
-        switch (_loaderActive) {
-          case connectionFormConnectLoader:
-            connectionFormConnectLoader = false;
-            break;
-          case recentProjectsLoader:
-            recentProjectsLoader = false;
-            break;
-        }
-        console.log(e);
+      .catch((err) => {
+        console.error(err);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
-          message: "Something went wrong. Check console for more information",
+          message: "Failed to connect to database",
         });
       });
+  }
+
+  async function loadRecentProjects() {
+    recentProjectsLoader = true;
+    try {
+      const res = await invoke<IPCResponse<StoredConnection[]>>(
+        "get_saved_connections",
+      );
+      if (res.error_code) {
+        notificationMsg.set({
+          type: NOTIFICATION_TYPE_ERROR,
+          message: res.frontend_msg || "Failed to load recent projects",
+        });
+        return;
+      }
+      // Map StoredConnection to RecentProjectsType
+      recentProjects = (res.data || []).map((conn) => ({
+        id: conn.id,
+        name: conn.conn_name,
+        hostName: conn.host_name,
+        port: conn.port,
+        userName: conn.user_name,
+        password: "", // Password is not stored in the frontend
+        dbName: conn.database_name,
+        dbType: conn.database_type, // Default to postgres for now
+      }));
+    } catch (err) {
+      console.error(err);
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_ERROR,
+        message: "Failed to load recent projects",
+      });
+    } finally {
+      recentProjectsLoader = false;
+    }
+  }
+
+  async function deleteProject(project: RecentProjectsType) {
+    try {
+      const res = await invoke<IPCResponse<string>>("delete_saved_connection", {
+        conn_name: project.name,
+      });
+      if (res.error_code) {
+        notificationMsg.set({
+          type: NOTIFICATION_TYPE_ERROR,
+          message: res.frontend_msg || "Failed to delete project",
+        });
+        return;
+      }
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_SUCCESS,
+        message: res.frontend_msg || "Project deleted successfully",
+      });
+      // Refresh the recent projects list
+      loadRecentProjects();
+    } catch (err) {
+      console.error(err);
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_ERROR,
+        message: "Failed to delete project",
+      });
+    }
   }
 
   function onConnectRecentProject(project: RecentProjectsType) {
     projectName = project.name;
     hostName = project.hostName;
     port = project.port;
+    dbType = project.dbType
     userName = project.userName;
     password = project.password;
     dbName = project.dbName;
@@ -205,7 +196,7 @@
         projects={recentProjects}
         onConnect={onConnectRecentProject}
         onEdit={() => {}}
-        onDelete={() => {}}
+        onDelete={deleteProject}
         recentProjectsLoading={recentProjectsLoader}
       />
     </div>

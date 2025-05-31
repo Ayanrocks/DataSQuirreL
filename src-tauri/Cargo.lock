@@ -6,6 +6,9 @@ version = 4
 name = "DataSquirrel"
 version = "0.1.2"
 dependencies = [
+ "dirs",
+ "keyring",
+ "once_cell",
  "serde",
  "serde_json",
  "sqlx",
@@ -2432,6 +2435,15 @@ dependencies = [
  "bitflags 2.9.0",
  "serde",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "keyring"
+version = "3.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1961983669d57bdfe6c0f3ef8e4c229b5ef751afcc7d87e4271d2f71f6ccfa8b"
+dependencies = [
+ "log",
 ]
 
 [[package]]
