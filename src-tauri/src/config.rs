@@ -4,6 +4,7 @@ use std::io::{self, Error, ErrorKind};
 use std::path::{PathBuf};
 use std::sync::Mutex;
 use std::fs;
+use crate::{log_function, log_info};
 
 const CONFIG_DIR: &str = ".datasquirrel";
 
@@ -19,6 +20,7 @@ pub struct ConfigManager {
 
 impl ConfigManager {
     pub fn new() -> io::Result<Self> {
+        log_function!(new);
         let home_dir = dirs::home_dir()
             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Could not find home directory"))?;
         let config_dir = home_dir.join(CONFIG_DIR);
@@ -32,6 +34,7 @@ impl ConfigManager {
     }
 
     fn get_config_path(&self, config_type: &ConfigType) -> PathBuf {
+        log_function!(get_config_path);
         let filename = match config_type {
             ConfigType::Config => "config.json",
             ConfigType::Connections => "connections.json",
@@ -43,6 +46,7 @@ impl ConfigManager {
         &self,
         config_type: &ConfigType,
     ) -> io::Result<T> {
+        log_function!(read_config);
         let config_path = self.get_config_path(config_type);
 
         if !config_path.exists() {
@@ -62,6 +66,7 @@ impl ConfigManager {
     }
 
     pub fn write_config<T: Serialize>(&self, config_type: &ConfigType, data: &T) -> io::Result<()> {
+        log_function!(write_config);
         let config_path = self.get_config_path(config_type);
         let json = serde_json::to_string_pretty(data)?;
         fs::write(config_path, json)
@@ -71,6 +76,7 @@ impl ConfigManager {
         &self,
         config_type: &ConfigType,
     ) -> io::Result<()> {
+        log_function!(ensure_config_exists);
         let config_path = self.get_config_path(config_type);
 
         if !config_path.exists() {

@@ -1,4 +1,4 @@
-use crate::constants;
+use crate::{constants, log_function};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
@@ -39,6 +39,7 @@ pub async fn connect_to_db(
     dbname: &str,
     conn_name: &str,
 ) -> Result<ConnPool, sqlx::Error> {
+    log_function!(connect_to_db);
     let dsn = format!(
         "postgres://{}:{}@{}:{}/{}",
         username, password, hostname, port, dbname,
@@ -67,6 +68,7 @@ pub async fn connect_to_db(
 
 impl ConnPool {
     pub async fn fetch_tables(&self) -> Result<Vec<TableSchema>, sqlx::Error> {
+        log_function!(fetch_tables);
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             "
@@ -106,6 +108,7 @@ impl ConnPool {
         &self,
         table_name: &str,
     ) -> Result<Vec<TableColumns>, sqlx::Error> {
+        log_function!(fetch_table_columns);
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             "
@@ -141,6 +144,7 @@ impl ConnPool {
         &self,
         table_name: &str,
     ) -> Result<TableRowCount, sqlx::Error> {
+        log_function!(fetch_table_rows_count);
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
@@ -173,6 +177,7 @@ impl ConnPool {
         &self,
         table_name: &str,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
+        log_function!(fetch_table_data);
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
@@ -208,6 +213,7 @@ impl ConnPool {
         table_name: &str,
         offset: &u32,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
+        log_function!(fetch_table_data_with_offset);
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
@@ -312,6 +318,7 @@ impl ConnPool {
 }
 
 fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> {
+    log_function!(format_table_data);
     let mut result: Vec<Vec<String>> = Vec::new();
 
     // looping through each row

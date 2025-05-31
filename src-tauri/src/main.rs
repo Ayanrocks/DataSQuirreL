@@ -12,6 +12,7 @@ use tauri::{AppHandle, Manager, State, http};
 // use tauri::menu::{CustomMenuItem, Menu, MenuItem, Submenu};
 use storage::{ConnectionStorage, StoredConnection};
 use tauri::menu::MenuBuilder;
+mod logging;
 
 pub mod config;
 pub mod constants;
@@ -69,6 +70,9 @@ async fn init_connection(
     req_payload: DBConnectionRequest,
     application_state: State<'_, ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
+    log_function!(init_connection);
+    log_info!("Attempting to connect to database: {}", req_payload.database_name);
+    
     let conn_result = connect_to_db(
         &req_payload.user_name,
         &req_payload.password,
@@ -81,6 +85,7 @@ async fn init_connection(
 
     match conn_result {
         Ok(conn_pool) => {
+            log_info!("Successfully connected to database: {}", req_payload.database_name);
             *application_state.dbpool.lock().unwrap() = Some(conn_pool);
 
             let stored_conn = StoredConnection {
@@ -98,7 +103,7 @@ async fn init_connection(
                 &stored_conn,
                 &req_payload.password,
             ) {
-                println!("Error {:?}", e);
+                log_error!("Failed to store connection details: {}", e);
                 return Ok(IPCResponse {
                     status: http::status::StatusCode::OK.as_u16(),
                     error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
@@ -108,6 +113,7 @@ async fn init_connection(
                 });
             }
 
+            log_info!("Connection details stored successfully");
             return Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: None,
@@ -117,6 +123,7 @@ async fn init_connection(
             });
         }
         Err(e) => {
+            log_error!("Failed to connect to database: {}", e);
             return Ok(IPCResponse::<_> {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: Some(constants::ERR_CODE_DATABASE_CONN_FAILED.to_string()),
@@ -133,6 +140,7 @@ fn get_saved_connections(
     app: AppHandle,
     application_state: State<ApplicationState>,
 ) -> Result<IPCResponse<Vec<StoredConnection>>, ()> {
+    log_function!(get_saved_connections);
     match application_state
         .connection_storage
         .get_all_connections(&app)
@@ -160,6 +168,7 @@ fn delete_saved_connection(
     conn_name: String,
     application_state: State<ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
+    log_function!(delete_saved_connection);
     match application_state
         .connection_storage
         .delete_connection(&app, &conn_name)
@@ -183,6 +192,9 @@ fn delete_saved_connection(
 
 #[tauri::command]
 fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<TableData<TableSchema>> {
+    log_function!(fetch_tables);
+    log_info!("Fetching tables from database");
+    
     tauri::async_runtime::block_on(async {
         let table_result = application_state
             .dbpool
@@ -195,6 +207,7 @@ fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<Table
 
         match table_result {
             Ok(t) => {
+                log_info!("Successfully fetched {} tables", t.len());
                 let table_data = TableData {
                     columns: vec![String::from("Table Name")],
                     row_count: Some(t.len().to_string()),
@@ -212,6 +225,7 @@ fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<Table
                 };
             }
             Err(e) => {
+                log_error!("Failed to fetch tables: {}", e);
                 return IPCResponse::<_> {
                     status: http::status::StatusCode::OK.as_u16(),
                     error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()),
@@ -229,6 +243,7 @@ fn fetch_table_data(
     req_payload: TableDataRequest,
     application_state: State<ApplicationState>,
 ) -> IPCResponse<TableData<String>> {
+    log_function!(fetch_table_data);
     tauri::async_runtime::block_on(async {
         /*
            3 things needed to display table data
@@ -344,6 +359,7 @@ fn fetch_table_data_with_offset(
     req_payload: TableDataOffsetRequest,
     application_state: State<ApplicationState>,
 ) -> IPCResponse<TableData<String>> {
+    log_function!(fetch_table_data_with_offset);
     tauri::async_runtime::block_on(async {
         let mut columns: Vec<String> = vec![];
 
@@ -451,65 +467,31 @@ fn fetch_table_data_with_offset(
 }
 
 fn main() {
-    // let quit: MenuItemBuilder = MenuItemBuilder::new("quit".to_string(), "Quit");
-    // let close = MenuItemBuilder::new("close".to_string(), "Close");
-    // let submenu = Submenu::new("File", Menu::new().add_item(quit).add_item(close));
-    // let menu = Menu::new()
-    //     .add_native_item(MenuItem::Copy)
-    //     .add_item(MenuItemBuilder::new("hide", "Hide"))
-    //     .add_submenu(submenu);
-    println!("Starting Tauri App!");
-
+    // Initialize logger
+    if let Err(e) = logging::init_logger() {
+        eprintln!("Failed to initialize logger: {}", e);
+    }
+    
+    log_info!("Starting DataSquirrel application");
+    
     tauri::Builder::default()
-        .setup(|app| {
-            /*
-            let menu = MenuBuilder::new(app.handle())
-                .copy()
-                .paste()
-                .separator()
-                .undo()
-                .redo()
-                .text("open-url", "Open URL")
-                .check("toggle", "Toggle")
-                .icon(
-                    "show-app",
-                    "Show App",
-                    app.handle().default_window_icon().cloned().unwrap(),
-                )
-                .build()
-                .expect("Failed to build menu");
-
-            let window = app.get_webview_window("main").unwrap();
-            window.set_menu(menu);
-            window.set_title("Tauri Database Client");
-            */
-
-            // window.open_devtools();
-            Ok(())
-        })
-        // .plugin(tauri_plugin_clipboard_manager::init())
-        // .plugin(tauri_plugin_http::init())
-        // .plugin(tauri_plugin_process::init())
-        // .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_fs::init())
-        // .plugin(tauri_plugin_shell::init())
-        // .plugin(tauri_plugin_dialog::init())
-        // .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        // .plugin(tauri_plugin_notification::init())
         .manage(ApplicationState {
-            dbpool: Default::default(),
+            dbpool: Mutex::new(None),
             connection_storage: ConnectionStorage::new(),
         })
         .invoke_handler(tauri::generate_handler![
             init_connection,
+            get_saved_connections,
+            delete_saved_connection,
             fetch_tables,
             fetch_table_data,
             fetch_table_data_with_offset,
-            get_saved_connections,
-            delete_saved_connection
         ])
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_fs::init())
+        .setup(|app| {
+            log_info!("Application setup started");
+            // Your setup code here
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

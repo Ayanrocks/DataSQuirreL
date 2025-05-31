@@ -174,7 +174,7 @@
     projectName = project.name;
     hostName = project.hostName;
     port = project.port;
-    dbType = project.dbType
+    dbType = project.dbType;
     userName = project.userName;
     password = project.password;
     dbName = project.dbName;

@@ -1,4 +1,5 @@
 use crate::config::{ConfigManager, ConfigType, get_config_manager};
+use crate::log_function;
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -22,6 +23,7 @@ pub struct ConnectionStorage;
 
 impl ConnectionStorage {
     pub fn new() -> Self {
+        log_function!(new);
         ConnectionStorage
     }
 
@@ -31,6 +33,7 @@ impl ConnectionStorage {
         conn: &StoredConnection,
         password: &str,
     ) -> Result<(), Box<dyn Error>> {
+        log_function!(save_connection);
         let connections = self.get_all_connections(app)?;
         let mut updated_connections = connections.clone();
 
@@ -61,6 +64,7 @@ impl ConnectionStorage {
         &self,
         app: &AppHandle,
     ) -> Result<Vec<StoredConnection>, Box<dyn Error>> {
+        log_function!(get_all_connections);
         let config_manager = get_config_manager().lock().unwrap();
         match config_manager.read_config::<Vec<StoredConnection>>(&ConfigType::Connections) {
             Ok(connections) => Ok(connections),
@@ -74,11 +78,13 @@ impl ConnectionStorage {
         app: &AppHandle,
         conn_name: &str,
     ) -> Result<Option<StoredConnection>, Box<dyn Error>> {
+        log_function!(get_connection);
         let connections = self.get_all_connections(app)?;
         Ok(connections.into_iter().find(|c| c.conn_name == conn_name))
     }
 
     pub fn get_password(&self, conn_name: &str) -> Result<String, Box<dyn Error>> {
+        log_function!(get_password);
         let entry = Entry::new("datasquirrel", conn_name)?;
         Ok(entry.get_password()?)
     }
@@ -88,6 +94,7 @@ impl ConnectionStorage {
         app: &AppHandle,
         conn_name: &str,
     ) -> Result<(), Box<dyn Error>> {
+        log_function!(delete_connection);
         let connections = self.get_all_connections(app)?;
         let updated_connections: Vec<StoredConnection> = connections
             .into_iter()
