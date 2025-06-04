@@ -71,8 +71,11 @@ async fn init_connection(
     application_state: State<'_, ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
     log_function!(init_connection);
-    log_info!("Attempting to connect to database: {}", req_payload.database_name);
-    
+    log_info!(
+        "Attempting to connect to database: {}",
+        req_payload.database_name
+    );
+
     let conn_result = connect_to_db(
         &req_payload.user_name,
         &req_payload.password,
@@ -85,7 +88,10 @@ async fn init_connection(
 
     match conn_result {
         Ok(conn_pool) => {
-            log_info!("Successfully connected to database: {}", req_payload.database_name);
+            log_info!(
+                "Successfully connected to database: {}",
+                req_payload.database_name
+            );
             *application_state.dbpool.lock().unwrap() = Some(conn_pool);
 
             let stored_conn = StoredConnection {
@@ -194,7 +200,7 @@ fn delete_saved_connection(
 fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<TableData<TableSchema>> {
     log_function!(fetch_tables);
     log_info!("Fetching tables from database");
-    
+
     tauri::async_runtime::block_on(async {
         let table_result = application_state
             .dbpool
@@ -471,19 +477,44 @@ fn main() {
     if let Err(e) = logging::init_logger() {
         eprintln!("Failed to initialize logger: {}", e);
     }
-    
-    log_info!("Starting DataSquirrel application");
 
+    log_info!("Starting DataSquirrel application");
 
     // Initialize config manager
     let config_manager = config::ConfigManager::new().expect("Failed to initialize config manager");
+    let connections_path = config_manager.get_config_path(&config::ConfigType::Connections);
 
-    // if no config file then create a default one
-    if let Err(e) = config_manager.ensure_config_exists::<serde_json::Value>(&config::ConfigType::Config) {
-        eprintln!("Failed to ensure config file exists: {}", e);
+    if connections_path.exists() {
+        // Try to read the file to check if it's malformed
+        if let Err(e) = std::fs::read_to_string(&connections_path)
+            .and_then(|content| Ok(serde_json::from_str::<Vec<StoredConnection>>(&content)?))
+        {
+            // Create backup with timestamp
+            let backup_path = connections_path.with_extension(format!("{}.bak", chrono::Local::now().format("%Y%m%d_%H%M%S")));
+            std::fs::rename(&connections_path, &backup_path).expect("Failed to create backup");
+            
+            // Clean up old backups (keep only 2 most recent)
+            let backup_dir = connections_path.parent().unwrap();
+            let mut backups: Vec<_> = std::fs::read_dir(backup_dir)
+                .unwrap()
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| {
+                    entry.path().extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| ext.starts_with("bak"))
+                        .unwrap_or(false)
+                })
+                .collect();
+            
+            backups.sort_by(|a, b| b.path().metadata().unwrap().modified().unwrap()
+                .cmp(&a.path().metadata().unwrap().modified().unwrap()));
+            
+            for old_backup in backups.into_iter().skip(2) {
+                std::fs::remove_file(old_backup.path()).ok();
+            }
+        }
     }
-    
-    
+
     tauri::Builder::default()
         .manage(ApplicationState {
             dbpool: Mutex::new(None),

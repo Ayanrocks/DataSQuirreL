@@ -33,7 +33,7 @@ impl ConfigManager {
         Ok(Self { config_dir })
     }
 
-    fn get_config_path(&self, config_type: &ConfigType) -> PathBuf {
+    pub fn get_config_path(&self, config_type: &ConfigType) -> PathBuf {
         log_function!(get_config_path, "config_type" => config_type);
         let filename = match config_type {
             ConfigType::Config => "config.json",

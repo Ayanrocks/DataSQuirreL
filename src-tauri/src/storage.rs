@@ -49,7 +49,7 @@ impl ConnectionStorage {
 
         config_manager.write_config(
             &ConfigType::Connections,
-            &serde_json::to_string(&updated_connections)?,
+            &updated_connections,
         )?;
 
         let entry = Entry::new("datasquirrel", &conn.id)?;
@@ -102,7 +102,7 @@ impl ConnectionStorage {
         let config_manager = get_config_manager().lock().unwrap();
         config_manager.write_config(
             &ConfigType::Connections,
-            &serde_json::to_string(&updated_connections)?,
+            &updated_connections,
         )?;
 
         let entry = Entry::new("datasquirrel", conn_name)?;
