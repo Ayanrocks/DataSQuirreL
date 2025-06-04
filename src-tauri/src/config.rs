@@ -1,10 +1,10 @@
+use crate::log_function;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::io::{self, Error, ErrorKind};
-use std::path::{PathBuf};
-use std::sync::Mutex;
 use std::fs;
-use crate::{log_function, log_info};
+use std::io::{self, Error, ErrorKind};
+use std::path::PathBuf;
+use std::sync::Mutex;
 
 const CONFIG_DIR: &str = ".datasquirrel";
 

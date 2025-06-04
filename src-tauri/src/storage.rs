@@ -1,10 +1,8 @@
-use crate::config::{ConfigManager, ConfigType, get_config_manager};
+use crate::config::{ConfigType, get_config_manager};
 use crate::log_function;
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::fs;
-use std::path::PathBuf;
 use tauri::AppHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

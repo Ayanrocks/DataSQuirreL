@@ -1,9 +1,8 @@
-use dirs::data_local_dir;
 use once_cell::sync::OnceCell;
-use std::{fmt, path::PathBuf};
-use tracing::{Level, Subscriber};
+use std::path::PathBuf;
+use tracing::Level;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::{EnvFilter, fmt::format::JsonFields, prelude::*};
+use tracing_subscriber::{EnvFilter, prelude::*};
 
 static LOGGER: OnceCell<()> = OnceCell::new();
 const APP_NAME: &str = "dataSquirrel";
