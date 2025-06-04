@@ -34,7 +34,7 @@ impl ConfigManager {
     }
 
     fn get_config_path(&self, config_type: &ConfigType) -> PathBuf {
-        log_function!(get_config_path);
+        log_function!(get_config_path, "config_type" => config_type);
         let filename = match config_type {
             ConfigType::Config => "config.json",
             ConfigType::Connections => "connections.json",
@@ -46,7 +46,7 @@ impl ConfigManager {
         &self,
         config_type: &ConfigType,
     ) -> io::Result<T> {
-        log_function!(read_config);
+        log_function!(read_config, "config_type" => config_type);
         let config_path = self.get_config_path(config_type);
 
         if !config_path.exists() {
@@ -66,7 +66,7 @@ impl ConfigManager {
     }
 
     pub fn write_config<T: Serialize>(&self, config_type: &ConfigType, data: &T) -> io::Result<()> {
-        log_function!(write_config);
+        log_function!(write_config, "config_type" => config_type);
         let config_path = self.get_config_path(config_type);
         let json = serde_json::to_string_pretty(data)?;
         fs::write(config_path, json)
@@ -76,7 +76,7 @@ impl ConfigManager {
         &self,
         config_type: &ConfigType,
     ) -> io::Result<()> {
-        log_function!(ensure_config_exists);
+        log_function!(ensure_config_exists, "config_type" => config_type);
         let config_path = self.get_config_path(config_type);
 
         if !config_path.exists() {

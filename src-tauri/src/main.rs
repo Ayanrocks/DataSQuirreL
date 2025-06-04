@@ -473,6 +473,16 @@ fn main() {
     }
     
     log_info!("Starting DataSquirrel application");
+
+
+    // Initialize config manager
+    let config_manager = config::ConfigManager::new().expect("Failed to initialize config manager");
+
+    // if no config file then create a default one
+    if let Err(e) = config_manager.ensure_config_exists::<serde_json::Value>(&config::ConfigType::Config) {
+        eprintln!("Failed to ensure config file exists: {}", e);
+    }
+    
     
     tauri::Builder::default()
         .manage(ApplicationState {

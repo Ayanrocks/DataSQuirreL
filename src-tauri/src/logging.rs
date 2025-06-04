@@ -111,13 +111,263 @@ macro_rules! log_trace {
     ($($arg:tt)*) => { log_with_context!(tracing::Level::TRACE, $($arg)*) };
 }
 
-/// Macro to log function entry and exit
+
+/// Macro to log function entry and exit with optional arguments
 #[macro_export]
 macro_rules! log_function {
-    ($($arg:tt)*) => {{
-        let function_name = stringify!($($arg)*);
+    // Pattern 1: Function identifier (converts to string)
+    ($fn_name:ident) => {{
+        let function_name = stringify!($fn_name);
         tracing::info!("Entering function: {}", function_name);
         let _guard = tracing::span!(tracing::Level::INFO, "function", name = function_name).entered();
-        tracing::info!("Exiting function: {}", function_name);
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
+    }};
+    
+    // Pattern 2: Function name as string literal
+    ($fn_name:expr) => {{
+        let function_name = $fn_name;
+        tracing::info!("Entering function: {}", function_name);
+        let _guard = tracing::span!(tracing::Level::INFO, "function", name = function_name).entered();
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
+    }};
+    
+    // Pattern 3: Function identifier with arguments (using format strings)
+    ($fn_name:ident, $($arg_name:expr => $arg_value:expr),+ $(,)?) => {{
+        let function_name = stringify!($fn_name);
+        
+        // Build argument string without requiring Debug trait
+        let mut args_str = String::new();
+        $(
+            if !args_str.is_empty() {
+                args_str.push_str(", ");
+            }
+            args_str.push_str(&format!("{} = {}", $arg_name, 
+                // Try to display the value, fallback to type name if not displayable
+                std::any::type_name_of_val(&$arg_value)
+            ));
+        )+
+        
+        tracing::info!("Entering function: {} with args: [{}]", function_name, args_str);
+        let _guard = tracing::span!(
+            tracing::Level::INFO, 
+            "function", 
+            name = function_name,
+            args = args_str.as_str()
+        ).entered();
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
+    }};
+    
+    // Pattern 4: Function name with arguments (using format strings)
+    ($fn_name:expr, $($arg_name:expr => $arg_value:expr),+ $(,)?) => {{
+        let function_name = $fn_name;
+        
+        // Build argument string without requiring Debug trait
+        let mut args_str = String::new();
+        $(
+            if !args_str.is_empty() {
+                args_str.push_str(", ");
+            }
+            args_str.push_str(&format!("{} = {}", $arg_name, 
+                // Try to display the value, fallback to type name if not displayable
+                std::any::type_name_of_val(&$arg_value)
+            ));
+        )+
+        
+        tracing::info!("Entering function: {} with args: [{}]", function_name, args_str);
+        let _guard = tracing::span!(
+            tracing::Level::INFO, 
+            "function", 
+            name = function_name,
+            args = args_str.as_str()
+        ).entered();
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
+    }};
+    
+    // Pattern 5: Function identifier with arguments that implement Display
+    ($fn_name:ident, display: $($arg_name:expr => $arg_value:expr),+ $(,)?) => {{
+        let function_name = stringify!($fn_name);
+        
+        // Build argument string using Display trait
+        let mut args_str = String::new();
+        $(
+            if !args_str.is_empty() {
+                args_str.push_str(", ");
+            }
+            args_str.push_str(&format!("{} = {}", $arg_name, $arg_value));
+        )+
+        
+        tracing::info!("Entering function: {} with args: [{}]", function_name, args_str);
+        let _guard = tracing::span!(
+            tracing::Level::INFO, 
+            "function", 
+            name = function_name,
+            args = args_str.as_str()
+        ).entered();
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
+    }};
+    
+    // Pattern 6: Function name with arguments that implement Display
+    ($fn_name:expr, display: $($arg_name:expr => $arg_value:expr),+ $(,)?) => {{
+        let function_name = $fn_name;
+        
+        // Build argument string using Display trait
+        let mut args_str = String::new();
+        $(
+            if !args_str.is_empty() {
+                args_str.push_str(", ");
+            }
+            args_str.push_str(&format!("{} = {}", $arg_name, $arg_value));
+        )+
+        
+        tracing::info!("Entering function: {} with args: [{}]", function_name, args_str);
+        let _guard = tracing::span!(
+            tracing::Level::INFO, 
+            "function", 
+            name = function_name,
+            args = args_str.as_str()
+        ).entered();
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
+    }};
+    
+    // Pattern 7: Function identifier with arguments that implement Debug
+    ($fn_name:ident, debug: $($arg_name:expr => $arg_value:expr),+ $(,)?) => {{
+        let function_name = stringify!($fn_name);
+        
+        // Build argument string using Debug trait
+        let mut args_str = String::new();
+        $(
+            if !args_str.is_empty() {
+                args_str.push_str(", ");
+            }
+            args_str.push_str(&format!("{} = {:?}", $arg_name, $arg_value));
+        )+
+        
+        tracing::info!("Entering function: {} with args: [{}]", function_name, args_str);
+        let _guard = tracing::span!(
+            tracing::Level::INFO, 
+            "function", 
+            name = function_name,
+            args = args_str.as_str()
+        ).entered();
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
+    }};
+    
+    // Pattern 8: Function name with arguments that implement Debug
+    ($fn_name:expr, debug: $($arg_name:expr => $arg_value:expr),+ $(,)?) => {{
+        let function_name = $fn_name;
+        
+        // Build argument string using Debug trait
+        let mut args_str = String::new();
+        $(
+            if !args_str.is_empty() {
+                args_str.push_str(", ");
+            }
+            args_str.push_str(&format!("{} = {:?}", $arg_name, $arg_value));
+        )+
+        
+        tracing::info!("Entering function: {} with args: [{}]", function_name, args_str);
+        let _guard = tracing::span!(
+            tracing::Level::INFO, 
+            "function", 
+            name = function_name,
+            args = args_str.as_str()
+        ).entered();
+        
+        // Create a defer-like mechanism for exit logging
+        struct ExitLogger<'a> {
+            function_name: &'a str,
+        }
+        
+        impl<'a> Drop for ExitLogger<'a> {
+            fn drop(&mut self) {
+                tracing::info!("Exiting function: {}", self.function_name);
+            }
+        }
+        
+        let _exit_logger = ExitLogger { function_name };
     }};
 }

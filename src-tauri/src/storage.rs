@@ -76,7 +76,7 @@ impl ConnectionStorage {
         app: &AppHandle,
         conn_name: &str,
     ) -> Result<Option<StoredConnection>, Box<dyn Error>> {
-        log_function!(get_connection);
+        log_function!(get_connection, "app" => app, "conn_name" => conn_name);
         let connections = self.get_all_connections(app)?;
         Ok(connections.into_iter().find(|c| c.conn_name == conn_name))
     }
@@ -92,7 +92,7 @@ impl ConnectionStorage {
         app: &AppHandle,
         conn_name: &str,
     ) -> Result<(), Box<dyn Error>> {
-        log_function!(delete_connection);
+        log_function!(delete_connection, "app" => app, "conn_name" => conn_name);
         let connections = self.get_all_connections(app)?;
         let updated_connections: Vec<StoredConnection> = connections
             .into_iter()

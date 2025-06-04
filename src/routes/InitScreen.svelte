@@ -18,6 +18,7 @@
   import { v4 as uuidv4 } from "uuid";
   import type { IPCResponse, StoredConnection } from "../types/response";
 
+  let projectId: string = $state("");
   let projectName: string = $state("test");
   let hostName: string = $state("localhost");
   let port: number = $state(5432);
@@ -63,11 +64,17 @@
   }
 
   function connect(_loaderActive: boolean) {
+    // if projectId is empty then create a new project
+    if (projectId === "") {
+      projectId = uuidv4();
+    }
     invoke("init_connection", {
       reqPayload: {
+        id: projectId,
         conn_name: projectName,
         host_name: hostName,
         database_name: dbName,
+        database_type: dbType,
         port: parseInt(port as any),
         user_name: userName,
         password: password,
@@ -114,13 +121,7 @@
       const res = await invoke<IPCResponse<StoredConnection[]>>(
         "get_saved_connections",
       );
-      if (res.error_code) {
-        notificationMsg.set({
-          type: NOTIFICATION_TYPE_ERROR,
-          message: res.frontend_msg || "Failed to load recent projects",
-        });
-        return;
-      }
+
       // Map StoredConnection to RecentProjectsType
       recentProjects = (res.data || []).map((conn) => ({
         id: conn.id,
@@ -171,6 +172,7 @@
   }
 
   function onConnectRecentProject(project: RecentProjectsType) {
+    projectId = project.id || "";
     projectName = project.name;
     hostName = project.hostName;
     port = project.port;
