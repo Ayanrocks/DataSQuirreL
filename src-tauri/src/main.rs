@@ -9,7 +9,6 @@ use database::db::{ConnPool, TableSchema, connect_to_db};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State, http};
-// use tauri::menu::{CustomMenuItem, Menu, MenuItem, Submenu};
 use storage::{ConnectionStorage, StoredConnection};
 use tauri::menu::MenuBuilder;
 mod logging;
@@ -516,6 +515,7 @@ fn main() {
     }
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .manage(ApplicationState {
             dbpool: Mutex::new(None),
             connection_storage: ConnectionStorage::new(),

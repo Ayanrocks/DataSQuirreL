@@ -7,15 +7,41 @@
   const appWindow = getCurrentWindow();
 
   async function getPlatform(): Promise<string> {
-    const platformName = await platform();
-    return platformName;
+    try {
+      // Try to get platform from Tauri plugin
+      const platformName = await platform();
+      return platformName;
+    } catch (e) {
+      console.warn("Error getting platform:", e);
+      // Fallback to browser detection if Tauri plugin fails
+      const userAgent = navigator.userAgent.toLowerCase();
+      if (userAgent.includes('mac')) {
+        return 'darwin';
+      } else if (userAgent.includes('win')) {
+        return 'win32';
+      } else if (userAgent.includes('linux')) {
+        return 'linux';
+      }
+      return ''; // Default fallback
+    }
   }
 
   onMount(async () => {
     try {
       currentPlatform = await getPlatform();
     } catch (e) {
-      currentPlatform = ""; // fallback for SSR or error
+      console.warn("Error getting platform:", e);
+      // Fallback to browser detection
+      const userAgent = navigator.userAgent.toLowerCase();
+      if (userAgent.includes('mac')) {
+        currentPlatform = 'darwin';
+      } else if (userAgent.includes('win')) {
+        currentPlatform = 'win32';
+      } else if (userAgent.includes('linux')) {
+        currentPlatform = 'linux';
+      } else {
+        currentPlatform = ''; // Default fallback
+      }
     }
   });
 

@@ -35,7 +35,11 @@
       }
     },
     "identifier": "com.bayan.datasquirrel",
-    "plugins": {},
+    "plugins": {
+      "os": {
+        "all": true
+      }
+    },
     "productName": "DataSquirrel",
     "version": "0.1.2"
   }
