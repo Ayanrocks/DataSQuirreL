@@ -47,12 +47,10 @@ impl ConnectionStorage {
         // fetch config_manager
         let config_manager = get_config_manager().lock().unwrap();
 
-        config_manager.write_config(
-            &ConfigType::Connections,
-            &updated_connections,
-        )?;
+        config_manager.write_config(&ConfigType::Connections, &updated_connections)?;
 
         let entry = Entry::new("datasquirrel", &conn.id)?;
+        dbg!(password);
         entry.set_password(password)?;
 
         Ok(())
@@ -91,23 +89,21 @@ impl ConnectionStorage {
         &self,
         app: &AppHandle,
         conn_name: &str,
-    ) -> Result<(), Box<dyn Error>> {
+        project_id: &str,
+    ) -> Result<String, Box<dyn Error>> {
         log_function!(delete_connection, "app" => app, "conn_name" => conn_name);
         let connections = self.get_all_connections(app)?;
         let updated_connections: Vec<StoredConnection> = connections
             .into_iter()
-            .filter(|c| c.conn_name != conn_name)
+            .filter(|c| c.conn_name != conn_name && project_id != c.id)
             .collect();
 
         let config_manager = get_config_manager().lock().unwrap();
-        config_manager.write_config(
-            &ConfigType::Connections,
-            &updated_connections,
-        )?;
+        config_manager.write_config(&ConfigType::Connections, &updated_connections)?;
 
-        let entry = Entry::new("datasquirrel", conn_name)?;
+        let entry = Entry::new("datasquirrel", project_id)?;
         entry.delete_credential()?;
 
-        Ok(())
+        Ok("Connection deleted successfully".to_string())
     }
 }

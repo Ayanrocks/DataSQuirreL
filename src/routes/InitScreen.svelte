@@ -147,7 +147,8 @@
   async function deleteProject(project: RecentProjectsType) {
     try {
       const res = await invoke<IPCResponse<string>>("delete_saved_connection", {
-        conn_name: project.name,
+        connName: project.name,
+        projectId: project.id,
       });
       if (res.error_code) {
         notificationMsg.set({
@@ -160,8 +161,6 @@
         type: NOTIFICATION_TYPE_SUCCESS,
         message: res.frontend_msg || "Project deleted successfully",
       });
-      // Refresh the recent projects list
-      loadRecentProjects();
     } catch (err) {
       console.error(err);
       notificationMsg.set({
@@ -169,6 +168,8 @@
         message: "Failed to delete project",
       });
     }
+    // Refresh the recent projects list
+    loadRecentProjects();
   }
 
   function onConnectRecentProject(project: RecentProjectsType) {

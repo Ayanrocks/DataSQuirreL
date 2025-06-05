@@ -171,18 +171,19 @@ fn get_saved_connections(
 fn delete_saved_connection(
     app: AppHandle,
     conn_name: String,
+    project_id: String,
     application_state: State<ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
     log_function!(delete_saved_connection);
     match application_state
         .connection_storage
-        .delete_connection(&app, &conn_name)
+        .delete_connection(&app, &conn_name, &project_id)
     {
-        Ok(_) => Ok(IPCResponse {
+        Ok(f) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
             sys_err: None,
-            frontend_msg: Some("Connection deleted successfully".to_string()),
+            frontend_msg: Some(f),
             data: None,
         }),
         Err(e) => Ok(IPCResponse {
