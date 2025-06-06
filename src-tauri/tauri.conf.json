@@ -1,45 +1,45 @@
 {
-    "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
-    "build": {
-      "beforeBuildCommand": "npm run build",
-      "beforeDevCommand": "npm run dev",
-      "frontendDist": "../dist",
-      "devUrl": "http://localhost:3001"
-    },
-    "bundle": {
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
-    },
-    "app": {
-      "windows": [
-        {
-          "label": "main",
-          "title": "DataSquirrel",
-          "width": 1450,
-          "height": 950,
-          "visible": true,
-          "resizable": true,
-          "fullscreen": false,
-          "decorations": true,
-          "titleBarStyle": "Overlay",
-          "url": "http://localhost:3001"
-        }
-      ],
-      "security": {
-        "csp": null
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/tooling/cli/schema.json",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3001"
+  },
+  "bundle": {
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "DataSquirrel",
+        "width": 1450,
+        "height": 950,
+        "visible": true,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "url": "http://localhost:3001"
       }
-    },
-    "identifier": "com.bayan.datasquirrel",
-    "plugins": {
-      "os": {
-        "all": true
-      }
-    },
-    "productName": "DataSquirrel",
-    "version": "0.1.2"
-  }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "identifier": "com.bayan.datasquirrel",
+  "plugins": {
+    "os": {
+      "all": true
+    }
+  },
+  "productName": "DataSquirrel",
+  "version": "0.1.2"
+}

@@ -1,5 +1,6 @@
 use crate::config::{ConfigType, get_config_manager};
-use crate::log_function;
+use crate::constants::APP_NAME;
+use crate::{log_error, log_function, log_info};
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -49,12 +50,26 @@ impl ConnectionStorage {
 
         config_manager.write_config(&ConfigType::Connections, &updated_connections)?;
 
-        let entry = Entry::new("datasquirrel", &conn.id)?;
-        dbg!(password);
-        entry.set_password(password)?;
-
-        Ok(())
+        let entry = Entry::new(APP_NAME, &conn.id)?;
+        println!("Saving Password {} - {}", conn.id, password);
+        // entry.set_password(password)?;
+        // Check if we can access the keyring first
+        match entry.set_password(password) {
+            Ok(_) => {
+                log_info!("Successfully saved to keyring");
+                Ok(())
+            }
+            Err(keyring::Error::NoEntry) => {
+                log_error!("Keyring service not available");
+                Err(Box::new(keyring::Error::NoEntry))
+            }
+            Err(e) => {
+                log_error!("Other keyring error: {:?}", e);
+                Err(Box::new(e))
+            }
+        }
     }
+
 
     pub fn get_all_connections(
         &self,
@@ -81,7 +96,7 @@ impl ConnectionStorage {
 
     pub fn get_password(&self, conn_name: &str) -> Result<String, Box<dyn Error>> {
         log_function!(get_password);
-        let entry = Entry::new("datasquirrel", conn_name)?;
+        let entry = Entry::new(APP_NAME, conn_name)?;
         Ok(entry.get_password()?)
     }
 
@@ -101,7 +116,7 @@ impl ConnectionStorage {
         let config_manager = get_config_manager().lock().unwrap();
         config_manager.write_config(&ConfigType::Connections, &updated_connections)?;
 
-        let entry = Entry::new("datasquirrel", project_id)?;
+        let entry = Entry::new(APP_NAME, project_id)?;
         entry.delete_credential()?;
 
         Ok("Connection deleted successfully".to_string())
