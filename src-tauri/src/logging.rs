@@ -1,3 +1,5 @@
+#![macro_use]
+
 use once_cell::sync::OnceCell;
 use std::path::PathBuf;
 use tracing::Level;

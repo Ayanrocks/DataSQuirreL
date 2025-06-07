@@ -115,6 +115,20 @@
       });
   }
 
+  function resetState() {
+    // reset state for all project variables
+    projectId = "";
+    projectName = "";
+    hostName = "";
+    port = 0;
+    userName = "";
+    password = "";
+    dbName = "";
+    dbType = "";
+    connectionFormConnectLoader = false;
+    recentProjectsLoader = false;
+  }
+
   async function loadRecentProjects() {
     recentProjectsLoader = true;
     try {
@@ -157,6 +171,8 @@
         });
         return;
       }
+      resetState();
+
       notificationMsg.set({
         type: NOTIFICATION_TYPE_SUCCESS,
         message: res.frontend_msg || "Project deleted successfully",
