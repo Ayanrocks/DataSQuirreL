@@ -18,17 +18,17 @@
   import { v4 as uuidv4 } from "uuid";
   import type { IPCResponse, StoredConnection } from "../types/response";
 
-  let projectId: string = $state("");
-  let projectName: string = $state("test");
-  let hostName: string = $state("localhost");
-  let port: number = $state(5432);
-  let userName: string = $state("dev");
-  let password: string = $state("1234");
-  let dbName: string = $state("datasquirrel");
-  let dbType: string = $state("postgres");
-  let connectionFormConnectLoader: boolean = $state(false);
-  let recentProjectsLoader: boolean = $state(false);
-  let recentProjects: RecentProjectsType[] = $state([]);
+  let projectId = $state("");
+  let projectName = $state("test");
+  let hostName = $state("localhost");
+  let port = $state(5432);
+  let userName = $state("dev");
+  let password = $state("1234");
+  let dbName = $state("datasquirrel");
+  let dbType = $state("postgres");
+  let connectionFormConnectLoader = $state(false);
+  let recentProjectsLoader = $state(false);
+  let recentProjects = $state<RecentProjectsType[]>([]);
 
   // Function to check if a project with the same connection details already exists
   function findExistingProjectId(
@@ -57,6 +57,14 @@
       password === ""
     ) {
       alert("Please enter all details");
+      console.log(
+        "not all fields are filled",
+        projectName,
+        hostName,
+        port,
+        userName,
+        password,
+      );
       return;
     }
     connectionFormConnectLoader = true;
@@ -102,12 +110,20 @@
           type: NOTIFICATION_TYPE_SUCCESS,
           message: res.frontend_msg,
         });
-
+        resetState();
         // Refresh the recent projects list
         loadRecentProjects();
       })
       .catch((err) => {
         console.error(err);
+        switch (_loaderActive) {
+          case connectionFormConnectLoader:
+            connectionFormConnectLoader = false;
+            break;
+          case recentProjectsLoader:
+            recentProjectsLoader = false;
+            break;
+        }
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
           message: "Failed to connect to database",
@@ -221,13 +237,13 @@
     </div>
     <div class="connection-form-container w-1/2">
       <ConnectionForm
-        {projectName}
-        {hostName}
-        {port}
-        {userName}
-        {password}
-        {dbName}
-        {dbType}
+        bind:projectName
+        bind:hostName
+        bind:port
+        bind:userName
+        bind:password
+        bind:dbName
+        bind:dbType
         loaderActive={connectionFormConnectLoader}
         {OnClickConnect}
       />

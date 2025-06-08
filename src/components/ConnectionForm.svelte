@@ -3,18 +3,17 @@
   import ArrowRight from "../assets/icons/arrowRight.svg?raw";
 
   // take props from the parent component
-
   let {
-    projectName,
-    hostName,
-    port,
-    userName,
-    password,
-    dbName,
-    dbType,
-    loaderActive,
+    projectName = $bindable(''),
+    hostName = $bindable(''),
+    port = $bindable(0),
+    userName = $bindable(''),
+    password = $bindable(''),
+    dbName = $bindable(''),
+    dbType = $bindable(''),
+    loaderActive = false,
     OnClickConnect,
-  }: {
+  } = $props<{
     projectName: string;
     hostName: string;
     port: number;
@@ -24,7 +23,7 @@
     dbName: string;
     loaderActive: boolean;
     OnClickConnect: (e: MouseEvent) => void;
-  } = $props();
+  }>();
 
   $inspect(
     "In ConnectionFormSvelte: ",
@@ -133,16 +132,8 @@
           <input
             id="port"
             class="shadow appearance-none border border-gray-200 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            type="text"
-            value={port}
-            oninput={(e: Event) => {
-              const target = e.target as HTMLInputElement;
-              if (target && !isNaN(parseInt(target.value))) {
-                port = parseInt(target.value);
-              } else if (target) {
-                target.value = port.toString();
-              }
-            }}
+            type="number"
+            bind:value={port}
             placeholder="Enter Port"
             autocomplete="off"
           />
