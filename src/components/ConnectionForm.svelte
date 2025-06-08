@@ -11,7 +11,7 @@
     password = $bindable(''),
     dbName = $bindable(''),
     dbType = $bindable(''),
-    loaderActive = false,
+    loaderActive = $bindable(false),
     OnClickConnect,
   } = $props<{
     projectName: string;

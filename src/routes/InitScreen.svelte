@@ -56,7 +56,6 @@
       userName === "" ||
       password === ""
     ) {
-      alert("Please enter all details");
       console.log(
         "not all fields are filled",
         projectName,
@@ -244,7 +243,7 @@
         bind:password
         bind:dbName
         bind:dbType
-        loaderActive={connectionFormConnectLoader}
+        bind:loaderActive={connectionFormConnectLoader}
         {OnClickConnect}
       />
     </div>

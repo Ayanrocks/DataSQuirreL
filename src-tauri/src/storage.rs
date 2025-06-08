@@ -51,7 +51,6 @@ impl ConnectionStorage {
         config_manager.write_config(&ConfigType::Connections, &updated_connections)?;
 
         let entry = Entry::new(APP_NAME, &conn.id)?;
-        println!("Saving Password {} - {}", conn.id, password);
         // entry.set_password(password)?;
         // Check if we can access the keyring first
         match entry.set_password(password) {
