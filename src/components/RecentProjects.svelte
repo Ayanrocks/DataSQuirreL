@@ -26,6 +26,8 @@
       onConnect(project);
     }
   }
+
+
 </script>
 
 <div class="recent-projects w-full">

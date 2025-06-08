@@ -215,6 +215,17 @@
     recentProjectsLoader = true;
     connect(recentProjectsLoader);
   }
+
+  function onEditRecentProject(project: RecentProjectsType) {
+    projectId = project.id || "";
+    projectName = project.name;
+    hostName = project.hostName;
+    port = project.port;
+    dbType = project.dbType;
+    userName = project.userName;
+    password = project.password;
+    dbName = project.dbName;
+  }
 </script>
 
 <div id="init-connection-container">
@@ -229,7 +240,7 @@
       <RecentProjects
         projects={recentProjects}
         onConnect={onConnectRecentProject}
-        onEdit={() => {}}
+        onEdit={onEditRecentProject}
         onDelete={deleteProject}
         recentProjectsLoading={recentProjectsLoader}
       />
