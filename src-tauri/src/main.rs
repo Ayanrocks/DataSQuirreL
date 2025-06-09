@@ -8,9 +8,10 @@ extern crate core;
 use database::db::{ConnPool, TableSchema, connect_to_db};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager, State, http};
 use storage::{ConnectionStorage, StoredConnection};
 use tauri::menu::MenuBuilder;
+use tauri::{AppHandle, Manager, State, Url, http};
+use tauri::{WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 mod logging;
 
 pub mod config;
@@ -119,6 +120,21 @@ async fn init_connection(
             }
 
             log_info!("Connection details stored successfully");
+
+            let webview_url =
+                WebviewUrl::External(Url::parse("http://localhost:3001/dashboard").unwrap());
+            // if successful then open a new window with the project name
+            WebviewWindowBuilder::new(
+                &app,
+                &format!("external-{}", chrono::Utc::now().timestamp_millis()),
+                webview_url,
+            )
+            .title("External Window")
+            .inner_size(1200.0, 800.0)
+            .center()
+            .build()
+            .map_err(|e| format!("Failed to create window: {}", e));
+
             return Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: None,
@@ -490,25 +506,36 @@ fn main() {
             .and_then(|content| Ok(serde_json::from_str::<Vec<StoredConnection>>(&content)?))
         {
             // Create backup with timestamp
-            let backup_path = connections_path.with_extension(format!("{}.bak", chrono::Local::now().format("%Y%m%d_%H%M%S")));
+            let backup_path = connections_path.with_extension(format!(
+                "{}.bak",
+                chrono::Local::now().format("%Y%m%d_%H%M%S")
+            ));
             std::fs::rename(&connections_path, &backup_path).expect("Failed to create backup");
-            
+
             // Clean up old backups (keep only 2 most recent)
             let backup_dir = connections_path.parent().unwrap();
             let mut backups: Vec<_> = std::fs::read_dir(backup_dir)
                 .unwrap()
                 .filter_map(|entry| entry.ok())
                 .filter(|entry| {
-                    entry.path().extension()
+                    entry
+                        .path()
+                        .extension()
                         .and_then(|ext| ext.to_str())
                         .map(|ext| ext.starts_with("bak"))
                         .unwrap_or(false)
                 })
                 .collect();
-            
-            backups.sort_by(|a, b| b.path().metadata().unwrap().modified().unwrap()
-                .cmp(&a.path().metadata().unwrap().modified().unwrap()));
-            
+
+            backups.sort_by(|a, b| {
+                b.path()
+                    .metadata()
+                    .unwrap()
+                    .modified()
+                    .unwrap()
+                    .cmp(&a.path().metadata().unwrap().modified().unwrap())
+            });
+
             for old_backup in backups.into_iter().skip(2) {
                 std::fs::remove_file(old_backup.path()).ok();
             }
