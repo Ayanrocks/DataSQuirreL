@@ -10,8 +10,10 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use storage::{ConnectionStorage, StoredConnection};
 use tauri::menu::MenuBuilder;
-use tauri::{AppHandle, Manager, State, Url, http};
+use tauri::{AppHandle, Manager, State, TitleBarStyle, Url, http};
 use tauri::{WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+
+use crate::constants::APP_NAME;
 mod logging;
 
 pub mod config;
@@ -124,14 +126,15 @@ async fn init_connection(
             let webview_url =
                 WebviewUrl::External(Url::parse("http://localhost:3001/dashboard").unwrap());
             // if successful then open a new window with the project name
-            WebviewWindowBuilder::new(
+            let _window = WebviewWindowBuilder::new(
                 &app,
                 &format!("external-{}", chrono::Utc::now().timestamp_millis()),
                 webview_url,
             )
-            .title("External Window")
-            .inner_size(1200.0, 800.0)
+            .title(format!("{} - {}", req_payload.conn_name.clone(), APP_NAME))
+            .inner_size(1450.0, 950.0)
             .center()
+            .title_bar_style(TitleBarStyle::Overlay)
             .build()
             .map_err(|e| format!("Failed to create window: {}", e));
 
