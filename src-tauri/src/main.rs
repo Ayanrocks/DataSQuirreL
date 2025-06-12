@@ -123,20 +123,40 @@ async fn init_connection(
 
             log_info!("Connection details stored successfully");
 
-            let webview_url =
-                WebviewUrl::External(Url::parse("http://localhost:3001/dashboard").unwrap());
-            // if successful then open a new window with the project name
-            let _window = WebviewWindowBuilder::new(
-                &app,
-                &format!("external-{}", chrono::Utc::now().timestamp_millis()),
-                webview_url,
-            )
-            .title(format!("{} - {}", req_payload.conn_name.clone(), APP_NAME))
-            .inner_size(1450.0, 950.0)
-            .center()
-            .title_bar_style(TitleBarStyle::Overlay)
-            .build()
-            .map_err(|e| format!("Failed to create window: {}", e));
+            let webview_url = WebviewUrl::External(Url::parse("http://localhost:3001/dashboard").unwrap());
+            let window_label = format!("connection-window-{}", req_payload.conn_name);
+
+            // Check if window already exists for this connection
+            if app.get_webview_window(&window_label).is_some() {
+                // Window already exists, just focus it
+                if let Some(window) = app.get_webview_window(&window_label) {
+                    window.set_focus().unwrap();
+                }
+            } else {
+                // Create new window for this connection
+                let window = WebviewWindowBuilder::new(
+                    &app,
+                    &window_label,
+                    webview_url,
+                )
+                .title(format!("{} - {}", req_payload.conn_name.clone(), APP_NAME))
+                .inner_size(1450.0, 950.0)
+                .center()
+                .title_bar_style(TitleBarStyle::Overlay)
+                .resizable(true)
+                .decorations(true)
+                .visible(true)
+                .fullscreen(false)
+                .build();
+
+                match window {
+                    Ok(w) => {
+                        w.start_dragging().unwrap();
+                    },
+                    Err(e) => log_error!("Failed to create window: {}", e),
+                }
+
+            }
 
             return Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
@@ -561,6 +581,29 @@ fn main() {
         ])
         .setup(|app| {
             log_info!("Application setup started");
+
+            // Get the main window that was created by the configuration
+            if let Some(window) = app.get_webview_window("main") {
+                // set background color only when building for macOS
+                #[cfg(target_os = "macos")]
+                {
+                    use cocoa::appkit::{NSColor, NSWindow};
+                    use cocoa::base::{id, nil};
+
+                    let ns_window = window.ns_window().unwrap() as id;
+                    unsafe {
+                        let bg_color = NSColor::colorWithRed_green_blue_alpha_(
+                            nil,
+                            50.0 / 255.0,
+                            158.0 / 255.0,
+                            163.5 / 255.0,
+                            1.0,
+                        );
+                        ns_window.setBackgroundColor_(bg_color);
+                    }
+                }
+            }
+
             // Your setup code here
             Ok(())
         })

@@ -20,6 +20,7 @@
         MAX_RESIZE_EXPANDABLE_SIZE,
         MIN_RESIZE_EXPANDABLE_SIZE,
     } from "../constants/constants";
+    import MainTopBar from "../components/MainTopBar.svelte";
     const appWindow = getCurrentWebviewWindow();
 
     // on mousedown for the draggable
@@ -174,6 +175,7 @@
 </script>
 
 <div class="main-container">
+    <MainTopBar />
     <div class="columns split-view-container" id="left-sidebar-container">
         <Sidebar on:resizing={resizeSideBar} />
     </div>
