@@ -121,7 +121,7 @@
 
 <style>
   .split-sidebar {
-    height: 102%;
+    height: 100%;
     width: 100%;
     flex: none;
     color: var(--offWhite);

@@ -5,66 +5,26 @@
 
 extern crate core;
 
-use database::db::{ConnPool, TableSchema, connect_to_db};
-use serde::{Deserialize, Serialize};
+use crate::types::db::TableSchema;
+use database::db::connect_to_db;
+use std::collections::HashMap;
 use std::sync::Mutex;
 use storage::{ConnectionStorage, StoredConnection};
-use tauri::menu::MenuBuilder;
 use tauri::{AppHandle, Manager, State, TitleBarStyle, Url, http};
-use tauri::{WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{WebviewUrl, WebviewWindowBuilder};
 
 use crate::constants::APP_NAME;
+use crate::types::api_objects::{
+    ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
+    TableData, TableDataOffsetRequest, TableDataRequest,
+};
 mod logging;
 
 pub mod config;
 pub mod constants;
 mod database;
 mod storage;
-
-struct ApplicationState {
-    dbpool: Mutex<Option<ConnPool>>,
-    connection_storage: ConnectionStorage,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct DBConnectionRequest {
-    id: String,
-    conn_name: String,
-    host_name: String,
-    database_name: String,
-    database_type: String,
-    port: i32,
-    user_name: String,
-    password: String,
-}
-#[derive(Debug, Serialize, Deserialize)]
-struct TableData<T> {
-    columns: Vec<String>,
-    rows: Option<Vec<Vec<T>>>,
-    row_count: Option<String>,
-    table_name: Option<String>,
-    query_type: String,
-}
-#[derive(Debug, Serialize, Deserialize)]
-struct IPCResponse<T> {
-    status: u16,
-    error_code: Option<String>,
-    sys_err: Option<String>,
-    frontend_msg: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<T>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct TableDataRequest {
-    table_name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct TableDataOffsetRequest {
-    table_name: String,
-    offset: u32,
-}
+mod types;
 
 #[tauri::command]
 async fn init_connection(
@@ -106,11 +66,10 @@ async fn init_connection(
                 user_name: req_payload.user_name,
             };
 
-            if let Err(e) = application_state.connection_storage.save_connection(
-                &app,
-                &stored_conn,
-                &req_payload.password,
-            ) {
+            if let Err(e) = application_state
+                .connection_storage
+                .save_connection(&stored_conn, &req_payload.password)
+            {
                 log_error!("Failed to store connection details: {}", e);
                 return Ok(IPCResponse {
                     status: http::status::StatusCode::OK.as_u16(),
@@ -123,8 +82,16 @@ async fn init_connection(
 
             log_info!("Connection details stored successfully");
 
-            let webview_url = WebviewUrl::External(Url::parse("http://localhost:3001/dashboard").unwrap());
+            let webview_url =
+                WebviewUrl::External(Url::parse("http://localhost:3001/dashboard").unwrap());
             let window_label = format!("connection-window-{}", req_payload.conn_name);
+
+            // Add connection to active connection map
+            let mut active_connection_map = application_state.active_connection_map.lock().unwrap();
+            active_connection_map.insert(
+                window_label.clone(),
+                stored_conn.clone(),
+            );
 
             // Check if window already exists for this connection
             if app.get_webview_window(&window_label).is_some() {
@@ -134,28 +101,23 @@ async fn init_connection(
                 }
             } else {
                 // Create new window for this connection
-                let window = WebviewWindowBuilder::new(
-                    &app,
-                    &window_label,
-                    webview_url,
-                )
-                .title(format!("{} - {}", req_payload.conn_name.clone(), APP_NAME))
-                .inner_size(1450.0, 950.0)
-                .center()
-                .title_bar_style(TitleBarStyle::Overlay)
-                .resizable(true)
-                .decorations(true)
-                .visible(true)
-                .fullscreen(false)
-                .build();
+                let window = WebviewWindowBuilder::new(&app, &window_label, webview_url)
+                    .title(format!("{} - {}", req_payload.conn_name.clone(), APP_NAME))
+                    .inner_size(1450.0, 950.0)
+                    .center()
+                    .title_bar_style(TitleBarStyle::Overlay)
+                    .resizable(true)
+                    .decorations(true)
+                    .visible(true)
+                    .fullscreen(false)
+                    .build();
 
                 match window {
                     Ok(w) => {
                         w.start_dragging().unwrap();
-                    },
+                    }
                     Err(e) => log_error!("Failed to create window: {}", e),
                 }
-
             }
 
             return Ok(IPCResponse {
@@ -181,14 +143,10 @@ async fn init_connection(
 
 #[tauri::command]
 fn get_saved_connections(
-    app: AppHandle,
     application_state: State<ApplicationState>,
 ) -> Result<IPCResponse<Vec<StoredConnection>>, ()> {
     log_function!(get_saved_connections);
-    match application_state
-        .connection_storage
-        .get_all_connections(&app)
-    {
+    match application_state.connection_storage.get_all_connections() {
         Ok(connections) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
@@ -208,7 +166,6 @@ fn get_saved_connections(
 
 #[tauri::command]
 fn delete_saved_connection(
-    app: AppHandle,
     conn_name: String,
     project_id: String,
     application_state: State<ApplicationState>,
@@ -216,7 +173,7 @@ fn delete_saved_connection(
     log_function!(delete_saved_connection);
     match application_state
         .connection_storage
-        .delete_connection(&app, &conn_name, &project_id)
+        .delete_connection(&conn_name, &project_id)
     {
         Ok(f) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
@@ -236,51 +193,75 @@ fn delete_saved_connection(
 }
 
 #[tauri::command]
-fn fetch_tables(application_state: State<ApplicationState>) -> IPCResponse<TableData<TableSchema>> {
-    log_function!(fetch_tables);
-    log_info!("Fetching tables from database");
+fn fetch_dashboard_data(
+    application_state: State<ApplicationState>,
+    req_payload: DashboardDataRequest,
+) -> IPCResponse<DashboardData> {
+    log_function!(fetch_dashboard_data);
+    log_info!("Fetching dashboard data and configuration");
 
-    tauri::async_runtime::block_on(async {
-        let table_result = application_state
+    // Get connection data
+    let connection_map = application_state.active_connection_map.lock().unwrap();
+    let connection_data = connection_map
+        .get(&req_payload.connection_window_label)
+        .unwrap();
+
+        let mut map = HashMap::new();
+        map.insert("id".to_string(), connection_data.id.clone());
+        map.insert("conn_name".to_string(), connection_data.conn_name.clone());
+        map.insert("host_name".to_string(), connection_data.host_name.clone());
+        map.insert("database_name".to_string(), connection_data.database_name.clone());
+        map.insert("database_type".to_string(), connection_data.database_type.clone());
+        map.insert("port".to_string(), connection_data.port.to_string());
+        map.insert("user_name".to_string(), connection_data.user_name.clone());
+        
+
+
+    // Fetch tables data
+    let table_result = tauri::async_runtime::block_on(async {
+        application_state
             .dbpool
             .lock()
             .unwrap()
             .as_ref()
             .unwrap()
             .fetch_tables()
-            .await;
+            .await
+    });
 
-        match table_result {
-            Ok(t) => {
-                log_info!("Successfully fetched {} tables", t.len());
-                let table_data = TableData {
-                    columns: vec![String::from("Table Name")],
-                    row_count: Some(t.len().to_string()),
-                    rows: Some(vec![t]),
-                    table_name: None,
-                    query_type: constants::QUERY_TYPE_FETCH_TABLES.to_string(),
-                };
+    match table_result {
+        Ok(tables) => {
+            log_info!("Successfully fetched {} tables", tables.len());
+            let table_data = TableData {
+                columns: vec![String::from("Table Name")],
+                row_count: Some(tables.len().to_string()),
+                rows: Some(vec![tables]),
+                table_name: None,
+                query_type: constants::QUERY_TYPE_FETCH_TABLES.to_string(),
+            };
 
-                return IPCResponse {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: None,
-                    sys_err: None,
-                    frontend_msg: Some("Operation Successful".to_string()),
-                    data: Some(table_data),
-                };
-            }
-            Err(e) => {
-                log_error!("Failed to fetch tables: {}", e);
-                return IPCResponse::<_> {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()),
-                    sys_err: Some(e.to_string()),
-                    frontend_msg: Some(e.to_string()),
-                    data: None,
-                };
+            IPCResponse {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: None,
+                sys_err: None,
+                frontend_msg: Some("Operation Successful".to_string()),
+                data: Some(DashboardData {
+                    connection_data: map,
+                    dashboard_data: table_data,
+                }),
             }
         }
-    })
+        Err(e) => {
+            log_error!("Failed to fetch tables: {}", e);
+            IPCResponse {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(e.to_string()),
+                data: None,
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -389,7 +370,7 @@ fn fetch_table_data(
             sys_err: None,
             frontend_msg: None,
             data: Some(TableData {
-                columns: columns,
+                columns,
                 rows: Some(table_data_rows),
                 row_count: Some(row_count),
                 table_name: Some(req_payload.table_name),
@@ -570,12 +551,13 @@ fn main() {
         .manage(ApplicationState {
             dbpool: Mutex::new(None),
             connection_storage: ConnectionStorage::new(),
+            active_connection_map: Mutex::new(HashMap::new()),
         })
         .invoke_handler(tauri::generate_handler![
             init_connection,
             get_saved_connections,
             delete_saved_connection,
-            fetch_tables,
+            fetch_dashboard_data,
             fetch_table_data,
             fetch_table_data_with_offset,
         ])

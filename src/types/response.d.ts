@@ -15,3 +15,21 @@ export interface StoredConnection {
     port: number;
     user_name: string;
 }
+
+export interface TableSchema {
+    table_catalog: string;
+    table_name: string;
+}
+
+export interface TableData<T> {
+    columns: string[];
+    rows?: T[][];
+    row_count?: string;
+    table_name?: string;
+    query_type: string;
+}
+
+export interface DashboardData {
+    connection_data: Record<string, string>;
+    dashboard_data: TableData<TableSchema>;
+}

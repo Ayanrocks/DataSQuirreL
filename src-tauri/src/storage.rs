@@ -4,7 +4,6 @@ use crate::{log_error, log_function, log_info};
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use tauri::AppHandle;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StoredConnection {
@@ -18,6 +17,7 @@ pub struct StoredConnection {
     // Password is not stored here, it's stored in the keyring
 }
 
+#[derive(Clone, Debug)]
 pub struct ConnectionStorage;
 
 impl ConnectionStorage {
@@ -28,12 +28,11 @@ impl ConnectionStorage {
 
     pub fn save_connection(
         &self,
-        app: &AppHandle,
         conn: &StoredConnection,
         password: &str,
     ) -> Result<(), Box<dyn Error>> {
         log_function!(save_connection);
-        let connections = self.get_all_connections(app)?;
+        let connections = self.get_all_connections()?;
         let mut updated_connections = connections.clone();
 
         if let Some(index) = connections
@@ -69,11 +68,7 @@ impl ConnectionStorage {
         }
     }
 
-
-    pub fn get_all_connections(
-        &self,
-        app: &AppHandle,
-    ) -> Result<Vec<StoredConnection>, Box<dyn Error>> {
+    pub fn get_all_connections(&self) -> Result<Vec<StoredConnection>, Box<dyn Error>> {
         log_function!(get_all_connections);
         let config_manager = get_config_manager().lock().unwrap();
         match config_manager.read_config::<Vec<StoredConnection>>(&ConfigType::Connections) {
@@ -85,11 +80,10 @@ impl ConnectionStorage {
 
     pub fn get_connection(
         &self,
-        app: &AppHandle,
         conn_name: &str,
     ) -> Result<Option<StoredConnection>, Box<dyn Error>> {
-        log_function!(get_connection, "app" => app, "conn_name" => conn_name);
-        let connections = self.get_all_connections(app)?;
+        log_function!(get_connection, "conn_name" => conn_name);
+        let connections = self.get_all_connections()?;
         Ok(connections.into_iter().find(|c| c.conn_name == conn_name))
     }
 
@@ -101,12 +95,11 @@ impl ConnectionStorage {
 
     pub fn delete_connection(
         &self,
-        app: &AppHandle,
         conn_name: &str,
         project_id: &str,
     ) -> Result<String, Box<dyn Error>> {
-        log_function!(delete_connection, "app" => app, "conn_name" => conn_name);
-        let connections = self.get_all_connections(app)?;
+        log_function!(delete_connection, "conn_name" => conn_name);
+        let connections = self.get_all_connections()?;
         let updated_connections: Vec<StoredConnection> = connections
             .into_iter()
             .filter(|c| c.conn_name != conn_name && project_id != c.id)

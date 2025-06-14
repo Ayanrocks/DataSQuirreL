@@ -1,10 +1,12 @@
 <script lang="ts">
   import settingsIcon from "../assets/icons/settings.svg?raw";
+
+  let { connectionName }: { connectionName: string } = $props();
 </script>
 
 <div class="top-bar_container">
   <div class="top-bar_left">
-    <div class="top-bar_left_title">Test - DataSquirrel</div>
+    <div class="top-bar_left_title">{connectionName} - DataSquirrel</div>
   </div>
   <div class="top-bar_right">
     <div class="top-bar_right_settings-icon">
