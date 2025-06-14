@@ -6,6 +6,7 @@
     NOTIFICATION_TYPE_ERROR,
     PAGINATION_SIZE,
   } from "../constants/constants";
+    import SidebarToolbar from "./SidebarToolbar.svelte";
 
   const dispatch = createEventDispatcher();
   let activeTableName: string = "";
@@ -85,20 +86,7 @@
     </span>
   </button>
   <div class="sidebar-content">
-    <div class="db-selector-dropdown">
-      <div class="control has-icons-left">
-        <div class="select is-rounded">
-          <select>
-            <option selected>{sideBarColumn}</option>
-          </select>
-        </div>
-        <div class="dropdown-icon-wrapper">
-          <span class="icon is-left">
-            <i class="fas fa-solid fa-database"></i>
-          </span>
-        </div>
-      </div>
-    </div>
+    <SidebarToolbar />
     <div class="table-list has-text-left">
       <h1>Tables</h1>
       <ul class="table-list-ul">
@@ -125,13 +113,12 @@
     width: 100%;
     flex: none;
     color: var(--offWhite);
-    background-color: var(--primaryColor);
+    background-color: var(--tertiaryColor);
   }
 
   .sidebar-content {
     display: flex;
     flex-direction: column;
-    padding: 20px 0 20px 5px;
     font-size: 12px;
     font-weight: 600;
     height: 100%;
