@@ -134,19 +134,6 @@
     cursor: ew-resize;
   }
 
-  .db-selector-dropdown {
-    /* text-align: center; */
-    margin: 0 auto;
-  }
-
-  div.select select {
-    color: var(--offWhite);
-    background-color: var(--secondaryColor);
-  }
-
-  div.select::after {
-    border-color: var(--primaryColor);
-  }
 
   .table-list {
     overflow-y: scroll;

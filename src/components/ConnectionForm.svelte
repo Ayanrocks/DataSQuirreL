@@ -25,17 +25,7 @@
     OnClickConnect: (e: MouseEvent) => void;
   }>();
 
-  $inspect(
-    "In ConnectionFormSvelte: ",
-    projectName,
-    hostName,
-    port,
-    dbType,
-    userName,
-    password,
-    dbName,
-    loaderActive,
-  );
+  
 </script>
 
 <div

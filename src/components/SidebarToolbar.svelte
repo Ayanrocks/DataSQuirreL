@@ -7,16 +7,16 @@
 
 <div class="sidebar-toolbar">
   <div class="sidebar-toolbar-content w-full">
-    <span class="icon add-circle">
+    <span class="icon add-circle scale-75">
       {@html AddCircle}
     </span>
-    <span class="icon refresh">
+    <span class="icon refresh scale-75">
       {@html Refresh}
     </span>
-    <span class="icon disconnect">
+    <span class="icon disconnect scale-75">
       {@html Disconnect}
     </span>
-    <span class="icon console">
+    <span class="icon console scale-75">
       {@html Console}
     </span>
   </div>
@@ -31,7 +31,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    height: 40px;
+    height: 30px;
     width: 100%;
     background-color: var(--accentColor);
   }
@@ -47,11 +47,9 @@
 
   .icon {
     color: #1d1b20;
-    margin: 0 10px;
+    margin: 0 5px;
     cursor: pointer;
     fill: #1d1b20;
     border-radius: 5px;
-    height: 18px;
-    width: 18px;
   }
 </style>
