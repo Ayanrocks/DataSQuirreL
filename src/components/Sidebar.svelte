@@ -6,7 +6,9 @@
     NOTIFICATION_TYPE_ERROR,
     PAGINATION_SIZE,
   } from "../constants/constants";
-    import SidebarToolbar from "./SidebarToolbar.svelte";
+  import SidebarToolbar from "./SidebarToolbar.svelte";
+  import SideBarItem from "./SideBarItem.svelte";
+  import RecursiveSidebarItem from "./RecursiveSidebarItem.svelte";
 
   const dispatch = createEventDispatcher();
   let activeTableName: string = "";
@@ -19,6 +21,32 @@
 
   let sideBarColumn: string = "Table Names";
   let tables: string[] = [];
+  let MockTableData = [
+    {
+      entityType: "postgresql",
+      entityName: "Database",
+      isExpanded: true,
+      children: [
+        {
+          entityType: "Schema",
+          entityName: "Public",
+          isExpanded: true,
+          children: [
+            {
+              entityType: "Table",
+              entityName: "users",
+              isExpanded: false,
+            },
+            {
+              entityType: "Table",
+              entityName: "posts",
+              isExpanded: false,
+            },
+          ],
+        },
+      ],
+    },
+  ];
 
   tableNames.subscribe((e) => {
     tables = e.tables;
@@ -73,6 +101,30 @@
         });
       });
   }
+
+  interface SidebarItem {
+    entityName: string;
+    isExpanded: boolean;
+    entityType: string;
+    level: number;
+    children: SidebarItem[];
+  }
+
+  function renderSideBarItem(item: any, mockTableData: any[], level: number): SidebarItem[] {
+    const items: SidebarItem[] = [];
+    
+    for (const currentItem of mockTableData) {
+      items.push({
+        entityName: currentItem.entityName,
+        isExpanded: currentItem.isExpanded,
+        entityType: currentItem.entityType,
+        level: level,
+        children: currentItem.children ? renderSideBarItem(currentItem, currentItem.children, level + 1) : []
+      });
+    }
+
+    return items;
+  }
 </script>
 
 <div class="column is-one-quarter split-sidebar" id="left-sidebar">
@@ -88,21 +140,9 @@
   <div class="sidebar-content">
     <SidebarToolbar />
     <div class="table-list has-text-left">
-      <h1>Tables</h1>
-      <ul class="table-list-ul">
-        {#each tables as t (t)}
-          <button
-            class="rounded-rectangle table-list-button"
-            onclick={() => clickedSidebar(t)}
-            onkeydown={() => clickedSidebar(t)}
-          >
-            <span class="icon is-left">
-              <i class="fas fa-thin fa-table"></i>
-            </span>
-            {t}
-          </button>
-        {/each}
-      </ul>
+      {#each renderSideBarItem(null, MockTableData, 0) as item}
+        <RecursiveSidebarItem {item} />
+      {/each}
     </div>
   </div>
 </div>
@@ -134,35 +174,12 @@
     cursor: ew-resize;
   }
 
-
   .table-list {
     overflow-y: scroll;
     overflow-x: hidden;
     margin: 20px 5px;
     line-height: 25px;
     word-break: break-all;
-  }
-
-  .rounded-rectangle {
-    border-radius: 7px;
-  }
-
-  .table-list-ul .table-list-button {
-    cursor: pointer;
-    transition: cubic-bezier(0.95, 0.05, 0.795, 0.035);
-    padding: 1px;
-  }
-
-  .table-list-ul button:hover {
-    background-color: var(--secondaryColor);
-  }
-
-  .fa-table {
-    color: var(--accentColor);
-  }
-
-  .fa-database {
-    color: var(--offBlue);
   }
 
   #resize-icon {
