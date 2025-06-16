@@ -114,6 +114,7 @@
     const items: SidebarItem[] = [];
     
     for (const currentItem of mockTableData) {
+      console.log(currentItem);
       items.push({
         entityName: currentItem.entityName,
         isExpanded: currentItem.isExpanded,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import SideBarItem from './SideBarItem.svelte';
-  
+  import SideBarItem from "./SideBarItem.svelte";
+
   export let item: {
     entityName: string;
     isExpanded: boolean;
@@ -15,6 +15,7 @@
     entityName={item.entityName}
     isExpanded={item.isExpanded}
     entityType={item.entityType}
+    hasChildren={item.children && item.children.length > 0}
   />
   {#if item.children && item.children.length > 0}
     {#each item.children as child}
@@ -27,4 +28,4 @@
   .sidebar-item {
     margin: 2px 0;
   }
-</style> 
+</style>

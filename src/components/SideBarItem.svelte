@@ -3,26 +3,35 @@
   import SchemaIcon from "../assets/icons/schema.svg?raw";
   import TableIcon from "../assets/icons/table.svg?raw";
   import PostgreSQLIcon from "../assets/icons/postgresql.svg?raw";
+  import ArrowRightIcon from "../assets/icons/arrowRight.svg?raw";
 
   let {
     entityName,
     isExpanded,
     entityType,
-  }: { entityName: string; isExpanded: boolean; entityType: string } = $props();
+    hasChildren,
+  }: { entityName: string; isExpanded: boolean; entityType: string; hasChildren: boolean } = $props();
 </script>
 
 <div class="sidebar-item">
   <div class="sidebar-item-content">
-    <div class="expandable-icon scale-65">
-      {@html isExpanded ? ExpandableArrowIcon : ExpandableArrowIcon}
-    </div>
+    <button 
+      type="button"
+      class="expandable-icon scale-55" 
+      onclick={() => {
+        isExpanded = !isExpanded;
+      }}
+      aria-expanded={isExpanded}
+    >
+      {@html isExpanded ? ExpandableArrowIcon : hasChildren ? ArrowRightIcon : ''}
+    </button>
     <div class="entity-icon">
       {#if entityType === "Schema"}
         <span class="icon-container scale-85">
           {@html SchemaIcon}
         </span>
       {:else if entityType === "Table"}
-        <span class="icon-container scale-85">
+        <span class="icon-container scale-75 text-white">
           {@html TableIcon}
         </span>
       {:else if entityType === "postgresql"}
@@ -74,7 +83,7 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    color: #1d1b20;
+    /* color: #1d1b20; */
     margin-left: 5px;
   }
 </style>
