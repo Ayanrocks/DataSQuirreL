@@ -4,6 +4,9 @@
   import TableIcon from "../assets/icons/table.svg?raw";
   import PostgreSQLIcon from "../assets/icons/postgresql.svg?raw";
   import ArrowRightIcon from "../assets/icons/arrowRight.svg?raw";
+  import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
 
   let {
     entityName,
@@ -19,7 +22,7 @@
       type="button"
       class="expandable-icon scale-55" 
       onclick={() => {
-        isExpanded = !isExpanded;
+        dispatch('toggle');
       }}
       aria-expanded={isExpanded}
     >

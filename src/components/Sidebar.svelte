@@ -181,6 +181,7 @@
     margin: 20px 5px;
     line-height: 25px;
     word-break: break-all;
+    height: 85%;
   }
 
   #resize-icon {

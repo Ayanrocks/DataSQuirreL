@@ -1,5 +1,6 @@
 <script lang="ts">
   import SideBarItem from "./SideBarItem.svelte";
+  import { slide } from 'svelte/transition';
 
   export let item: {
     entityName: string;
@@ -8,6 +9,10 @@
     level: number;
     children: any[];
   };
+
+  function handleToggle() {
+    item.isExpanded = !item.isExpanded;
+  }
 </script>
 
 <div class="sidebar-item" style="padding-left: {item.level * 15}px">
@@ -16,11 +21,14 @@
     isExpanded={item.isExpanded}
     entityType={item.entityType}
     hasChildren={item.children && item.children.length > 0}
+    on:toggle={handleToggle}
   />
-  {#if item.children && item.children.length > 0}
-    {#each item.children as child}
-      <svelte:self item={child} />
-    {/each}
+  {#if item.children && item.children.length > 0 && item.isExpanded}
+    <div transition:slide>
+      {#each item.children as child}
+        <svelte:self item={child} />
+      {/each}
+    </div>
   {/if}
 </div>
 

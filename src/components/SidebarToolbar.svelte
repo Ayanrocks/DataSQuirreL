@@ -7,16 +7,16 @@
 
 <div class="sidebar-toolbar">
   <div class="sidebar-toolbar-content w-full">
-    <span class="icon add-circle scale-75">
+    <span class="icon add-circle scale-75" title="Add New Connection">
       {@html AddCircle}
     </span>
-    <span class="icon refresh scale-75">
+    <span class="icon refresh scale-75" title="Refresh">
       {@html Refresh}
     </span>
-    <span class="icon disconnect scale-75">
+    <span class="icon disconnect scale-75" title="Disconnect">
       {@html Disconnect}
     </span>
-    <span class="icon console scale-75">
+    <span class="icon console scale-75" title="Open Query Console">
       {@html Console}
     </span>
   </div>
