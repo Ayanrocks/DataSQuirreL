@@ -196,9 +196,7 @@
 
 <div class="main-container">
   <MainTopBar connectionName={activeConnectionName} />
-  <div class="columns split-view-container" id="left-sidebar-container">
-    <Sidebar on:resizing={resizeSideBar} />
-  </div>
+  <Sidebar on:resizing={resizeSideBar} />
   <div class="columns split-main-content" id="right-main-content">
     {#if activeTableData.tableName !== ""}
       <DataTable />
@@ -214,16 +212,6 @@
     color: var(--accentColor);
     display: flex;
     justify-content: flex-start;
-  }
-
-  .split-view-container {
-    position: absolute;
-    background-color: var(--accentColor);
-    height: 100%;
-    margin-top: 50px;
-    width: 24%;
-    min-width: 250px;
-    max-width: 600px;
   }
 
   .split-main-content {

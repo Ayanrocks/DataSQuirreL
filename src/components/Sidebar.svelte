@@ -1,22 +1,53 @@
 <script lang="ts">
   import { activeTable, notificationMsg, tableNames } from "../stores";
-  import { createEventDispatcher } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import {
     NOTIFICATION_TYPE_ERROR,
     PAGINATION_SIZE,
   } from "../constants/constants";
   import SidebarToolbar from "./SidebarToolbar.svelte";
-  import SideBarItem from "./SideBarItem.svelte";
   import RecursiveSidebarItem from "./RecursiveSidebarItem.svelte";
 
-  const dispatch = createEventDispatcher();
   let activeTableName: string = "";
 
-  function resize(e: MouseEvent) {
-    dispatch("resizing", {
-      event: e,
-    });
+  // Sidebar width state
+  let sidebarWidth = 260; // px, default width
+  const minSidebarWidth = 180;
+  const maxSidebarWidth = 500;
+  let isResizing = false;
+  let sidebarRef: HTMLDivElement;
+
+  function handleMouseDown(e: MouseEvent) {
+    isResizing = true;
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    if (!isResizing) return;
+    const newWidth = Math.min(
+      Math.max(e.clientX, minSidebarWidth),
+      maxSidebarWidth,
+    );
+    // Direct DOM manipulation for instant feedback
+    if (sidebarRef) {
+      sidebarRef.style.width = `${newWidth}px`;
+    }
+  }
+
+  function handleMouseUp(e: MouseEvent) {
+    isResizing = false;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+    // Sync the width back to Svelte state
+    if (sidebarRef) {
+      const width = parseInt(sidebarRef.style.width, 10);
+      sidebarWidth = width;
+    }
   }
 
   let sideBarColumn: string = "Table Names";
@@ -58,19 +89,15 @@
   });
 
   function clickedSidebar(tableName: string) {
-    // checking if the same table is opened or not
     if (activeTableName == tableName) {
-      // no change needed
       return;
     }
-    // Invoke the command
     invoke("fetch_table_data", {
       reqPayload: {
         table_name: tableName,
       },
     })
       .then((res: any) => {
-        // TODO: Define a proper type for res
         console.log(res);
         activeTableName = res.data.table_name;
         let activeTableData = {
@@ -81,19 +108,15 @@
           currentPage: 1,
           maxPage: 0,
         };
-
-        // calculate the total page numbers
         activeTableData.maxPage = Math.floor(
           res.data.row_count / PAGINATION_SIZE,
         );
         if (res.data.row_count % PAGINATION_SIZE) {
           activeTableData.maxPage++;
         }
-
         activeTable.set(activeTableData);
       })
       .catch((e: any) => {
-        // TODO: Define a proper type for e
         console.log(e);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
@@ -110,34 +133,32 @@
     children: SidebarItem[];
   }
 
-  function renderSideBarItem(item: any, mockTableData: any[], level: number): SidebarItem[] {
+  function renderSideBarItem(
+    item: any,
+    mockTableData: any[],
+    level: number,
+  ): SidebarItem[] {
     const items: SidebarItem[] = [];
-    
     for (const currentItem of mockTableData) {
-      console.log(currentItem);
       items.push({
         entityName: currentItem.entityName,
         isExpanded: currentItem.isExpanded,
         entityType: currentItem.entityType,
         level: level,
-        children: currentItem.children ? renderSideBarItem(currentItem, currentItem.children, level + 1) : []
+        children: currentItem.children
+          ? renderSideBarItem(currentItem, currentItem.children, level + 1)
+          : [],
       });
     }
-
     return items;
   }
 </script>
 
-<div class="column is-one-quarter split-sidebar" id="left-sidebar">
-  <button
-    class="split-sidebar-draggable-div"
-    aria-label="Resize sidebar"
-    onmousedown={resize}
-  >
-    <span id="resize-icon">
-      <i class="fas fa-solid fa-grip-lines-vertical"></i>
-    </span>
-  </button>
+<div
+  bind:this={sidebarRef}
+  class="sidebar-resize-wrapper"
+  style="width: {sidebarWidth}px; min-width: {minSidebarWidth}px; max-width: {maxSidebarWidth}px;"
+>
   <div class="sidebar-content">
     <SidebarToolbar />
     <div class="table-list has-text-left">
@@ -146,35 +167,61 @@
       {/each}
     </div>
   </div>
+  <button
+    class="sidebar-divider"
+    on:mousedown={handleMouseDown}
+    aria-label="Resize sidebar"
+  >
+    <span class="resize-icon">
+      <i class="fas fa-solid fa-grip-lines-vertical"></i>
+    </span>
+  </button>
 </div>
 
 <style>
-  .split-sidebar {
+  .sidebar-resize-wrapper {
+    display: flex;
+    flex-direction: row;
     height: 100%;
-    width: 100%;
-    flex: none;
-    color: var(--offWhite);
     background-color: var(--tertiaryColor);
+    position: relative;
+    z-index: 2;
+    margin-top: 50px;
   }
-
   .sidebar-content {
     display: flex;
     flex-direction: column;
     font-size: 12px;
     font-weight: 600;
     height: 100%;
+    flex: 1;
+    min-width: 0;
   }
-
-  .split-sidebar-draggable-div {
-    position: absolute;
-    right: 0;
-    background-color: var(--secondaryColor);
-    width: 10px;
-    height: 100%;
-    margin-left: 30px;
+  .sidebar-divider {
+    width: 4px;
+    min-width: 4px;
+    max-width: 8px;
     cursor: ew-resize;
+    background-color: var(--accentColor);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    height: 100%;
+    z-index: 10;
+    transition: background 0.15s;
+    touch-action: none;
   }
 
+  .resize-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--yellowPrimary);
+    width: 100%;
+    height: 24px;
+  }
   .table-list {
     overflow-y: scroll;
     overflow-x: hidden;
@@ -183,13 +230,7 @@
     word-break: break-all;
     height: 85%;
   }
-
   #resize-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 14px;
-    color: var(--yellowPrimary);
+    display: none;
   }
 </style>
