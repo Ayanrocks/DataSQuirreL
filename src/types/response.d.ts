@@ -31,5 +31,5 @@ export interface TableData<T> {
 
 export interface DashboardData {
     connection_data: Record<string, string>;
-    dashboard_data: TableData<TableSchema>;
+    dashboard_data: SchemaData[];
 }

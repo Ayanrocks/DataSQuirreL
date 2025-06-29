@@ -42,7 +42,39 @@ pub async fn connect_to_db(
 }
 
 impl ConnPool {
-    pub async fn fetch_tables(&self) -> Result<Vec<TableSchema>, sqlx::Error> {
+    pub async fn fetch_schemas(&self) -> Result<Vec<String>, sqlx::Error> {
+        log_function!(fetch_schemas);
+        let query = format!(
+            "
+                    SELECT schema_name
+                    FROM information_schema.schemata
+                    WHERE catalog_name = '{}'
+                    AND schema_name NOT IN ('pg_catalog', 'information_schema');
+            ",
+            self.db_name,
+        );
+
+        println!("Printing Query: {}", &query);
+
+        let query_result = sqlx::query(&query)
+            .fetch_all(&self.pool)
+            .await;
+
+        match query_result {
+            Ok(rows) => {
+                let schemas = rows.into_iter()
+                    .map(|row| row.get("schema_name"))
+                    .collect();
+                Ok(schemas)
+            }
+            Err(e) => {
+                println!("{:#?}", e);
+                Err(e)
+            }
+        }
+    }
+
+    pub async fn fetch_tables(&self, schema_name: &str) -> Result<Vec<TableSchema>, sqlx::Error> {
         log_function!(fetch_tables);
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
@@ -55,10 +87,10 @@ impl ConnPool {
                     FROM
                         information_schema.tables
                     WHERE
-                        table_schema = 'public'
+                        table_schema = '{}'
                         AND table_catalog = '{}'
             ",
-            self.db_name,
+            schema_name, self.db_name,
         );
 
         println!("Printing Query: {}", &query);

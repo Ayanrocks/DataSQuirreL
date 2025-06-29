@@ -7,8 +7,11 @@
   } from "../constants/constants";
   import SidebarToolbar from "./SidebarToolbar.svelte";
   import RecursiveSidebarItem from "./RecursiveSidebarItem.svelte";
+  import type { SidebarItem, SchemaData } from "../types/interface";
 
   let activeTableName: string = "";
+
+  export let dashboardData: SchemaData[];
 
   // Sidebar width state
   let sidebarWidth = 260; // px, default width
@@ -52,32 +55,6 @@
 
   let sideBarColumn: string = "Table Names";
   let tables: string[] = [];
-  let MockTableData = [
-    {
-      entityType: "postgresql",
-      entityName: "Database",
-      isExpanded: true,
-      children: [
-        {
-          entityType: "Schema",
-          entityName: "Public",
-          isExpanded: true,
-          children: [
-            {
-              entityType: "Table",
-              entityName: "users",
-              isExpanded: false,
-            },
-            {
-              entityType: "Table",
-              entityName: "posts",
-              isExpanded: false,
-            },
-          ],
-        },
-      ],
-    },
-  ];
 
   tableNames.subscribe((e) => {
     tables = e.tables;
@@ -88,58 +65,40 @@
     activeTableName = val.tableName;
   });
 
-  function clickedSidebar(tableName: string) {
-    if (activeTableName == tableName) {
-      return;
-    }
-    invoke("fetch_table_data", {
-      reqPayload: {
-        table_name: tableName,
-      },
-    })
-      .then((res: any) => {
-        console.log(res);
-        activeTableName = res.data.table_name;
-        let activeTableData = {
-          tableName: res.data.table_name,
-          columns: res.data.columns,
-          rows: res.data.rows,
-          rowCount: res.data.row_count,
-          currentPage: 1,
-          maxPage: 0,
-        };
-        activeTableData.maxPage = Math.floor(
-          res.data.row_count / PAGINATION_SIZE,
-        );
-        if (res.data.row_count % PAGINATION_SIZE) {
-          activeTableData.maxPage++;
-        }
-        activeTable.set(activeTableData);
-      })
-      .catch((e: any) => {
-        console.log(e);
-        notificationMsg.set({
-          type: NOTIFICATION_TYPE_ERROR,
-          message: e,
-        });
-      });
-  }
-
-  interface SidebarItem {
-    entityName: string;
-    isExpanded: boolean;
-    entityType: string;
-    level: number;
-    children: SidebarItem[];
-  }
+  // let MockTableData = [
+  //   {
+  //     entityType: "postgresql",
+  //     entityName: "Database",
+  //     isExpanded: true,
+  //     children: [
+  //       {
+  //         entityType: "Schema",
+  //         entityName: "Public",
+  //         isExpanded: true,
+  //         children: [
+  //           {
+  //             entityType: "Table",
+  //             entityName: "users",
+  //             isExpanded: false,
+  //           },
+  //           {
+  //             entityType: "Table",
+  //             entityName: "posts",
+  //             isExpanded: false,
+  //           },
+  //         ],
+  //       },
+  //     ],
+  //   },
+  // ];
 
   function renderSideBarItem(
     item: any,
-    mockTableData: any[],
+    data: SchemaData[],
     level: number,
   ): SidebarItem[] {
     const items: SidebarItem[] = [];
-    for (const currentItem of mockTableData) {
+    for (const currentItem of data) {
       items.push({
         entityName: currentItem.entityName,
         isExpanded: currentItem.isExpanded,
@@ -162,9 +121,11 @@
   <div class="sidebar-content">
     <SidebarToolbar />
     <div class="table-list has-text-left">
-      {#each renderSideBarItem(null, MockTableData, 0) as item}
-        <RecursiveSidebarItem {item} />
-      {/each}
+      {#if dashboardData.length > 0}
+        {#each renderSideBarItem(null, dashboardData, 0) as item}
+          <RecursiveSidebarItem {item} />
+        {/each}
+      {/if}
     </div>
   </div>
   <button

@@ -5,7 +5,6 @@
 
 extern crate core;
 
-use crate::types::db::TableSchema;
 use database::db::connect_to_db;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -16,7 +15,7 @@ use tauri::{WebviewUrl, WebviewWindowBuilder};
 use crate::constants::APP_NAME;
 use crate::types::api_objects::{
     ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
-    TableData, TableDataOffsetRequest, TableDataRequest,
+    SchemaData, TableData, TableDataOffsetRequest, TableDataRequest,
 };
 mod logging;
 
@@ -88,10 +87,7 @@ async fn init_connection(
 
             // Add connection to active connection map
             let mut active_connection_map = application_state.active_connection_map.lock().unwrap();
-            active_connection_map.insert(
-                window_label.clone(),
-                stored_conn.clone(),
-            );
+            active_connection_map.insert(window_label.clone(), stored_conn.clone());
 
             // Check if window already exists for this connection
             if app.get_webview_window(&window_label).is_some() {
@@ -202,65 +198,128 @@ fn fetch_dashboard_data(
 
     // Get connection data
     let connection_map = application_state.active_connection_map.lock().unwrap();
-    let connection_data = connection_map
-        .get(&req_payload.connection_window_label)
-        .unwrap();
+    let connection_data = match connection_map.get(&req_payload.connection_window_label) {
+        Some(data) => data,
+        None => {
+            log_error!(
+                "Connection data not found for window label: {}",
+                req_payload.connection_window_label
+            );
+            return IPCResponse {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(constants::ERR_CODE_INVALID_CONN_DATA.to_string()),
+                sys_err: Some("Connection data not found.".to_string()),
+                frontend_msg: Some(
+                    "Failed to retrieve connection details. Please try reconnecting.".to_string(),
+                ),
+                data: None,
+            };
+        }
+    };
 
-        let mut map = HashMap::new();
-        map.insert("id".to_string(), connection_data.id.clone());
-        map.insert("conn_name".to_string(), connection_data.conn_name.clone());
-        map.insert("host_name".to_string(), connection_data.host_name.clone());
-        map.insert("database_name".to_string(), connection_data.database_name.clone());
-        map.insert("database_type".to_string(), connection_data.database_type.clone());
-        map.insert("port".to_string(), connection_data.port.to_string());
-        map.insert("user_name".to_string(), connection_data.user_name.clone());
-        
+    let mut map = HashMap::new();
+    map.insert("id".to_string(), connection_data.id.clone());
+    map.insert("conn_name".to_string(), connection_data.conn_name.clone());
+    map.insert("host_name".to_string(), connection_data.host_name.clone());
+    map.insert(
+        "database_name".to_string(),
+        connection_data.database_name.clone(),
+    );
+    map.insert(
+        "database_type".to_string(),
+        connection_data.database_type.clone(),
+    );
+    map.insert("port".to_string(), connection_data.port.to_string());
+    map.insert("user_name".to_string(), connection_data.user_name.clone());
 
-
-    // Fetch tables data
-    let table_result = tauri::async_runtime::block_on(async {
+    // Fetch schemas and tables
+    let mut database_schemas: Vec<SchemaData> = Vec::new();
+    let schemas_result = tauri::async_runtime::block_on(async {
         application_state
             .dbpool
             .lock()
             .unwrap()
             .as_ref()
             .unwrap()
-            .fetch_tables()
+            .fetch_schemas()
             .await
     });
 
-    match table_result {
-        Ok(tables) => {
-            log_info!("Successfully fetched {} tables", tables.len());
-            let table_data = TableData {
-                columns: vec![String::from("Table Name")],
-                row_count: Some(tables.len().to_string()),
-                rows: Some(vec![tables]),
-                table_name: None,
-                query_type: constants::QUERY_TYPE_FETCH_TABLES.to_string(),
-            };
+    match schemas_result {
+        Ok(schemas) => {
+            log_info!("Successfully fetched {} schemas", schemas.len());
+            for schema_name in schemas {
+                let mut schema_tables: Vec<SchemaData> = Vec::new();
+                let tables_result = tauri::async_runtime::block_on(async {
+                    application_state
+                        .dbpool
+                        .lock()
+                        .unwrap()
+                        .as_ref()
+                        .unwrap()
+                        .fetch_tables(&schema_name)
+                        .await
+                });
 
-            IPCResponse {
-                status: http::status::StatusCode::OK.as_u16(),
-                error_code: None,
-                sys_err: None,
-                frontend_msg: Some("Operation Successful".to_string()),
-                data: Some(DashboardData {
-                    connection_data: map,
-                    dashboard_data: table_data,
-                }),
+                match tables_result {
+                    Ok(tables) => {
+                        for table in tables {
+                            schema_tables.push(SchemaData {
+                                entity_type: "Table".to_string(),
+                                entity_name: table.table_name,
+                                is_expanded: false,
+                                children: None,
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        log_error!("Failed to fetch tables for schema {}: {}", schema_name, e);
+                        // Optionally handle error: return an error response or log and continue
+                    }
+                }
+                database_schemas.push(SchemaData {
+                    entity_type: "Schema".to_string(),
+                    entity_name: schema_name,
+                    is_expanded: true,
+                    children: Some(schema_tables),
+                });
             }
         }
         Err(e) => {
-            log_error!("Failed to fetch tables: {}", e);
-            IPCResponse {
+            log_error!("Failed to fetch schemas: {}", e);
+            return IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
-                error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()),
+                error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()), // This error code might need to be adjusted or a new one created for schema fetching errors
                 sys_err: Some(e.to_string()),
                 frontend_msg: Some(e.to_string()),
                 data: None,
-            }
+            };
         }
+    }
+
+    // Construct the top-level database entity
+    let dashboard_data = vec![SchemaData {
+        entity_type: constants::POSTGRES_DATABASE_TYPE.to_string(),
+        entity_name: {
+            let mut chars = connection_data.database_name.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().collect::<String>() + chars.as_str(),
+            }
+        },
+        is_expanded: true,
+        children: Some(database_schemas),
+    }];
+
+    IPCResponse {
+        status: http::status::StatusCode::OK.as_u16(),
+        error_code: None,
+        sys_err: None,
+        frontend_msg: Some("Operation Successful".to_string()),
+        data: Some(DashboardData {
+            connection_data: map,
+            dashboard_data,
+        }),
     }
 }
 

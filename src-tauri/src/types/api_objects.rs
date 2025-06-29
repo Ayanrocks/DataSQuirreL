@@ -57,7 +57,19 @@ pub struct TableDataOffsetRequest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DashboardData {
     pub connection_data: HashMap<String, String>,
-    pub dashboard_data: TableData<TableSchema>,
+    pub dashboard_data: Vec<SchemaData>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SchemaData {
+    #[serde(rename = "entityType")]
+    pub entity_type: String,
+    #[serde(rename = "entityName")]
+    pub entity_name: String,
+    #[serde(rename = "isExpanded")]
+    pub is_expanded: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub children: Option<Vec<SchemaData>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

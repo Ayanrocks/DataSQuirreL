@@ -22,6 +22,7 @@
   } from "../constants/constants";
   import MainTopBar from "../components/MainTopBar.svelte";
   import type { IPCResponse, DashboardData } from "../types/response";
+  import type { SchemaData, SidebarItem } from "../types/interface";
 
   const appWindow = getCurrentWindow();
 
@@ -29,6 +30,7 @@
 
   let m_pos: number | undefined;
   let activeConnectionName = "";
+  let dashboardData: SchemaData[] = [];
 
   /// to resize the window on drag
   function resize(e: MouseEvent) {
@@ -143,7 +145,7 @@
 
     // fetch tables on load
     try {
-      console.log("appWindow.label:", appWindow.label);
+
       const res = await invoke<IPCResponse<DashboardData>>(
         "fetch_dashboard_data",
         {
@@ -162,27 +164,7 @@
       }
 
       if (res.data) {
-        if (
-          res.data.dashboard_data.rows &&
-          res.data.dashboard_data.rows.length > 0
-        ) {
-          let tablesResult: string[] = []; // Add type annotation
-          let entityName: string = ""; // Add type annotation
-          for (const i of res.data.dashboard_data.rows[0]) {
-            entityName = i.table_catalog;
-            tablesResult.push(i.table_name);
-          }
-
-          // sort tablenames
-          tablesResult = tablesResult.sort((a: string, b: string) =>
-            a.localeCompare(b),
-          ); // Add type annotation and use localeCompare for string comparison
-
-          tableNames.set({
-            tableName: entityName,
-            tables: tablesResult,
-          });
-        }
+        dashboardData = res.data.dashboard_data;
       }
     } catch (e) {
       console.log(e);
@@ -196,7 +178,7 @@
 
 <div class="main-container">
   <MainTopBar connectionName={activeConnectionName} />
-  <Sidebar on:resizing={resizeSideBar} />
+  <Sidebar on:resizing={resizeSideBar} {dashboardData} />
   <div class="columns split-main-content" id="right-main-content">
     {#if activeTableData.tableName !== ""}
       <DataTable />
