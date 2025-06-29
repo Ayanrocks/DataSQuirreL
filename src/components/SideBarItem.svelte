@@ -18,16 +18,20 @@
 
 <div class="sidebar-item">
   <div class="sidebar-item-content">
-    <button 
-      type="button"
-      class="expandable-icon scale-55" 
-      onclick={() => {
-        dispatch('toggle');
-      }}
-      aria-expanded={isExpanded}
-    >
-      {@html isExpanded ? ExpandableArrowIcon : hasChildren ? ArrowRightIcon : ''}
-    </button>
+    {#if hasChildren}
+      <button
+        type="button"
+        class="expandable-icon scale-55"
+        onclick={() => {
+          dispatch('toggle');
+        }}
+        aria-expanded={isExpanded}
+      >
+        {@html isExpanded ? ExpandableArrowIcon : ArrowRightIcon}
+      </button>
+    {:else}
+      <div class="expandable-icon scale-55"></div>
+    {/if}
     <div class="entity-icon">
       {#if entityType === "Schema"}
         <span class="icon-container scale-85">
@@ -60,7 +64,6 @@
     align-items: center;
     justify-content: start;
     width: 100%;
-    height: 100%;
     color: #1d1b20;
   }
 
@@ -77,7 +80,13 @@
     align-items: center;
     justify-content: start;
     width: 100%;
-    height: 100%;
+    min-height: 25px;
+    padding-block: 2px;
+    cursor: pointer;
+  }
+
+  .sidebar-item-content:hover {
+    background-color: var(--accentColor);
   }
 
   .icon-container {

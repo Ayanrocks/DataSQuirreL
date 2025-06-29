@@ -104,7 +104,7 @@
         isExpanded: currentItem.isExpanded,
         entityType: currentItem.entityType,
         level: level,
-        children: currentItem.children
+        children: currentItem.children && currentItem.children.length > 0
           ? renderSideBarItem(currentItem, currentItem.children, level + 1)
           : [],
       });
