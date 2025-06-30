@@ -18,31 +18,31 @@
 
 <div class="sidebar-item">
   <div class="sidebar-item-content">
-    {#if hasChildren}
-      <button
-        type="button"
-        class="expandable-icon scale-55"
-        onclick={() => {
-          dispatch('toggle');
-        }}
-        aria-expanded={isExpanded}
-      >
-        {@html isExpanded ? ExpandableArrowIcon : ArrowRightIcon}
-      </button>
-    {:else}
-      <div class="expandable-icon scale-55"></div>
-    {/if}
+    <div class="arrow-space">
+      {#if hasChildren}
+        <button
+          type="button"
+          class="expandable-icon"
+          onclick={() => {
+            dispatch('toggle');
+          }}
+          aria-expanded={isExpanded}
+        >
+          {@html isExpanded ? ExpandableArrowIcon : ArrowRightIcon}
+        </button>
+      {/if}
+    </div>
     <div class="entity-icon">
       {#if entityType === "Schema"}
-        <span class="icon-container scale-85">
+        <span class="icon-container">
           {@html SchemaIcon}
         </span>
       {:else if entityType === "Table"}
-        <span class="icon-container scale-75 text-white">
+        <span class="icon-container text-white">
           {@html TableIcon}
         </span>
       {:else if entityType === "postgresql"}
-        <span class="icon-container scale-85">
+        <span class="icon-container">
           {@html PostgreSQLIcon}
         </span>
         <!-- {:else if entityName === "View"}
@@ -89,13 +89,28 @@
     background-color: var(--accentColor);
   }
 
-  .icon-container {
+  .icon-container,
+  .expandable-icon {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin: 0 5px;
+    /* color: #1d1b20; */
+  }
+
+  .icon-container svg,
+  .expandable-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .arrow-space {
     width: 24px;
     height: 24px;
-    /* color: #1d1b20; */
-    margin-left: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 </style>
