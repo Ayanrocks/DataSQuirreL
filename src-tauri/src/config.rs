@@ -42,6 +42,10 @@ impl ConfigManager {
         self.config_dir.join(filename)
     }
 
+    pub fn get_config_dir(&self) -> &PathBuf {
+        &self.config_dir
+    }
+
     pub fn read_config<T: for<'de> Deserialize<'de>>(
         &self,
         config_type: &ConfigType,

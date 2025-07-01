@@ -1,4 +1,5 @@
 use types::db::ConnPool;
+use crate::sql_console_storage::SqlConsoleStorage;
 use crate::storage::{ConnectionStorage, StoredConnection};
 use crate::types;
 use crate::types::db::TableSchema;
@@ -10,6 +11,7 @@ pub struct ApplicationState {
     pub dbpool: Mutex<Option<ConnPool>>,
     pub connection_storage: ConnectionStorage,
     pub active_connection_map: Mutex<HashMap<String, StoredConnection>>,
+    pub sql_console_storage: SqlConsoleStorage,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

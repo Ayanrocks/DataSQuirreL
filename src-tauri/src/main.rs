@@ -24,6 +24,7 @@ pub mod constants;
 mod database;
 mod storage;
 mod types;
+pub mod sql_console_storage;
 
 #[tauri::command]
 async fn init_connection(
@@ -298,7 +299,7 @@ fn fetch_dashboard_data(
     }
 
     // Construct the top-level database entity
-    let dashboard_data = vec![SchemaData {
+    let mut dashboard_data = vec![SchemaData {
         entity_type: constants::POSTGRES_DATABASE_TYPE.to_string(),
         entity_name: {
             let mut chars = connection_data.database_name.chars();
@@ -310,6 +311,35 @@ fn fetch_dashboard_data(
         is_expanded: true,
         children: Some(database_schemas),
     }];
+
+    // Add consoles entity if there are consoles present
+    match application_state.sql_console_storage.list_console_files() {
+        Ok(console_files) => {
+            if !console_files.is_empty() {
+                let children: Vec<SchemaData> = console_files
+                    .into_iter()
+                    .map(|file_name| SchemaData {
+                        entity_type: "Console".to_string(),
+                        entity_name: file_name,
+                        is_expanded: false,
+                        children: None,
+                    })
+                    .collect();
+
+                let consoles_entity = SchemaData {
+                    entity_type: "Consoles".to_string(),
+                    entity_name: "Consoles".to_string(),
+                    is_expanded: true,
+                    children: Some(children),
+                };
+                dashboard_data.push(consoles_entity);
+            }
+        }
+        Err(e) => {
+            log_error!("Failed to list console files: {}", e);
+            // Optionally return an error response or log and continue
+        }
+    }
 
     IPCResponse {
         status: http::status::StatusCode::OK.as_u16(),
@@ -551,6 +581,102 @@ fn fetch_table_data_with_offset(
     })
 }
 
+#[tauri::command]
+fn save_console_file_cmd(
+    file_path: String,
+    content: String,
+    application_state: State<ApplicationState>,
+) -> Result<IPCResponse<String>, ()> {
+    log_function!(save_console_file_cmd);
+    match application_state.sql_console_storage.save_console_file(&file_path, &content) {
+        Ok(f) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: None,
+            sys_err: None,
+            frontend_msg: Some("Console file saved successfully".to_string()),
+            data: None,
+        }),
+        Err(e) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
+            sys_err: Some(e.to_string()),
+            frontend_msg: Some("Failed to save console file".to_string()),
+            data: None,
+        }),
+    }
+}
+
+#[tauri::command]
+fn read_console_file_cmd(
+    file_path: String,
+    application_state: State<ApplicationState>,
+) -> Result<IPCResponse<String>, ()> {
+    log_function!(read_console_file_cmd);
+    match application_state.sql_console_storage.read_console_file(&file_path) {
+        Ok(content) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: None,
+            sys_err: None,
+            frontend_msg: Some(content),
+            data: None,
+        }),
+        Err(e) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
+            sys_err: Some(e.to_string()),
+            frontend_msg: Some("Failed to read console file".to_string()),
+            data: None,
+        }),
+    }
+}
+
+#[tauri::command]
+fn list_console_files_cmd(
+    application_state: State<ApplicationState>,
+) -> Result<IPCResponse<Vec<String>>, ()> {
+    log_function!(list_console_files_cmd);
+    match application_state.sql_console_storage.list_console_files() {
+        Ok(files) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: None,
+            sys_err: None,
+            frontend_msg: None,
+            data: Some(files),
+        }),
+        Err(e) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
+            sys_err: Some(e.to_string()),
+            frontend_msg: Some("Failed to list console files".to_string()),
+            data: None,
+        }),
+    }
+}
+
+#[tauri::command]
+fn delete_console_file_cmd(
+    file_path: String,
+    application_state: State<ApplicationState>,
+) -> Result<IPCResponse<String>, ()> {
+    log_function!(delete_console_file_cmd);
+    match application_state.sql_console_storage.delete_console_file(&file_path) {
+        Ok(f) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: None,
+            sys_err: None,
+            frontend_msg: Some("Console file deleted successfully".to_string()),
+            data: None,
+        }),
+        Err(e) => Ok(IPCResponse {
+            status: http::status::StatusCode::OK.as_u16(),
+            error_code: Some(constants::ERR_CODE_STORAGE_FAILED.to_string()),
+            sys_err: Some(e.to_string()),
+            frontend_msg: Some("Failed to delete console file".to_string()),
+            data: None,
+        }),
+    }
+}
+
 fn main() {
     // Initialize logger
     if let Err(e) = logging::init_logger() {
@@ -611,6 +737,7 @@ fn main() {
             dbpool: Mutex::new(None),
             connection_storage: ConnectionStorage::new(),
             active_connection_map: Mutex::new(HashMap::new()),
+            sql_console_storage: sql_console_storage::SqlConsoleStorage::new().expect("Failed to initialize SQL console storage"),
         })
         .invoke_handler(tauri::generate_handler![
             init_connection,
@@ -619,6 +746,10 @@ fn main() {
             fetch_dashboard_data,
             fetch_table_data,
             fetch_table_data_with_offset,
+            save_console_file_cmd,
+            read_console_file_cmd,
+            list_console_files_cmd,
+            delete_console_file_cmd,
         ])
         .setup(|app| {
             log_info!("Application setup started");

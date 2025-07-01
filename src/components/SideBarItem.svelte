@@ -4,7 +4,9 @@
   import TableIcon from "../assets/icons/table.svg?raw";
   import PostgreSQLIcon from "../assets/icons/postgresql.svg?raw";
   import ArrowRightIcon from "../assets/icons/arrowRight.svg?raw";
-  import { createEventDispatcher } from 'svelte';
+  import ConsoleIcon from "../assets/icons/console.svg?raw";
+  
+  import { createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -13,18 +15,23 @@
     isExpanded,
     entityType,
     hasChildren,
-  }: { entityName: string; isExpanded: boolean; entityType: string; hasChildren: boolean } = $props();
+  }: {
+    entityName: string;
+    isExpanded: boolean;
+    entityType: string;
+    hasChildren: boolean;
+  } = $props();
 </script>
 
 <div class="sidebar-item">
   <div class="sidebar-item-content">
-    <div class="arrow-space">
+    <div class="arrow-space scale-75">
       {#if hasChildren}
         <button
           type="button"
           class="expandable-icon"
           onclick={() => {
-            dispatch('toggle');
+            dispatch("toggle");
           }}
           aria-expanded={isExpanded}
         >
@@ -45,9 +52,11 @@
         <span class="icon-container">
           {@html PostgreSQLIcon}
         </span>
-        <!-- {:else if entityName === "View"}
-        {@html ViewIcon}
-      {:else if entityName === "Function"}
+      {:else if entityType === "Console"}
+        <span class="icon-container">
+          {@html ConsoleIcon}
+        </span>
+        <!-- {:else if entityName === "Function"}
         {@html FunctionIcon} -->
       {/if}
     </div>
@@ -100,11 +109,6 @@
     /* color: #1d1b20; */
   }
 
-  .icon-container svg,
-  .expandable-icon svg {
-    width: 100%;
-    height: 100%;
-  }
 
   .arrow-space {
     width: 24px;
