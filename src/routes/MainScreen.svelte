@@ -23,7 +23,8 @@
   import MainTopBar from "../components/MainTopBar.svelte";
   import type { IPCResponse, DashboardData } from "../types/response";
   import type { SchemaData, SidebarItem } from "../types/interface";
-
+  import TabBar from "../components/TabBar.svelte";
+  
   const appWindow = getCurrentWindow();
 
   // on mousedown for the draggable
@@ -179,6 +180,7 @@
 <div class="main-container">
   <MainTopBar connectionName={activeConnectionName} />
   <Sidebar on:resizing={resizeSideBar} {dashboardData} />
+  <TabBar />
   <div class="columns split-main-content" id="right-main-content">
     {#if activeTableData.tableName !== ""}
       <DataTable />
