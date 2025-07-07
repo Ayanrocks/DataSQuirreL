@@ -8,11 +8,11 @@
   },
   "bundle": {
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "icons/extension_icon.ico",
+      "icons/extension_icon.icns",
+      "icons/extension_icon@4096px.png",
+      "icons/extension_icon@8192px.png",
+      "icons/extension_icon@12288px.png"
     ]
   },
   "app": {
