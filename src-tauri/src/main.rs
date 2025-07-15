@@ -2,6 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 extern crate core;
 
@@ -9,22 +10,28 @@ use database::db::connect_to_db;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use storage::{ConnectionStorage, StoredConnection};
-use tauri::{AppHandle, Manager, State, TitleBarStyle, Url, http};
-use tauri::{WebviewUrl, WebviewWindowBuilder};
+use tauri::{
+    AppHandle, Manager, State, TitleBarStyle, Url, WebviewUrl, WebviewWindowBuilder, command, http,
+};
+
+use lru::LruCache;
+use serde::{Deserialize, Serialize};
+use tauri_plugin_sql::{Migration, Sql};
+use zstd::stream::{compress, decompress_all};
 
 use crate::constants::APP_NAME;
 use crate::types::api_objects::{
     ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
     SchemaData, TableData, TableDataOffsetRequest, TableDataRequest,
 };
-mod logging;
-
+mod cache;
 pub mod config;
 pub mod constants;
 mod database;
+mod logging;
+pub mod sql_console_storage;
 mod storage;
 mod types;
-pub mod sql_console_storage;
 
 #[tauri::command]
 async fn init_connection(
@@ -588,7 +595,10 @@ fn save_console_file_cmd(
     application_state: State<ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
     log_function!(save_console_file_cmd);
-    match application_state.sql_console_storage.save_console_file(&file_path, &content) {
+    match application_state
+        .sql_console_storage
+        .save_console_file(&file_path, &content)
+    {
         Ok(f) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
@@ -612,7 +622,10 @@ fn read_console_file_cmd(
     application_state: State<ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
     log_function!(read_console_file_cmd);
-    match application_state.sql_console_storage.read_console_file(&file_path) {
+    match application_state
+        .sql_console_storage
+        .read_console_file(&file_path)
+    {
         Ok(content) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
@@ -659,7 +672,10 @@ fn delete_console_file_cmd(
     application_state: State<ApplicationState>,
 ) -> Result<IPCResponse<String>, ()> {
     log_function!(delete_console_file_cmd);
-    match application_state.sql_console_storage.delete_console_file(&file_path) {
+    match application_state
+        .sql_console_storage
+        .delete_console_file(&file_path)
+    {
         Ok(f) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
@@ -675,6 +691,72 @@ fn delete_console_file_cmd(
             data: None,
         }),
     }
+}
+
+/// Simulate fetching from real DB
+#[tauri::command]
+async fn fetch_table_rows(
+    tab_id: String,
+    offset: u32,
+    limit: u32,
+) -> Result<(Vec<RowData>, u32), String> {
+    // TODO: Replace with real query via sqlx
+    let total = 10_000;
+    let rows = (offset..(offset + limit).min(total))
+        .map(|i| RowData {
+            id: format!("row_{}", i),
+            data: serde_json::json!({ "col1": i, "col2": format!("Value {}", i) }),
+        })
+        .collect();
+    Ok((rows, total))
+}
+
+/// Save one row compressed into SQLite
+#[tauri::command]
+async fn save_cache_entry(
+    db: State<'_, Db>,
+    tab_id: String,
+    row_idx: u32,
+    row_json: String,
+) -> Result<(), String> {
+    let blob = compress(row_json.as_bytes(), 0).map_err(|e| e.to_string())?;
+    db.0.execute(
+        "REPLACE INTO cache_entries (tab_id, row_idx, data_blob) VALUES (?1,?2,?3)",
+        [tab_id.as_str(), &row_idx.to_string(), &blob],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Retrieve and decompress one row
+#[tauri::command]
+async fn get_cache_entry(
+    db: State<'_, Db>,
+    tab_id: String,
+    row_idx: u32,
+) -> Result<Option<String>, String> {
+    let mut stmt =
+        db.0.prepare("SELECT data_blob FROM cache_entries WHERE tab_id = ?1 AND row_idx = ?2")
+            .map_err(|e| e.to_string())?;
+    let mut rows = stmt
+        .query([tab_id.as_str(), &row_idx.to_string()])
+        .map_err(|e| e.to_string())?;
+    if let Some(row) = rows.next().transpose().map_err(|e| e.to_string())? {
+        let blob: Vec<u8> = row.get(0).map_err(|e| e.to_string())?;
+        let decompressed = decompress_all(&blob).map_err(|e| e.to_string())?;
+        let s = String::from_utf8(decompressed).map_err(|e| e.to_string())?;
+        Ok(Some(s))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Clear cache for a specific tab
+#[command]
+async fn clear_tab_cache(db: State<'_, Db>, tab_id: String) -> Result<(), String> {
+    db.0.execute("DELETE FROM cache_entries WHERE tab_id = ?1", [tab_id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 fn main() {
@@ -731,13 +813,36 @@ fn main() {
         }
     }
 
+    // Get SQLite Cache DB
+    let db_path = tauri::api::path::app_data_dir(&tauri::Config::default())
+        .unwrap()
+        .join("cache.db");
+
+    let connection = Connection::open(db_path).expect("failed to open SQLite");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
+        .plugin(
+            Sql::default()
+                .add_migration(Migration::create_table(
+                    "cache_entries",
+                    r#"
+                  CREATE TABLE IF NOT EXISTS cache_entries (
+                    tab_id    TEXT,
+                    row_idx   INTEGER,
+                    data_blob BLOB,
+                    PRIMARY KEY(tab_id, row_idx)
+                  )"#,
+                ))
+                .build(),
+        )
         .manage(ApplicationState {
             dbpool: Mutex::new(None),
             connection_storage: ConnectionStorage::new(),
             active_connection_map: Mutex::new(HashMap::new()),
-            sql_console_storage: sql_console_storage::SqlConsoleStorage::new().expect("Failed to initialize SQL console storage"),
+            sql_console_storage: sql_console_storage::SqlConsoleStorage::new()
+                .expect("Failed to initialize SQL console storage"),
+            sqlite_db: CacheDB(Mutex::new(connection)),
         })
         .invoke_handler(tauri::generate_handler![
             init_connection,
@@ -750,6 +855,10 @@ fn main() {
             read_console_file_cmd,
             list_console_files_cmd,
             delete_console_file_cmd,
+            init_cache_db,
+            save_cache_entry,
+            get_cache_entry,
+            clear_cache,
         ])
         .setup(|app| {
             log_info!("Application setup started");
@@ -776,7 +885,10 @@ fn main() {
                 }
             }
 
-            // Your setup code here
+            // Initialize cache DB
+            init_cache_db(&app.state::<CacheDB>());
+            log_info!("✅ Cache DB initialized at startup.");
+
             Ok(())
         })
         .run(tauri::generate_context!())

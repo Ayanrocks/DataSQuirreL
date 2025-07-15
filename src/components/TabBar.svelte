@@ -1,5 +1,28 @@
 <script lang="ts">
-    
+    let tabs = [
+        {
+            tab_type: "table",
+            table_name: "Home",
+            schema_name: "public",
+            table_rows_count: 100,
+            table_rows_selected: 10,
+            table_columns: [
+                {
+                    column_name: "id",
+                    column_type: "integer",
+                },
+                {
+                    column_name: "name",
+                    column_type: "text",
+                }
+            ],
+            table_rows: [
+                {
+                    row_id: 1,
+                }
+            ]
+        }
+    ]
 </script>
 
 <div class="tabbar-container">

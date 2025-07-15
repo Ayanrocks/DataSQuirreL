@@ -1,4 +1,5 @@
 use types::db::ConnPool;
+use crate::cache::CacheDB;
 use crate::sql_console_storage::SqlConsoleStorage;
 use crate::storage::{ConnectionStorage, StoredConnection};
 use crate::types;
@@ -6,12 +7,14 @@ use crate::types::db::TableSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
+use tauri_plugin_sql::{Migration, Sql};
 
 pub struct ApplicationState {
     pub dbpool: Mutex<Option<ConnPool>>,
     pub connection_storage: ConnectionStorage,
     pub active_connection_map: Mutex<HashMap<String, StoredConnection>>,
     pub sql_console_storage: SqlConsoleStorage,
+    pub sqlite_db: CacheDB,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
