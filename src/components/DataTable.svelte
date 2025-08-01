@@ -1,26 +1,25 @@
 <script lang="ts">
-  import { Grid } from 'ag-grid-community';
   import { onDestroy, onMount } from 'svelte';
   import DataTableToolBar from './DataTableToolBar.svelte';
   import { activeTable, notificationMsg } from '../stores';
-  import type { ActiveTable } from '../stores'; // Import the ActiveTable type
-
-  // import 'ag-grid-community/dist/styles/ag-grid.css';
-  // import 'ag-grid-community/dist/styles/ag-theme-alpine.css';
+  import type { ActiveTable } from '../stores';
   import { invoke } from '@tauri-apps/api/core';
   import { NOTIFICATION_TYPE_ERROR, PAGINATION_SIZE } from '../constants/constants';
-  import type { GridOptions, GridApi, ColumnApi, ColDef } from 'ag-grid-community'; // Import necessary AG Grid types
+  import {
+    createTable,
+    type ColumnDef,
+    type Table,
+    type Updater,
+    getCoreRowModel,
+    type CellContext,
+  } from '@tanstack/svelte-table';
 
-  let domNode: HTMLElement;
-  let grid: Grid;
-  let gridApi: GridApi;
-  let gridColumnApi: ColumnApi;
-  let columnDefs: ColDef[] = [];
-  let rowDefs: any[] = []; // Use 'any' for row data as the structure is dynamic
+  let table: Table<any>;
+  let columns: ColumnDef<any>[] = [];
+  let data: any[] = [];
   let rowCount = 0;
 
-  // props
-  let tableData: ActiveTable = { // Initialize with default values matching the interface
+  let tableData: ActiveTable = {
     tableName: '',
     rows: [],
     columns: [],
@@ -29,104 +28,96 @@
     maxPage: 0,
   };
 
-  activeTable.subscribe((val: ActiveTable) => { // Add type annotation for the subscribed value
+  activeTable.subscribe((val: ActiveTable) => {
     console.log('ActiveTable Subscribe', val);
     tableData = val;
   });
 
   onMount(() => {
-    let gridOptions = {
-      defaultColDef: {
-        editable: true,
-        sortable: true,
-        resizable: true,
-        filter: true,
-        flex: 1,
-        minWidth: 65,
+    columns = [
+      {
+        header: '#',
+        accessorFn: (_row, index) => index + 1,
+        cell: (info: CellContext<any, unknown>) => info.getValue(),
+        enableSorting: true,
       },
-      debounceVerticalScrollbar: true,
-      autoSizePadding: 2,
-      // pagination: true, // Disable AG Grid's built-in pagination
-      // paginationPageSize: PAGINATION_SIZE, // Disable AG Grid's built-in pagination
-      columnDefs: columnDefs,
-      rowData: rowDefs,
-      suppressColumnVirtualisation: true,
-      suppressRowVirtualisation: true,
-      animateRows: false,
-      infiniteInitialRowCount: 1,
-      // suppressPaginationPanel: true, // Disable AG Grid's built-in pagination panel
-      rowSelection: 'multiple',
-      rowGroupPanelShow: 'always',
-      pivotPanelShow: 'always',
-      onGridReady: (params) => { // Move onGridReady inside gridOptions
-        gridApi = params.api;
-        gridColumnApi = params.columnApi;
-      },
-    } as GridOptions<any>; // Explicitly cast to GridOptions<any>
+      ...tableData.columns.map((colName) => ({
+        accessorKey: colName,
+        header: colName,
+        cell: (info: CellContext<any, unknown>) => info.getValue(),
+        enableSorting: true,
+      })),
+    ];
 
-    grid = new Grid(domNode, gridOptions);
+    data = tableData.rows.map((row) => {
+      let singleRowData: any = {};
+      tableData.columns.forEach((colName, index) => {
+        singleRowData[colName] = row[index];
+      });
+      return singleRowData;
+    });
+
+    table = createTable({
+      data,
+      columns,
+      getCoreRowModel: getCoreRowModel(),
+      state: {},
+      onStateChange: (updater: Updater<any>) => {
+        // Handle state changes if needed
+      },
+      renderFallbackValue: null,
+      debugTable: true,
+      debugHeaders: true,
+      debugColumns: true,
+    });
   });
 
-  $: if (gridApi != null && tableData != null) {
-    if (tableData.tableName !== '' && tableData.columns.length !== 0) {
-      columnDefs = [];
-      rowDefs = [];
-      rowCount = tableData.rowCount;
+  $: if (tableData.tableName !== '' && tableData.columns.length !== 0 && table) {
+    rowCount = tableData.rowCount;
 
-      columnDefs.push({
-        headerName: '#',
-        valueGetter: 'node.id',
-        pinned: 'left',
-        lockPinned: true, // Change 'left' to true
-        sortable: true,
-        editable: false,
-        cellEditorPopup: false,
-        // comparator: (valueA, valueB, nodeA, nodeB, isDescending) => valueA - valueB, // Remove incorrect comparator
+    columns = [
+      {
+        header: '#',
+        accessorFn: (_row, index) => index + 1,
+        cell: (info: CellContext<any, unknown>) => info.getValue(),
+        enableSorting: true,
+      },
+      ...tableData.columns.map((colName) => ({
+        accessorKey: colName,
+        header: colName,
+        cell: (info: CellContext<any, unknown>) => info.getValue(),
+        enableSorting: true,
+      })),
+    ];
+
+    data = tableData.rows.map((row) => {
+      let singleRowData: any = {};
+      tableData.columns.forEach((colName, index) => {
+        singleRowData[colName] = row[index];
       });
+      return singleRowData;
+    });
 
-      // set the columns
-      tableData.columns.forEach((elem) => {
-        columnDefs.push({
-          field: elem,
-          headerName: elem,
-          sortable: true,
-          minWidth: 150,
-          // comparator: (valueA, valueB, nodeA, nodeB, isDescending) => valueA - valueB, // Remove incorrect comparator
-        });
-      });
-
-      // set the rows
-      tableData.rows.forEach((elem: any[]) => { // Add type annotation for elem
-        let singleRowData: any = {}; // Explicitly type singleRowData as any
-        elem.forEach((subElem: any, index: number) => { // Add type annotations for subElem and index
-          singleRowData[tableData.columns[index] as string] = subElem; // Explicitly type index access
-        });
-        rowDefs.push(singleRowData);
-      });
-
-      gridApi.setColumnDefs(columnDefs);
-      gridApi.setRowData(rowDefs);
-      gridApi.sizeColumnsToFit();
-    }
+    table.setOptions((prev) => ({
+      ...prev,
+      columns,
+      data,
+    }));
   }
 
   let gotoNext = () => {
-    // calculate offset value
     let offsetVal = PAGINATION_SIZE * tableData.currentPage;
     fetchNextRecordBatch(tableData.tableName, offsetVal);
-    gridApi.refreshClientSideRowModel('filter');
-    // gridApi.paginationGoToNextPage(); // Remove AG Grid pagination call
   };
 
   let gotoPrev = () => {
-    // gridApi.paginationGoToPreviousPage(); // Remove AG Grid pagination call
     // Need to implement logic to fetch previous batch if needed, or rely on already loaded data
-    // For now, just remove the incorrect AG Grid call.
+    // For now, this is a placeholder.
   };
 
-  function fetchNextRecordBatch(tableName: string, offsetVal: number) { // Add type annotations
+  function fetchNextRecordBatch(tableName: string, offsetVal: number) {
     console.log('TABLENAME: ', tableName);
-    invoke<{ data: { rows: any[][], currentPage: number } }>('fetch_table_data_with_offset', { // Add type annotation for invoke result
+    invoke<{ data: { rows: any[][], currentPage: number } }>('fetch_table_data_with_offset', {
       reqPayload: {
         table_name: tableName,
         offset: offsetVal,
@@ -137,11 +128,11 @@
         let data = res.data;
 
         tableData.rows = [...data.rows];
-        tableData.currentPage = data.currentPage; // Use data.currentPage from the response
+        tableData.currentPage = data.currentPage;
 
         activeTable.set(tableData);
       })
-      .catch((e: string) => { // Add type annotation for error
+      .catch((e: string) => {
         console.log(e);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
@@ -151,9 +142,7 @@
   }
 
   onDestroy(() => {
-    if (grid) {
-      grid.destroy();
-    }
+    // TanStack Table does not require explicit destruction like AG Grid
   });
 </script>
 
@@ -161,7 +150,36 @@
   <div class="datagrid-container">
     <DataTableToolBar currentPage={tableData.currentPage} maxPage={tableData.maxPage} {gotoNext} {gotoPrev} />
 
-    <div id="datagrid" bind:this={domNode} class="ag-theme-alpine"></div>
+    {#if table}
+      <div class="table-container">
+        <table>
+          <thead>
+            {#each table.getHeaderGroups() as headerGroup}
+              <tr>
+                {#each headerGroup.headers as header}
+                  <th colSpan={header.colSpan}>
+                    {#if !header.isPlaceholder}
+                      {header.isPlaceholder ? null : header.column.columnDef.header}
+                    {/if}
+                  </th>
+                {/each}
+              </tr>
+            {/each}
+          </thead>
+          <tbody>
+            {#each table.getRowModel().rows as row}
+              <tr>
+                {#each row.getVisibleCells() as cell}
+                  <td>
+                    {cell.getIsGrouped() ? null : cell.getValue()}
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -182,10 +200,26 @@
     margin: 55px auto 10px auto;
   }
 
-  #datagrid {
+  .table-container {
     margin-top: 5%;
     height: 90%;
     width: 100%;
-    --ag-header-foreground-color: var(--accentColor);
+    overflow: auto; /* Add scroll for large tables */
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+
+  th {
+    background-color: var(--accentColor);
+    color: white;
   }
 </style>

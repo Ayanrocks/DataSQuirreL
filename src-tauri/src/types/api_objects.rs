@@ -3,11 +3,9 @@ use crate::cache::CacheDB;
 use crate::sql_console_storage::SqlConsoleStorage;
 use crate::storage::{ConnectionStorage, StoredConnection};
 use crate::types;
-use crate::types::db::TableSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Mutex;
-use tauri_plugin_sql::{Migration, Sql};
+use tokio::sync::Mutex;
 
 pub struct ApplicationState {
     pub dbpool: Mutex<Option<ConnPool>>,

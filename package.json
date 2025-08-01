@@ -35,8 +35,9 @@
     "vite": "^6.3.4"
   },
   "dependencies": {
-    "@budibase/svelte-ag-grid": "^1.0.4",
     "@tailwindcss/vite": "^4.1.5",
+    "@tanstack/svelte-table": "^8.21.3",
+    "@tanstack/table-core": "^8.21.3",
     "@tauri-apps/api": "^2.6.0",
     "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
     "@tauri-apps/plugin-dialog": "^2.2.1",
@@ -48,7 +49,6 @@
     "@tauri-apps/plugin-shell": "^2.2.1",
     "@tauri-apps/plugin-sql": "^2.3.0",
     "@types/uuid": "^10.0.0",
-    "ag-grid-community": "^31.3.0",
     "fflate": "^0.8.2",
     "tailwindcss": "^4.1.5",
     "uuid": "^11.1.0"

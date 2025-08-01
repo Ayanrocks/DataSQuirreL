@@ -11,14 +11,16 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use storage::{ConnectionStorage, StoredConnection};
 use tauri::{
-    AppHandle, Manager, State, TitleBarStyle, Url, WebviewUrl, WebviewWindowBuilder, command, http,
+    AppHandle, Manager, State, TitleBarStyle, Url, WebviewUrl, WebviewWindowBuilder, http,
 };
 
 use lru::LruCache;
 use serde::{Deserialize, Serialize};
+use sqlx::SqliteConnection;
 use tauri_plugin_sql::{Migration, Sql};
+use tauri_plugin_sql::Error::Sql;
 use zstd::stream::{compress, decompress_all};
-
+use crate::cache::{clear_cache, get_cache_entry, init_cache_db, save_cache_entry, CacheDB, RowData};
 use crate::constants::APP_NAME;
 use crate::types::api_objects::{
     ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
@@ -711,53 +713,6 @@ async fn fetch_table_rows(
     Ok((rows, total))
 }
 
-/// Save one row compressed into SQLite
-#[tauri::command]
-async fn save_cache_entry(
-    db: State<'_, Db>,
-    tab_id: String,
-    row_idx: u32,
-    row_json: String,
-) -> Result<(), String> {
-    let blob = compress(row_json.as_bytes(), 0).map_err(|e| e.to_string())?;
-    db.0.execute(
-        "REPLACE INTO cache_entries (tab_id, row_idx, data_blob) VALUES (?1,?2,?3)",
-        [tab_id.as_str(), &row_idx.to_string(), &blob],
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-/// Retrieve and decompress one row
-#[tauri::command]
-async fn get_cache_entry(
-    db: State<'_, Db>,
-    tab_id: String,
-    row_idx: u32,
-) -> Result<Option<String>, String> {
-    let mut stmt =
-        db.0.prepare("SELECT data_blob FROM cache_entries WHERE tab_id = ?1 AND row_idx = ?2")
-            .map_err(|e| e.to_string())?;
-    let mut rows = stmt
-        .query([tab_id.as_str(), &row_idx.to_string()])
-        .map_err(|e| e.to_string())?;
-    if let Some(row) = rows.next().transpose().map_err(|e| e.to_string())? {
-        let blob: Vec<u8> = row.get(0).map_err(|e| e.to_string())?;
-        let decompressed = decompress_all(&blob).map_err(|e| e.to_string())?;
-        let s = String::from_utf8(decompressed).map_err(|e| e.to_string())?;
-        Ok(Some(s))
-    } else {
-        Ok(None)
-    }
-}
-
-/// Clear cache for a specific tab
-#[command]
-async fn clear_tab_cache(db: State<'_, Db>, tab_id: String) -> Result<(), String> {
-    db.0.execute("DELETE FROM cache_entries WHERE tab_id = ?1", [tab_id])
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
 
 fn main() {
     // Initialize logger
@@ -818,7 +773,7 @@ fn main() {
         .unwrap()
         .join("cache.db");
 
-    let connection = Connection::open(db_path).expect("failed to open SQLite");
+    let connection = SqliteConnection::open(db_path).expect("failed to open SQLite");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
@@ -886,7 +841,7 @@ fn main() {
             }
 
             // Initialize cache DB
-            init_cache_db(&app.state::<CacheDB>());
+            init_cache_db(app.state());
             log_info!("✅ Cache DB initialized at startup.");
 
             Ok(())
