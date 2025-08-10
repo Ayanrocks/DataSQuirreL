@@ -1,25 +1,24 @@
 <script>
   export const ssr = false;
-  import { Router, Route } from "svelte-routing";
   import InitScreen from "./routes/InitScreen.svelte";
   import MainScreen from "./routes/MainScreen.svelte";
   import Notification from "./components/Notification.svelte";
   import WindowControls from "./components/WindowControls.svelte";
+  import { currentPath } from './lib/router';
   import "./App.css";
 </script>
 
 <WindowControls />
 <Notification />
-<Router>
+{#if $currentPath === '/dashboard'}
   <div id="router-view">
-    <Route path="/">
-      <InitScreen />
-    </Route>
-    <Route path="/dashboard">
-      <MainScreen />
-    </Route>
+    <MainScreen />
   </div>
-</Router>
+{:else}
+  <div id="router-view">
+    <InitScreen />
+  </div>
+{/if}
 
 <style>
   #router-view {

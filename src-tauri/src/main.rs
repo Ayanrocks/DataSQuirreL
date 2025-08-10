@@ -8,24 +8,23 @@ extern crate core;
 
 use database::db::connect_to_db;
 use std::collections::HashMap;
-use std::sync::Mutex;
 use storage::{ConnectionStorage, StoredConnection};
 use tauri::{
     AppHandle, Manager, State, TitleBarStyle, Url, WebviewUrl, WebviewWindowBuilder, http,
 };
+use tokio::sync::Mutex;
 
-use lru::LruCache;
-use serde::{Deserialize, Serialize};
-use sqlx::SqliteConnection;
-use tauri_plugin_sql::{Migration, Sql};
-use tauri_plugin_sql::Error::Sql;
-use zstd::stream::{compress, decompress_all};
-use crate::cache::{clear_cache, get_cache_entry, init_cache_db, save_cache_entry, CacheDB, RowData};
+use crate::cache::{
+    CacheDB, RowData, clear_cache, get_cache_entry, init_cache_db, save_cache_entry,
+};
 use crate::constants::APP_NAME;
 use crate::types::api_objects::{
     ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
     SchemaData, TableData, TableDataOffsetRequest, TableDataRequest,
 };
+use serde_json;
+use sqlx::{SqliteConnection, Connection};
+use sqlx::sqlite::SqliteConnectOptions;
 mod cache;
 pub mod config;
 pub mod constants;
@@ -63,7 +62,7 @@ async fn init_connection(
                 "Successfully connected to database: {}",
                 req_payload.database_name
             );
-            *application_state.dbpool.lock().unwrap() = Some(conn_pool);
+            *application_state.dbpool.lock().await = Some(conn_pool);
 
             let stored_conn = StoredConnection {
                 id: req_payload.id.clone(),
@@ -96,7 +95,7 @@ async fn init_connection(
             let window_label = format!("connection-window-{}", req_payload.conn_name);
 
             // Add connection to active connection map
-            let mut active_connection_map = application_state.active_connection_map.lock().unwrap();
+            let mut active_connection_map = application_state.active_connection_map.lock().await;
             active_connection_map.insert(window_label.clone(), stored_conn.clone());
 
             // Check if window already exists for this connection
@@ -181,11 +180,11 @@ fn delete_saved_connection(
         .connection_storage
         .delete_connection(&conn_name, &project_id)
     {
-        Ok(f) => Ok(IPCResponse {
+        Ok(_f) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
             sys_err: None,
-            frontend_msg: Some(f),
+            frontend_msg: Some("Connection deleted successfully".to_string()),
             data: None,
         }),
         Err(e) => Ok(IPCResponse {
@@ -199,15 +198,15 @@ fn delete_saved_connection(
 }
 
 #[tauri::command]
-fn fetch_dashboard_data(
-    application_state: State<ApplicationState>,
+async fn fetch_dashboard_data(
+    application_state: State<'_, ApplicationState>,
     req_payload: DashboardDataRequest,
-) -> IPCResponse<DashboardData> {
+) -> Result<IPCResponse<DashboardData>, ()> {
     log_function!(fetch_dashboard_data);
     log_info!("Fetching dashboard data and configuration");
 
     // Get connection data
-    let connection_map = application_state.active_connection_map.lock().unwrap();
+    let connection_map = application_state.active_connection_map.lock().await;
     let connection_data = match connection_map.get(&req_payload.connection_window_label) {
         Some(data) => data,
         None => {
@@ -215,7 +214,7 @@ fn fetch_dashboard_data(
                 "Connection data not found for window label: {}",
                 req_payload.connection_window_label
             );
-            return IPCResponse {
+            return Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: Some(constants::ERR_CODE_INVALID_CONN_DATA.to_string()),
                 sys_err: Some("Connection data not found.".to_string()),
@@ -223,7 +222,7 @@ fn fetch_dashboard_data(
                     "Failed to retrieve connection details. Please try reconnecting.".to_string(),
                 ),
                 data: None,
-            };
+            });
         }
     };
 
@@ -248,7 +247,7 @@ fn fetch_dashboard_data(
         application_state
             .dbpool
             .lock()
-            .unwrap()
+            .await
             .as_ref()
             .unwrap()
             .fetch_schemas()
@@ -260,16 +259,14 @@ fn fetch_dashboard_data(
             log_info!("Successfully fetched {} schemas", schemas.len());
             for schema_name in schemas {
                 let mut schema_tables: Vec<SchemaData> = Vec::new();
-                let tables_result = tauri::async_runtime::block_on(async {
-                    application_state
-                        .dbpool
-                        .lock()
-                        .unwrap()
-                        .as_ref()
-                        .unwrap()
-                        .fetch_tables(&schema_name)
-                        .await
-                });
+                let tables_result = application_state
+                    .dbpool
+                    .lock()
+                    .await
+                    .as_ref()
+                    .unwrap()
+                    .fetch_tables(&schema_name)
+                    .await;
 
                 match tables_result {
                     Ok(tables) => {
@@ -297,13 +294,13 @@ fn fetch_dashboard_data(
         }
         Err(e) => {
             log_error!("Failed to fetch schemas: {}", e);
-            return IPCResponse {
+            return Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLES_FAILED.to_string()), // This error code might need to be adjusted or a new one created for schema fetching errors
                 sys_err: Some(e.to_string()),
                 frontend_msg: Some(e.to_string()),
                 data: None,
-            };
+            });
         }
     }
 
@@ -350,7 +347,7 @@ fn fetch_dashboard_data(
         }
     }
 
-    IPCResponse {
+    Ok(IPCResponse {
         status: http::status::StatusCode::OK.as_u16(),
         error_code: None,
         sys_err: None,
@@ -359,122 +356,112 @@ fn fetch_dashboard_data(
             connection_data: map,
             dashboard_data,
         }),
-    }
+    })
 }
 
 #[tauri::command]
-fn fetch_table_data(
+async fn fetch_table_data(
     req_payload: TableDataRequest,
-    application_state: State<ApplicationState>,
-) -> IPCResponse<TableData<String>> {
+    application_state: State<'_, ApplicationState>,
+) -> Result<IPCResponse<TableData<String>>, ()> {
     log_function!(fetch_table_data);
-    tauri::async_runtime::block_on(async {
-        /*
-           3 things needed to display table data
-               1. table columns
-               2. Total rows
-               3. first 600 rows
-        */
+    /*
+       3 things needed to display table data
+           1. table columns
+           2. Total rows
+           3. first 600 rows
+    */
 
-        let mut columns: Vec<String> = vec![];
+    let mut columns: Vec<String> = vec![];
 
-        let table_columns_result = application_state
-            .dbpool
-            .lock()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .fetch_table_columns(&req_payload.table_name)
-            .await;
+    let table_columns_result = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_columns(&req_payload.table_name)
+        .await;
 
-        // fetch table columns
-        match table_columns_result {
-            Ok(table_columns) => {
-                let mut i = 0;
-                for t in table_columns {
-                    columns.push(t.column_name);
-                    i += 1;
-                }
+    // fetch table columns
+    match table_columns_result {
+        Ok(table_columns) => {
+            for t in table_columns {
+                columns.push(t.column_name);
             }
-            Err(e) => {
-                return IPCResponse::<_> {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: Some(
-                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
-                    ),
-                    sys_err: Some(e.to_string()),
-                    frontend_msg: Some(e.to_string()),
-                    data: None,
-                };
-            }
-        };
-
-        // fetch table data
-        let table_data_result = application_state
-            .dbpool
-            .lock()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .fetch_table_data(&req_payload.table_name)
-            .await;
-
-        let mut table_data_rows: Vec<Vec<String>> = vec![vec!["".to_string()]];
-
-        match table_data_result {
-            Ok(table_data) => table_data_rows = table_data,
-            Err(e) => {
-                return IPCResponse::<_> {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: Some(
-                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
-                    ),
-                    sys_err: Some(e.to_string()),
-                    frontend_msg: Some(e.to_string()),
-                    data: None,
-                };
-            }
-        };
-
-        // fetch table rows count
-        let table_rows_count_result = application_state
-            .dbpool
-            .lock()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .fetch_table_rows_count(&req_payload.table_name)
-            .await;
-
-        let row_count: String;
-        match table_rows_count_result {
-            Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
-            Err(e) => {
-                return IPCResponse::<_> {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: Some(
-                        constants::ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED.to_string(),
-                    ),
-                    sys_err: Some(e.to_string()),
-                    frontend_msg: Some(e.to_string()),
-                    data: None,
-                };
-            }
-        };
-
-        IPCResponse {
-            status: http::status::StatusCode::OK.as_u16(),
-            error_code: None,
-            sys_err: None,
-            frontend_msg: None,
-            data: Some(TableData {
-                columns,
-                rows: Some(table_data_rows),
-                row_count: Some(row_count),
-                table_name: Some(req_payload.table_name),
-                query_type: constants::QUERY_TYPE_FETCH_INITIAL_TABLE_DATA.to_string(),
-            }),
         }
+        Err(e) => {
+            return Ok(IPCResponse::<_> {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string()),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(e.to_string()),
+                data: None,
+            });
+        }
+    };
+
+    // fetch table data
+    let table_data_result = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_data(&req_payload.table_name)
+        .await;
+
+    let table_data_rows: Vec<Vec<String>> = match table_data_result {
+        Ok(table_data) => table_data,
+        Err(e) => {
+            return Ok(IPCResponse::<_> {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string()),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(e.to_string()),
+                data: None,
+            });
+        }
+    };
+
+    // fetch table rows count
+    let table_rows_count_result = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_rows_count(&req_payload.table_name)
+        .await;
+
+    let row_count: String;
+    match table_rows_count_result {
+        Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
+        Err(e) => {
+            return Ok(IPCResponse::<_> {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(
+                    constants::ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED.to_string(),
+                ),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(e.to_string()),
+                data: None,
+            });
+        }
+    };
+
+    Ok(IPCResponse {
+        status: http::status::StatusCode::OK.as_u16(),
+        error_code: None,
+        sys_err: None,
+        frontend_msg: None,
+        data: Some(TableData {
+            columns,
+            rows: Some(table_data_rows),
+            row_count: Some(row_count),
+            table_name: Some(req_payload.table_name),
+            query_type: constants::QUERY_TYPE_FETCH_INITIAL_TABLE_DATA.to_string(),
+        }),
     })
 }
 
@@ -490,7 +477,7 @@ fn fetch_table_data_with_offset(
         let table_columns_result = application_state
             .dbpool
             .lock()
-            .unwrap()
+            .await
             .as_ref()
             .unwrap()
             .fetch_table_columns(&req_payload.table_name)
@@ -499,10 +486,8 @@ fn fetch_table_data_with_offset(
         // fetch table columns
         match table_columns_result {
             Ok(table_columns) => {
-                let mut i = 0;
                 for t in table_columns {
                     columns.push(t.column_name);
-                    i += 1;
                 }
             }
             Err(e) => {
@@ -522,7 +507,7 @@ fn fetch_table_data_with_offset(
         let table_rows_count_result = application_state
             .dbpool
             .lock()
-            .unwrap()
+            .await
             .as_ref()
             .unwrap()
             .fetch_table_rows_count(&req_payload.table_name)
@@ -548,19 +533,16 @@ fn fetch_table_data_with_offset(
            Pass the offset and the table name and return the additional data
         */
 
-        let mut table_data_rows: Vec<Vec<String>> = vec![vec!["".to_string()]];
-
-        let table_data_result = application_state
+        let table_data_rows: Vec<Vec<String>> = match application_state
             .dbpool
             .lock()
-            .unwrap()
+            .await
             .as_ref()
             .unwrap()
             .fetch_table_data_with_offset(&req_payload.table_name, &req_payload.offset)
-            .await;
-
-        match table_data_result {
-            Ok(table_data) => table_data_rows = table_data,
+            .await
+        {
+            Ok(table_data) => table_data,
             Err(e) => {
                 return IPCResponse::<_> {
                     status: http::status::StatusCode::OK.as_u16(),
@@ -601,7 +583,7 @@ fn save_console_file_cmd(
         .sql_console_storage
         .save_console_file(&file_path, &content)
     {
-        Ok(f) => Ok(IPCResponse {
+        Ok(_f) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
             sys_err: None,
@@ -678,7 +660,7 @@ fn delete_console_file_cmd(
         .sql_console_storage
         .delete_console_file(&file_path)
     {
-        Ok(f) => Ok(IPCResponse {
+        Ok(_f) => Ok(IPCResponse {
             status: http::status::StatusCode::OK.as_u16(),
             error_code: None,
             sys_err: None,
@@ -698,7 +680,7 @@ fn delete_console_file_cmd(
 /// Simulate fetching from real DB
 #[tauri::command]
 async fn fetch_table_rows(
-    tab_id: String,
+    _tab_id: String,
     offset: u32,
     limit: u32,
 ) -> Result<(Vec<RowData>, u32), String> {
@@ -713,8 +695,8 @@ async fn fetch_table_rows(
     Ok((rows, total))
 }
 
-
-fn main() {
+#[tokio::main]
+async fn main() {
     // Initialize logger
     if let Err(e) = logging::init_logger() {
         eprintln!("Failed to initialize logger: {}", e);
@@ -769,28 +751,43 @@ fn main() {
     }
 
     // Get SQLite Cache DB
-    let db_path = tauri::api::path::app_data_dir(&tauri::Config::default())
+    let db_path = dirs::data_local_dir()
         .unwrap()
+        .join("DataSquirrel")
         .join("cache.db");
 
-    let connection = SqliteConnection::open(db_path).expect("failed to open SQLite");
+    // Ensure the directory exists
+    if let Some(parent) = db_path.parent() {
+        std::fs::create_dir_all(parent).expect("Failed to create cache directory");
+    }
+
+    let mut connection = SqliteConnection::connect_with(
+        &SqliteConnectOptions::new()
+            .filename(&db_path)
+            .create_if_missing(true),
+    )
+    .await
+    .expect("failed to open SQLite");
+
+    // Ensure cache table exists before starting the app
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS cache_entries (
+      tab_id TEXT NOT NULL,
+      row_idx INTEGER NOT NULL,
+      data_blob BLOB NOT NULL,
+      PRIMARY KEY (tab_id, row_idx)
+    )",
+    )
+    .execute(&mut connection)
+    .await
+    .map_err(|e| {
+        eprintln!("failed to create cache_entries table: {}", e);
+        e
+    })
+    .expect("failed to create cache_entries table");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
-        .plugin(
-            Sql::default()
-                .add_migration(Migration::create_table(
-                    "cache_entries",
-                    r#"
-                  CREATE TABLE IF NOT EXISTS cache_entries (
-                    tab_id    TEXT,
-                    row_idx   INTEGER,
-                    data_blob BLOB,
-                    PRIMARY KEY(tab_id, row_idx)
-                  )"#,
-                ))
-                .build(),
-        )
         .manage(ApplicationState {
             dbpool: Mutex::new(None),
             connection_storage: ConnectionStorage::new(),
@@ -839,10 +836,6 @@ fn main() {
                     }
                 }
             }
-
-            // Initialize cache DB
-            init_cache_db(app.state());
-            log_info!("✅ Cache DB initialized at startup.");
 
             Ok(())
         })

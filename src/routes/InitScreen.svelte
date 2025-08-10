@@ -2,7 +2,6 @@
   export const ssr = false;
 
   import { invoke } from "@tauri-apps/api/core";
-  import { navigate } from "svelte-routing";
   import { notificationMsg } from "../stores";
   import { onMount } from "svelte";
   import {

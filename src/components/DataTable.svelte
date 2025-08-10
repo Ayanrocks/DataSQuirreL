@@ -12,7 +12,7 @@
     type Updater,
     getCoreRowModel,
     type CellContext,
-  } from '@tanstack/svelte-table';
+  } from '@tanstack/table-core';
 
   let table: Table<any>;
   let columns: ColumnDef<any>[] = [];
