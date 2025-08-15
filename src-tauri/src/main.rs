@@ -23,8 +23,8 @@ use crate::types::api_objects::{
     SchemaData, TableData, TableDataOffsetRequest, TableDataRequest,
 };
 use serde_json;
-use sqlx::{SqliteConnection, Connection};
 use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::{Connection, SqliteConnection};
 mod cache;
 pub mod config;
 pub mod constants;
@@ -243,16 +243,13 @@ async fn fetch_dashboard_data(
 
     // Fetch schemas and tables
     let mut database_schemas: Vec<SchemaData> = Vec::new();
-    let schemas_result = tauri::async_runtime::block_on(async {
-        application_state
-            .dbpool
-            .lock()
-            .await
-            .as_ref()
-            .unwrap()
-            .fetch_schemas()
-            .await
-    });
+    let schemas_result = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_schemas().await;
 
     match schemas_result {
         Ok(schemas) => {

@@ -13,6 +13,14 @@
 
   export let dashboardData: SchemaData[];
 
+  // Debug logging
+  $: console.log('Sidebar dashboardData:', dashboardData);
+  $: console.log('Sidebar dashboardData length:', dashboardData?.length);
+  $: console.log('Sidebar dashboardData type:', typeof dashboardData);
+  $: console.log('Sidebar dashboardData is array:', Array.isArray(dashboardData));
+
+
+
   // Sidebar width state
   let sidebarWidth = 260; // px, default width
   const minSidebarWidth = 180;
@@ -93,22 +101,24 @@
   // ];
 
   function renderSideBarItem(
-    item: any,
     data: SchemaData[],
     level: number,
   ): SidebarItem[] {
+    console.log('renderSideBarItem called with data:', data, 'level:', level);
     const items: SidebarItem[] = [];
     for (const currentItem of data) {
+      console.log('Processing item:', currentItem);
       items.push({
         entityName: currentItem.entityName,
         isExpanded: currentItem.isExpanded,
         entityType: currentItem.entityType,
         level: level,
         children: currentItem.children && currentItem.children.length > 0
-          ? renderSideBarItem(currentItem, currentItem.children, level + 1)
+          ? renderSideBarItem(currentItem.children, level + 1)
           : [],
       });
     }
+    console.log('renderSideBarItem returning items:', items);
     return items;
   }
 </script>
@@ -121,10 +131,14 @@
   <div class="sidebar-content">
     <SidebarToolbar />
     <div class="table-list has-text-left">
-      {#if dashboardData.length > 0}
-        {#each renderSideBarItem(null, dashboardData, 0) as item}
+      {#if dashboardData && dashboardData.length > 0}
+        {#each renderSideBarItem(dashboardData, 0) as item}
           <RecursiveSidebarItem {item} />
         {/each}
+      {:else}
+        <div class="p-4 text-gray-500">
+          {dashboardData ? 'No data available' : 'Loading...'}
+        </div>
       {/if}
     </div>
   </div>
@@ -191,7 +205,5 @@
     word-break: break-all;
     height: 85%;
   }
-  #resize-icon {
-    display: none;
-  }
+
 </style>

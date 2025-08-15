@@ -10,6 +10,9 @@
     children: any[];
   };
 
+  // Debug logging
+  $: console.log('RecursiveSidebarItem item:', item);
+
   function handleToggle() {
     item.isExpanded = !item.isExpanded;
   }

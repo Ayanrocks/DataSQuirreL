@@ -104,6 +104,8 @@
     // Get the current window label and extract the connection name
     const label = await appWindow.label;
     activeConnectionName = label.replace(/^connection-window-/, "");
+    console.log('Window label:', label);
+    console.log('Active connection name:', activeConnectionName);
 
     // on change of width, check and set the width of the main and sidebar content
     windowWidth.subscribe((val) => {
@@ -146,6 +148,7 @@
 
     // fetch tables on load
     try {
+      console.log('Fetching dashboard data for window label:', appWindow.label);
 
       const res = await invoke<IPCResponse<DashboardData>>(
         "fetch_dashboard_data",
@@ -156,7 +159,10 @@
         },
       );
 
+      console.log('API response:', res);
+      
       if (res.error_code) {
+        console.error('API error:', res.error_code, res.frontend_msg);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
           message: res.frontend_msg || "An error occurred",
@@ -166,6 +172,7 @@
 
       if (res.data) {
         dashboardData = res.data.dashboard_data;
+        console.log('MainScreen dashboardData:', dashboardData);
       }
     } catch (e) {
       console.log(e);
