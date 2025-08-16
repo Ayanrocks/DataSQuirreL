@@ -8,3 +8,7 @@ dist/
 debug/
 target/
 .rustc_*
+
+# TypeScript generated files
+*.js.map
+src/**/*.js
