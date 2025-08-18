@@ -26,6 +26,8 @@ export const windowHeight: Writable<number> = writable(0);
 // setting state for one tab
 export interface ActiveTable {
     tableName: string;
+    schemaName: string;
+    dbName: string;
     rows: string[][];
     columns: string[];
     rowCount: number;
@@ -35,6 +37,8 @@ export interface ActiveTable {
 
 export const activeTable: Writable<ActiveTable> = writable({
     tableName: '',
+    schemaName: '',
+    dbName: '',
     rows: [[]],
     columns: [''],
     rowCount: 0,

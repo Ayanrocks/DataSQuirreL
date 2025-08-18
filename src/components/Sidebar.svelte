@@ -13,13 +13,6 @@
 
   export let dashboardData: SchemaData[];
 
-  // Debug logging
-  $: console.log('Sidebar dashboardData:', dashboardData);
-  $: console.log('Sidebar dashboardData length:', dashboardData?.length);
-  $: console.log('Sidebar dashboardData type:', typeof dashboardData);
-  $: console.log('Sidebar dashboardData is array:', Array.isArray(dashboardData));
-
-
 
   // Sidebar width state
   let sidebarWidth = 260; // px, default width
@@ -73,41 +66,14 @@
     activeTableName = val.tableName;
   });
 
-  // let MockTableData = [
-  //   {
-  //     entityType: "postgresql",
-  //     entityName: "Database",
-  //     isExpanded: true,
-  //     children: [
-  //       {
-  //         entityType: "Schema",
-  //         entityName: "Public",
-  //         isExpanded: true,
-  //         children: [
-  //           {
-  //             entityType: "Table",
-  //             entityName: "users",
-  //             isExpanded: false,
-  //           },
-  //           {
-  //             entityType: "Table",
-  //             entityName: "posts",
-  //             isExpanded: false,
-  //           },
-  //         ],
-  //       },
-  //     ],
-  //   },
-  // ];
+  
 
   function renderSideBarItem(
     data: SchemaData[],
     level: number,
   ): SidebarItem[] {
-    console.log('renderSideBarItem called with data:', data, 'level:', level);
     const items: SidebarItem[] = [];
     for (const currentItem of data) {
-      console.log('Processing item:', currentItem);
       items.push({
         entityName: currentItem.entityName,
         isExpanded: currentItem.isExpanded,
@@ -118,7 +84,6 @@
           : [],
       });
     }
-    console.log('renderSideBarItem returning items:', items);
     return items;
   }
 </script>

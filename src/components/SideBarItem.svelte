@@ -6,32 +6,57 @@
   import ArrowRightIcon from "../assets/icons/arrowRight.svg?raw";
   import ConsoleIcon from "../assets/icons/console.svg?raw";
   
-  import { createEventDispatcher } from "svelte";
-
-  const dispatch = createEventDispatcher();
-
   let {
     entityName,
     isExpanded,
     entityType,
     hasChildren,
+    fullPath,
+    toggle,
+    handleTableClick
   }: {
     entityName: string;
     isExpanded: boolean;
     entityType: string;
     hasChildren: boolean;
+    fullPath: string;
+    toggle: () => void,
+    handleTableClick: (entityType: string, fullPath: string) => void
   } = $props();
+
+  const handleMouseTableClick = (e: MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    handleTableClick(entityType, fullPath)
+  }
+ 
+  const handleKeyDown = (e: KeyboardEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (e.key === "Enter" || e.key === " ") {
+      handleTableClick(entityType, fullPath);
+    }
+  };
 </script>
 
 <div class="sidebar-item">
-  <div class="sidebar-item-content">
+  <div
+    class="sidebar-item-content"
+    onclick={handleMouseTableClick}
+    onkeydown={handleKeyDown}
+    tabindex={entityType === "Table" ? 0 : -1}
+    aria-label={entityType === "Table"
+      ? `Select table ${entityName}`
+      : undefined}
+    role="button"
+  >
     <div class="arrow-space scale-75">
       {#if hasChildren}
         <button
           type="button"
           class="expandable-icon"
           onclick={() => {
-            dispatch("toggle");
+            toggle()
           }}
           aria-expanded={isExpanded}
         >
@@ -108,7 +133,6 @@
     margin: 0 5px;
     /* color: #1d1b20; */
   }
-
 
   .arrow-space {
     width: 24px;

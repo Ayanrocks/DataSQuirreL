@@ -182,11 +182,24 @@
       });
     }
   });
+
+
+  function handleTableClick(entityType: string, fullPath: string) {
+    if (entityType === "Table") {
+      let dbComponents = fullPath.split("::")
+      console.log("clicked", fullPath, dbComponents);
+
+      // write logic to invoke fetch table data and render in the mainscreen
+
+    }
+  }
+
+
 </script>
 
 <div class="main-container">
   <MainTopBar connectionName={activeConnectionName} />
-  <Sidebar on:resizing={resizeSideBar} {dashboardData} />
+  <Sidebar on:resizing={resizeSideBar} {dashboardData} {handleTableClick}/>
   <TabBar />
   <div class="columns split-main-content" id="right-main-content">
     {#if activeTableData.tableName !== ""}
