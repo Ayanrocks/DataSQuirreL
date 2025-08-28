@@ -113,6 +113,8 @@ impl ConnPool {
 
     pub async fn fetch_table_columns(
         &self,
+        database_name: &str,
+        schema_name: &str,
         table_name: &str,
     ) -> Result<Vec<TableColumns>, sqlx::Error> {
         log_function!(fetch_table_columns);
@@ -126,7 +128,7 @@ impl ConnPool {
                   AND TABLE_SCHEMA = '{}'
                   AND TABLE_NAME = '{}';
             ",
-            self.db_name, "public", table_name,
+            database_name, schema_name, table_name,
         );
 
         println!("Printing Query: {}", &query);

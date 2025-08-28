@@ -19,12 +19,13 @@
     BORDER_SIZE,
     MAX_RESIZE_EXPANDABLE_SIZE,
     MIN_RESIZE_EXPANDABLE_SIZE,
+    INVOKE_GET_TABLE_DATA,
   } from "../constants/constants";
   import MainTopBar from "../components/MainTopBar.svelte";
   import type { IPCResponse, DashboardData } from "../types/response";
   import type { SchemaData, SidebarItem } from "../types/interface";
   import TabBar from "../components/TabBar.svelte";
-  
+
   const appWindow = getCurrentWindow();
 
   // on mousedown for the draggable
@@ -82,6 +83,8 @@
   let activeTableData: ActiveTable = {
     // Initialize with the correct type
     tableName: "",
+    schemaName: "",
+    dbName: "",
     rows: [[]],
     columns: [""],
     rowCount: 0,
@@ -97,15 +100,16 @@
   });
 
   activeTable.subscribe((val) => {
-    activeTableData = val;
+    console.log("ACTIVETABLE SUbscribed in Mainscreen", val);
+    invokeTableData(val.dbName, val.schemaName, val.tableName);
   });
 
   onMount(async () => {
     // Get the current window label and extract the connection name
     const label = await appWindow.label;
     activeConnectionName = label.replace(/^connection-window-/, "");
-    console.log('Window label:', label);
-    console.log('Active connection name:', activeConnectionName);
+    console.log("Window label:", label);
+    console.log("Active connection name:", activeConnectionName);
 
     // on change of width, check and set the width of the main and sidebar content
     windowWidth.subscribe((val) => {
@@ -148,7 +152,7 @@
 
     // fetch tables on load
     try {
-      console.log('Fetching dashboard data for window label:', appWindow.label);
+      console.log("Fetching dashboard data for window label:", appWindow.label);
 
       const res = await invoke<IPCResponse<DashboardData>>(
         "fetch_dashboard_data",
@@ -159,10 +163,10 @@
         },
       );
 
-      console.log('API response:', res);
-      
+      console.log("API response:", res);
+
       if (res.error_code) {
-        console.error('API error:', res.error_code, res.frontend_msg);
+        console.error("API error:", res.error_code, res.frontend_msg);
         notificationMsg.set({
           type: NOTIFICATION_TYPE_ERROR,
           message: res.frontend_msg || "An error occurred",
@@ -172,7 +176,7 @@
 
       if (res.data) {
         dashboardData = res.data.dashboard_data;
-        console.log('MainScreen dashboardData:', dashboardData);
+        console.log("MainScreen dashboardData:", dashboardData);
       }
     } catch (e) {
       console.log(e);
@@ -183,23 +187,30 @@
     }
   });
 
+  async function invokeTableData(
+    databaseName: string,
+    schema: string,
+    tableName: string,
+  ) {
+    try {
+      const res = await invoke<IPCResponse<any>>(INVOKE_GET_TABLE_DATA, {
+        reqPayload: {
+          database_name: databaseName,
+          schema_name: schema,
+          table_name: tableName,
+        },
+      });
 
-  function handleTableClick(entityType: string, fullPath: string) {
-    if (entityType === "Table") {
-      let dbComponents = fullPath.split("::")
-      console.log("clicked", fullPath, dbComponents);
-
-      // write logic to invoke fetch table data and render in the mainscreen
-
+      console.log("RES:::", res);
+    } catch (e) {
+      console.log("ErrorCATching: ", e);
     }
   }
-
-
 </script>
 
 <div class="main-container">
   <MainTopBar connectionName={activeConnectionName} />
-  <Sidebar on:resizing={resizeSideBar} {dashboardData} {handleTableClick}/>
+  <Sidebar on:resizing={resizeSideBar} {dashboardData} />
   <TabBar />
   <div class="columns split-main-content" id="right-main-content">
     {#if activeTableData.tableName !== ""}

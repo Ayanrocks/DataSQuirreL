@@ -7,3 +7,5 @@ export const MAX_RESIZE_EXPANDABLE_SIZE: number = 600;
 export const MIN_RESIZE_EXPANDABLE_SIZE: number = 250;
 
 export const PAGINATION_SIZE: number = 40;
+
+export const INVOKE_GET_TABLE_DATA: string = "fetch_table_data";

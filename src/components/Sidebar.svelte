@@ -13,7 +13,6 @@
 
   export let dashboardData: SchemaData[];
 
-
   // Sidebar width state
   let sidebarWidth = 260; // px, default width
   const minSidebarWidth = 180;
@@ -57,21 +56,7 @@
   let sideBarColumn: string = "Table Names";
   let tables: string[] = [];
 
-  tableNames.subscribe((e) => {
-    tables = e.tables;
-    sideBarColumn = e.tableName;
-  });
-
-  activeTable.subscribe((val) => {
-    activeTableName = val.tableName;
-  });
-
-  
-
-  function renderSideBarItem(
-    data: SchemaData[],
-    level: number,
-  ): SidebarItem[] {
+  function renderSideBarItem(data: SchemaData[], level: number): SidebarItem[] {
     const items: SidebarItem[] = [];
     for (const currentItem of data) {
       items.push({
@@ -79,12 +64,33 @@
         isExpanded: currentItem.isExpanded,
         entityType: currentItem.entityType,
         level: level,
-        children: currentItem.children && currentItem.children.length > 0
-          ? renderSideBarItem(currentItem.children, level + 1)
-          : [],
+        children:
+          currentItem.children && currentItem.children.length > 0
+            ? renderSideBarItem(currentItem.children, level + 1)
+            : [],
       });
     }
     return items;
+  }
+
+  function handleTableClick(entityType: string, fullPath: string) {
+    if (entityType === "Table") {
+      let dbComponents = fullPath.split("::");
+      console.log("clicked", fullPath, dbComponents);
+
+      // write logic to invoke fetch table data and render in the mainscreen
+      // set active table to the tablename
+      activeTable.set({
+        tableName: dbComponents[2],
+        schemaName: dbComponents[1],
+        dbName: dbComponents[0],
+        columns: [],
+        currentPage: 1,
+        maxPage: 0,
+        rowCount: 0,
+        rows: [],
+      });
+    }
   }
 </script>
 
@@ -98,11 +104,11 @@
     <div class="table-list has-text-left">
       {#if dashboardData && dashboardData.length > 0}
         {#each renderSideBarItem(dashboardData, 0) as item}
-          <RecursiveSidebarItem {item} />
+          <RecursiveSidebarItem {item} {handleTableClick} parentContext={{}} />
         {/each}
       {:else}
         <div class="p-4 text-gray-500">
-          {dashboardData ? 'No data available' : 'Loading...'}
+          {dashboardData ? "No data available" : "Loading..."}
         </div>
       {/if}
     </div>
@@ -170,5 +176,4 @@
     word-break: break-all;
     height: 85%;
   }
-
 </style>

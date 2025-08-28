@@ -1,4 +1,3 @@
-use types::db::ConnPool;
 use crate::cache::CacheDB;
 use crate::sql_console_storage::SqlConsoleStorage;
 use crate::storage::{ConnectionStorage, StoredConnection};
@@ -6,6 +5,7 @@ use crate::types;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio::sync::Mutex;
+use types::db::ConnPool;
 
 pub struct ApplicationState {
     pub dbpool: Mutex<Option<ConnPool>>,
@@ -48,11 +48,15 @@ pub struct IPCResponse<T> {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableDataRequest {
+    pub database_name: String,
+    pub schema_name: String,
     pub table_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableDataOffsetRequest {
+    pub database_name: String,
+    pub schema_name: String,
     pub table_name: String,
     pub offset: u32,
 }

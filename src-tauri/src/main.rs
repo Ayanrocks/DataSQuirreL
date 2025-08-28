@@ -249,7 +249,8 @@ async fn fetch_dashboard_data(
         .await
         .as_ref()
         .unwrap()
-        .fetch_schemas().await;
+        .fetch_schemas()
+        .await;
 
     match schemas_result {
         Ok(schemas) => {
@@ -377,7 +378,11 @@ async fn fetch_table_data(
         .await
         .as_ref()
         .unwrap()
-        .fetch_table_columns(&req_payload.table_name)
+        .fetch_table_columns(
+            &req_payload.database_name.to_lowercase(),
+            &req_payload.schema_name.to_lowercase(),
+            &req_payload.table_name.to_lowercase(),
+        )
         .await;
 
     // fetch table columns
@@ -477,7 +482,11 @@ fn fetch_table_data_with_offset(
             .await
             .as_ref()
             .unwrap()
-            .fetch_table_columns(&req_payload.table_name)
+            .fetch_table_columns(
+                &req_payload.database_name,
+                &req_payload.schema_name,
+                &req_payload.table_name,
+            )
             .await;
 
         // fetch table columns
