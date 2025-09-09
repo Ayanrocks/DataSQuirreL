@@ -22,6 +22,7 @@ use crate::types::api_objects::{
     ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
     SchemaData, TableData, TableDataOffsetRequest, TableDataRequest,
 };
+use crate::types::db::sql_to_js_type;
 use serde_json;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{Connection, SqliteConnection};
@@ -370,7 +371,7 @@ async fn fetch_table_data(
            3. first 600 rows
     */
 
-    let mut columns: Vec<String> = vec![];
+    let mut columns: Vec<(String, String)> = vec![];
 
     let table_columns_result = application_state
         .dbpool
@@ -389,7 +390,8 @@ async fn fetch_table_data(
     match table_columns_result {
         Ok(table_columns) => {
             for t in table_columns {
-                columns.push(t.column_name);
+                // Convert the data type to js data type
+                columns.push((sql_to_js_type(&t.data_type), t.column_name));
             }
         }
         Err(e) => {
@@ -474,7 +476,7 @@ fn fetch_table_data_with_offset(
 ) -> IPCResponse<TableData<String>> {
     log_function!(fetch_table_data_with_offset);
     tauri::async_runtime::block_on(async {
-        let mut columns: Vec<String> = vec![];
+        let mut columns: Vec<(String, String)> = vec![];
 
         let table_columns_result = application_state
             .dbpool
@@ -493,7 +495,7 @@ fn fetch_table_data_with_offset(
         match table_columns_result {
             Ok(table_columns) => {
                 for t in table_columns {
-                    columns.push(t.column_name);
+                    columns.push((sql_to_js_type(&t.data_type), t.column_name));
                 }
             }
             Err(e) => {

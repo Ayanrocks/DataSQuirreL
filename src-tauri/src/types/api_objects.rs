@@ -29,7 +29,7 @@ pub struct DBConnectionRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableData<T> {
-    pub columns: Vec<String>,
+    pub columns: Vec<(String, String)>,
     pub rows: Option<Vec<Vec<T>>>,
     pub row_count: Option<String>,
     pub table_name: Option<String>,
