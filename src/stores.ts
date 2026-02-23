@@ -29,7 +29,7 @@ export interface ActiveTable {
     schemaName: string;
     dbName: string;
     rows: string[][];
-    columns: string[];
+    columns: string[][];
     rowCount: number;
     currentPage: number;
     maxPage: number;
@@ -40,7 +40,7 @@ export const activeTable: Writable<ActiveTable> = writable({
     schemaName: '',
     dbName: '',
     rows: [[]],
-    columns: [''],
+    columns: [],
     rowCount: 0,
     currentPage: 0,
     maxPage: 0

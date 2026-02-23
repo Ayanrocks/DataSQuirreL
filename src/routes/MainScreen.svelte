@@ -11,8 +11,7 @@
     tableNames,
     windowWidth,
     windowHeight,
-    activeTable,
-    type ActiveTable, // Import ActiveTable interface
+    type ActiveTable,
   } from "../stores";
   import {
     NOTIFICATION_TYPE_ERROR,
@@ -28,81 +27,70 @@
 
   const appWindow = getCurrentWindow();
 
-  // on mousedown for the draggable
+  let activeConnectionName = $state("");
+  let dashboardData: SchemaData[] = $state([]);
 
-  let m_pos: number | undefined;
-  let activeConnectionName = "";
-  let dashboardData: SchemaData[] = [];
+  var unlisten: any;
 
-  /// to resize the window on drag
-  function resize(e: MouseEvent) {
-    if (m_pos === undefined) return; // Add null check
-    const dx = e.x - m_pos;
-    m_pos = e.x;
-    const leftSidebarContainer = document.getElementById(
-      "left-sidebar-container",
-    );
-    const rightMainContainer = document.getElementById("right-main-content");
-
-    if (leftSidebarContainer && rightMainContainer) {
-      // Add null checks
-      let computedWidth =
-        parseInt(getComputedStyle(leftSidebarContainer, "").width) + dx;
-      let computedWidthInPx = computedWidth + "px";
-
-      if (
-        computedWidth <= MAX_RESIZE_EXPANDABLE_SIZE &&
-        computedWidth >= MIN_RESIZE_EXPANDABLE_SIZE
-      ) {
-        leftSidebarContainer.style.width = computedWidthInPx;
-        rightMainContainer.style.width = $windowWidth - computedWidth + "px";
-        rightMainContainer.style.marginLeft = computedWidthInPx;
-      }
-    }
-  }
-
-  /// to resize the sidebar
-  function resizeSideBar(e: CustomEvent) {
-    const event = e.detail.event;
-    if (event.offsetX < BORDER_SIZE) {
-      m_pos = event.x;
-      document.addEventListener("mousemove", resize, false);
-    }
-  }
-
-  /// adding mousemove and mouseup event listeners
-  document.addEventListener(
-    "mouseup",
-    function () {
-      document.removeEventListener("mousemove", resize, false);
-    },
-    false,
-  );
-
-  var unlisten: any; // TODO: Find a more specific type for unlisten
-  let activeTableData: ActiveTable = {
-    // Initialize with the correct type
-    tableName: "",
-    schemaName: "",
-    dbName: "",
-    rows: [[]],
-    columns: [""],
-    rowCount: 0,
-    currentPage: 0,
-    maxPage: 0,
-  };
+  let tabs = $state<({ id: string } & ActiveTable)[]>([]);
+  let activeTabIndex = $state(-1);
 
   onDestroy(() => {
     if (unlisten) {
-      // Add null check
       unlisten();
     }
   });
 
-  activeTable.subscribe((val) => {
-    console.log("ACTIVETABLE SUbscribed in Mainscreen", val);
-    invokeTableData(val.dbName, val.schemaName, val.tableName);
-  });
+  // Replaced activeTable.subscribe with handleTableSelect
+  function handleTableSelect(entityType: string, fullPath: string) {
+    if (entityType === "Table") {
+      let dbComponents = fullPath.split("::");
+      let dbName = dbComponents[0];
+      let schemaName = dbComponents[1];
+      let tableName = dbComponents[2];
+
+      let tabId = `${dbName}::${schemaName}::${tableName}`;
+
+      // Check if tab already exists
+      let existingIndex = tabs.findIndex((t) => t.id === tabId);
+      if (existingIndex !== -1) {
+        activeTabIndex = existingIndex;
+        return;
+      }
+
+      // Create new tab
+      tabs.push({
+        id: tabId,
+        tableName: tableName,
+        schemaName: schemaName,
+        dbName: dbName,
+        columns: [],
+        currentPage: 1,
+        maxPage: 0,
+        rowCount: 0,
+        rows: [],
+      });
+      activeTabIndex = tabs.length - 1;
+
+      // Fetch initial data
+      invokeTableData(dbName, schemaName, tableName, activeTabIndex);
+    }
+  }
+
+  function handleTabChange(index: number) {
+    activeTabIndex = index;
+  }
+
+  function handleTabClose(index: number) {
+    tabs.splice(index, 1);
+    if (tabs.length === 0) {
+      activeTabIndex = -1;
+    } else if (activeTabIndex === index) {
+      activeTabIndex = Math.max(0, index - 1);
+    } else if (activeTabIndex > index) {
+      activeTabIndex--;
+    }
+  }
 
   onMount(async () => {
     // Get the current window label and extract the connection name
@@ -110,27 +98,6 @@
     activeConnectionName = label.replace(/^connection-window-/, "");
     console.log("Window label:", label);
     console.log("Active connection name:", activeConnectionName);
-
-    // on change of width, check and set the width of the main and sidebar content
-    windowWidth.subscribe((val) => {
-      // set initial width of sidebar and main content area
-      const leftSidebarContainer = document.getElementById(
-        "left-sidebar-container",
-      );
-      const rightMainContainer = document.getElementById("right-main-content");
-
-      if (leftSidebarContainer && rightMainContainer) {
-        // Add null checks
-        let computedWidth = parseInt(
-          getComputedStyle(leftSidebarContainer, "").width,
-        );
-        let computedWidthInPx = computedWidth + "px";
-
-        leftSidebarContainer.style.width = computedWidthInPx;
-        rightMainContainer.style.width = val - computedWidth + "px";
-        rightMainContainer.style.marginLeft = computedWidthInPx;
-      }
-    });
 
     unlisten = appWindow.onResized(async () => {
       const factor = await appWindow.scaleFactor();
@@ -191,6 +158,7 @@
     databaseName: string,
     schema: string,
     tableName: string,
+    tabIndex: number,
   ) {
     try {
       const res = await invoke<IPCResponse<any>>(INVOKE_GET_TABLE_DATA, {
@@ -202,34 +170,70 @@
       });
 
       console.log("RES:::", res);
+      if (tabs[tabIndex]) {
+        tabs[tabIndex].rows = res.data.rows;
+        tabs[tabIndex].columns = res.data.columns;
+        tabs[tabIndex].rowCount = parseInt(res.data.row_count);
+        tabs[tabIndex].currentPage = res.data.current_page || 1;
+        tabs[tabIndex].maxPage = res.data.max_page || 0;
+      }
     } catch (e) {
-      console.log("ErrorCATching: ", e);
+      console.log("ErrorCatching: ", e);
     }
   }
 </script>
 
 <div class="main-container">
   <MainTopBar connectionName={activeConnectionName} />
-  <Sidebar on:resizing={resizeSideBar} {dashboardData} />
-  <TabBar />
-  <div class="columns split-main-content" id="right-main-content">
-    {#if activeTableData.tableName !== ""}
-      <DataTable />
-    {/if}
+  <Sidebar {dashboardData} onTableSelect={handleTableSelect} />
+
+  <div class="right-panes">
+    <TabBar
+      {tabs}
+      {activeTabIndex}
+      onTabChange={handleTabChange}
+      onTabClose={handleTabClose}
+    />
+    <div class="columns split-main-content" id="right-main-content">
+      {#each tabs as tab, i (tab.id)}
+        <div
+          class="tab-content"
+          style="display: {i === activeTabIndex
+            ? 'block'
+            : 'none'}; height: 100%; width: 100%;"
+        >
+          <DataTable activeTableData={tab} />
+        </div>
+      {/each}
+    </div>
   </div>
 </div>
 
 <style>
   .main-container {
-    height: 102vh;
+    height: 100vh;
     width: 100vw;
     background-color: var(--offWhite);
     color: var(--accentColor);
     display: flex;
     justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  .right-panes {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin-top: 50px;
+    height: calc(100vh - 50px);
+    background-color: #ffffff;
   }
 
   .split-main-content {
-    margin-left: clamp(250px, 24%, 600px);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
   }
 </style>

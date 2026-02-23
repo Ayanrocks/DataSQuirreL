@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { activeTable, notificationMsg, tableNames } from "../stores";
+  import { notificationMsg, tableNames } from "../stores";
   import { invoke } from "@tauri-apps/api/core";
   import {
     NOTIFICATION_TYPE_ERROR,
@@ -12,6 +12,10 @@
   let activeTableName: string = "";
 
   export let dashboardData: SchemaData[];
+  export let onTableSelect: (
+    entityType: string,
+    fullPath: string,
+  ) => void = () => {};
 
   // Sidebar width state
   let sidebarWidth = 260; // px, default width
@@ -75,21 +79,7 @@
 
   function handleTableClick(entityType: string, fullPath: string) {
     if (entityType === "Table") {
-      let dbComponents = fullPath.split("::");
-      console.log("clicked", fullPath, dbComponents);
-
-      // write logic to invoke fetch table data and render in the mainscreen
-      // set active table to the tablename
-      activeTable.set({
-        tableName: dbComponents[2],
-        schemaName: dbComponents[1],
-        dbName: dbComponents[0],
-        columns: [],
-        currentPage: 1,
-        maxPage: 0,
-        rowCount: 0,
-        rows: [],
-      });
+      onTableSelect(entityType, fullPath);
     }
   }
 </script>
@@ -103,7 +93,7 @@
     <SidebarToolbar />
     <div class="table-list has-text-left">
       {#if dashboardData && dashboardData.length > 0}
-        {#each renderSideBarItem(dashboardData, 0) as item}
+        {#each renderSideBarItem(dashboardData, 0) as item (item.entityName)}
           <RecursiveSidebarItem {item} {handleTableClick} parentContext={{}} />
         {/each}
       {:else}
