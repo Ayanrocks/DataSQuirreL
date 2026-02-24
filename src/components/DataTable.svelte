@@ -15,8 +15,8 @@
       {
         id: "index",
         header: "#",
-        cell: (info) =>
-          info.row.index + 1 + ((activeTableData?.currentPage || 1) - 1) * 100,
+        accessorFn: (_row, index) =>
+          index + 1 + ((activeTableData?.currentPage || 1) - 1) * 100,
         size: 50,
       },
     ];
@@ -118,10 +118,13 @@
   }
 
   .table-scroll-container {
-    flex: 1;
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
     overflow: auto;
     width: 100%;
     border-bottom: 1px solid #d1d5db;
+    margin-bottom: 24px;
   }
 
   table {
