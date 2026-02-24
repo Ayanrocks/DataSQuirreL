@@ -49,6 +49,7 @@
     c: number,
   ) {
     if (e.button !== 0) return; // only left click
+    e.preventDefault();
     isDragging = true;
 
     if (e.shiftKey && selectionAnchor && selectionAnchor.type === type) {
@@ -291,6 +292,7 @@
     min-width: 0;
     overflow: auto;
     width: 100%;
+    overscroll-behavior: contain;
     border-bottom: 1px solid #d1d5db;
     margin-bottom: 24px;
   }
