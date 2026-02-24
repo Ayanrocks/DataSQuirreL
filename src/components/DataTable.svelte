@@ -10,6 +10,16 @@
 
   let { activeTableData } = $props<{ activeTableData: ActiveTable }>();
 
+  let selectedRowId = $state<string | null>(null);
+  let selectedCellId = $state<string | null>(null);
+
+  $effect(() => {
+    // Reset selection when table or page changes
+    const _ = activeTableData;
+    selectedRowId = null;
+    selectedCellId = null;
+  });
+
   let columns = $derived.by(() => {
     let cols: ColumnDef<any>[] = [
       {
@@ -89,9 +99,23 @@
         </thead>
         <tbody>
           {#each table.getRowModel().rows as row (row.id)}
-            <tr>
+            <tr class:selected-row={selectedRowId === row.id}>
               {#each row.getVisibleCells() as cell (cell.id)}
-                <td>
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <td
+                  class:selected-cell={selectedCellId === cell.id &&
+                    selectedRowId !== row.id}
+                  onclick={() => {
+                    if (cell.column.id === "index") {
+                      selectedRowId = selectedRowId === row.id ? null : row.id;
+                      selectedCellId = null;
+                    } else {
+                      selectedCellId = cell.id;
+                      selectedRowId = null;
+                    }
+                  }}
+                >
                   {cell.getValue()}
                 </td>
               {/each}
@@ -132,7 +156,8 @@
     border-collapse: separate;
     border-spacing: 0;
     font-size: 13px;
-    font-family: inherit;
+    font-family: "JetBrains Mono", monospace;
+    color: #1f2937;
   }
 
   th,
@@ -145,6 +170,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 300px;
+  }
+
+  td {
+    cursor: cell;
   }
 
   th {
@@ -178,6 +207,7 @@
     z-index: 4; /* Higher than normal cells but below headers */
     box-shadow: 1px 0 0 #d1d5db;
     border-right: none;
+    cursor: pointer;
   }
 
   tbody tr:nth-child(even) td:not(:first-child) {
@@ -186,6 +216,34 @@
 
   tbody tr:hover td:not(:first-child) {
     background-color: #f3f4f6;
+  }
+
+  tbody tr.selected-row td {
+    background-color: #e0f2fe !important; /* light blue for selected row */
+    box-shadow:
+      inset 0 2px 0 0 #3b82f6,
+      inset 0 -2px 0 0 #3b82f6;
+  }
+
+  tbody tr.selected-row td:first-child {
+    background-color: #bae6fd !important; /* slightly darker for the index */
+    box-shadow:
+      inset 0 2px 0 0 #3b82f6,
+      inset 0 -2px 0 0 #3b82f6,
+      inset 2px 0 0 0 #3b82f6;
+  }
+
+  tbody tr.selected-row td:last-child {
+    box-shadow:
+      inset 0 2px 0 0 #3b82f6,
+      inset 0 -2px 0 0 #3b82f6,
+      inset -2px 0 0 0 #3b82f6;
+  }
+
+  td.selected-cell {
+    outline: 2px solid #3b82f6; /* blue outline */
+    outline-offset: -2px;
+    background-color: #e0f2fe !important;
   }
 
   .empty-state {
