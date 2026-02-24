@@ -29,6 +29,13 @@
   } | null>(null);
   let isDragging = $state(false);
 
+  let editingCell = $state<{ r: number; c: number } | null>(null);
+  let editValue = $state("");
+  let inputRef = $state<HTMLInputElement | null>(null);
+  let contextMenu = $state<{ x: number; y: number; show: boolean } | null>(
+    null,
+  );
+
   $effect(() => {
     // Reset selection when table or page changes
     const _ = activeTableData;
@@ -40,7 +47,313 @@
     dragSelectedCells = {};
     selectionAnchor = null;
     isDragging = false;
+    editingCell = null;
+    contextMenu = null;
   });
+
+  function handleDoubleClick(r: number, c: number, cellValue: string) {
+    if (c === 0) return; // don't edit the index column
+    editingCell = { r, c };
+    editValue = cellValue;
+    setTimeout(() => {
+      if (inputRef) {
+        inputRef.focus();
+        inputRef.select();
+      }
+    }, 0);
+  }
+
+  function commitEdit() {
+    if (editingCell) {
+      const { r, c } = editingCell;
+      if (activeTableData?.rows) {
+        activeTableData.rows[r][c - 1] = editValue;
+      }
+      editingCell = null;
+    }
+  }
+
+  function cancelEdit() {
+    editingCell = null;
+  }
+
+  function handleEditKeyDown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      commitEdit();
+    } else if (e.key === "Escape") {
+      cancelEdit();
+    }
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      )
+        return;
+      e.preventDefault();
+      const allRows: Record<number, boolean> = {};
+      for (let i = 0; i < data.length; i++) {
+        allRows[i] = true;
+      }
+      baseSelectedRows = allRows;
+      baseSelectedCols = {};
+      baseSelectedCells = {};
+      return;
+    }
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      )
+        return;
+      if (editingCell) return;
+
+      const hasSelection =
+        Object.keys(selectedCells).length > 0 ||
+        Object.keys(selectedRows).length > 0 ||
+        Object.keys(selectedCols).length > 0;
+      if (!hasSelection) return;
+
+      e.preventDefault();
+
+      if (activeTableData?.rows && activeTableData.columns) {
+        let updatedRows = [...activeTableData.rows];
+        let modified = false;
+
+        const sRows = Object.keys(selectedRows).map(Number);
+        if (sRows.length > 0) {
+          sRows.forEach((r) => {
+            for (let c = 0; c < activeTableData.columns.length; c++) {
+              updatedRows[r][c] = "";
+            }
+          });
+          modified = true;
+        }
+
+        const sCols = Object.keys(selectedCols).map(Number);
+        if (sCols.length > 0) {
+          for (let r = 0; r < updatedRows.length; r++) {
+            sCols.forEach((c) => {
+              if (c > 0) {
+                updatedRows[r][c - 1] = "";
+              }
+            });
+          }
+          modified = true;
+        }
+
+        const sCells = Object.keys(selectedCells);
+        if (sCells.length > 0) {
+          sCells.forEach((id) => {
+            const [rStr, cStr] = id.split("-");
+            const r = parseInt(rStr);
+            const c = parseInt(cStr);
+            if (c > 0) {
+              updatedRows[r][c - 1] = "";
+            }
+          });
+          modified = true;
+        }
+
+        if (modified) {
+          activeTableData.rows = updatedRows;
+        }
+      }
+    }
+  }
+
+  function getSelectedText() {
+    const hasCells = Object.keys(selectedCells).length > 0;
+    const hasRows = Object.keys(selectedRows).length > 0;
+    const hasCols = Object.keys(selectedCols).length > 0;
+
+    if (!hasCells && !hasRows && !hasCols) return null;
+    if (!activeTableData?.rows) return null;
+
+    let lines: string[] = [];
+
+    if (hasRows) {
+      const sRows = Object.keys(selectedRows)
+        .map(Number)
+        .sort((a, b) => a - b);
+      sRows.forEach((r) => {
+        lines.push(activeTableData.rows[r].join("\t"));
+      });
+    } else if (hasCols) {
+      const sCols = Object.keys(selectedCols)
+        .map(Number)
+        .sort((a, b) => a - b);
+      for (let r = 0; r < activeTableData.rows.length; r++) {
+        let rowVals: string[] = [];
+        sCols.forEach((c) => {
+          if (c > 0) rowVals.push(activeTableData.rows[r][c - 1] || "");
+        });
+        lines.push(rowVals.join("\t"));
+      }
+    } else {
+      const cellKeys = Object.keys(selectedCells);
+      let minR = Infinity,
+        maxR = -Infinity;
+      let minC = Infinity,
+        maxC = -Infinity;
+      cellKeys.forEach((k) => {
+        const [rStr, cStr] = k.split("-");
+        const r = parseInt(rStr);
+        const c = parseInt(cStr);
+        if (r < minR) minR = r;
+        if (r > maxR) maxR = r;
+        if (c < minC) minC = c;
+        if (c > maxC) maxC = c;
+      });
+
+      for (let r = minR; r <= maxR; r++) {
+        let rowVals: string[] = [];
+        for (let c = minC; c <= maxC; c++) {
+          if (c > 0) {
+            if (selectedCells[`${r}-${c}`]) {
+              rowVals.push(activeTableData.rows[r][c - 1] || "");
+            } else {
+              rowVals.push("");
+            }
+          }
+        }
+        if (rowVals.length > 0) lines.push(rowVals.join("\t"));
+      }
+    }
+
+    return lines.join("\n");
+  }
+
+  async function handleCopy(e: ClipboardEvent | undefined = undefined) {
+    if (
+      document.activeElement?.tagName === "INPUT" ||
+      document.activeElement?.tagName === "TEXTAREA"
+    )
+      return;
+    if (editingCell) return;
+
+    const text = getSelectedText();
+    if (text !== null) {
+      if (e) {
+        e.preventDefault();
+        e.clipboardData?.setData("text/plain", text);
+      } else {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch (err) {
+          console.error("Failed to copy", err);
+        }
+      }
+    }
+    contextMenu = null;
+  }
+
+  async function handlePaste(e: ClipboardEvent | undefined = undefined) {
+    if (
+      document.activeElement?.tagName === "INPUT" ||
+      document.activeElement?.tagName === "TEXTAREA"
+    )
+      return;
+    if (editingCell) return;
+
+    let text = "";
+    if (e) {
+      text = e.clipboardData?.getData("text/plain") || "";
+      if (text) e.preventDefault();
+    } else {
+      try {
+        text = await navigator.clipboard.readText();
+      } catch (err) {
+        console.error("Failed to read clipboard", err);
+        return;
+      }
+    }
+
+    if (!text || !activeTableData?.rows) {
+      contextMenu = null;
+      return;
+    }
+
+    const rows = text.split(/\r?\n/).map((row) => row.split("\t"));
+
+    let startR = 0;
+    let startC = 1;
+
+    if (selectionAnchor) {
+      startR = selectionAnchor.r;
+      startC = selectionAnchor.c;
+    } else {
+      const cellKeys = Object.keys(selectedCells);
+      if (cellKeys.length > 0) {
+        const [r, c] = cellKeys[0].split("-").map(Number);
+        startR = r;
+        startC = c;
+      } else if (Object.keys(selectedRows).length > 0) {
+        startR = Math.min(...Object.keys(selectedRows).map(Number));
+        startC = 1;
+      } else if (Object.keys(selectedCols).length > 0) {
+        startC = Math.min(...Object.keys(selectedCols).map(Number));
+        if (startC === 0) startC = 1;
+        startR = 0;
+      }
+    }
+
+    if (startC === 0) startC = 1;
+
+    let updatedRows = [...activeTableData.rows];
+    let modified = false;
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = startR + i;
+      if (r >= updatedRows.length) break;
+
+      for (let j = 0; j < rows[i].length; j++) {
+        const c = startC + j;
+        if (c - 1 < activeTableData.columns.length) {
+          updatedRows[r][c - 1] = rows[i][j];
+          modified = true;
+        }
+      }
+    }
+
+    if (modified) {
+      activeTableData.rows = updatedRows;
+    }
+    contextMenu = null;
+  }
+
+  function handleContextMenu(e: MouseEvent, r: number, c: number) {
+    if (c === 0) return; // ignore index col
+    e.preventDefault();
+    contextMenu = {
+      x: e.clientX,
+      y: e.clientY,
+      show: true,
+    };
+
+    // Check if right click matches current selection
+    let isSelected = false;
+    if (selectedRows[r] || selectedCols[c] || selectedCells[`${r}-${c}`]) {
+      isSelected = true;
+    }
+
+    if (!isSelected) {
+      baseSelectedCells = { [`${r}-${c}`]: true };
+      baseSelectedRows = {};
+      baseSelectedCols = {};
+      selectionAnchor = { type: "cell", r, c };
+      dragSelectedRows = {};
+      dragSelectedCols = {};
+      dragSelectedCells = {};
+    }
+  }
+
+  function handleClickOutside(e: MouseEvent) {
+    if (contextMenu) contextMenu = null;
+  }
 
   function handleMouseDown(
     e: MouseEvent,
@@ -49,6 +362,11 @@
     c: number,
   ) {
     if (e.button !== 0) return; // only left click
+
+    if (editingCell) {
+      commitEdit();
+    }
+
     e.preventDefault();
     isDragging = true;
 
@@ -192,7 +510,13 @@
   });
 </script>
 
-<svelte:window onmouseup={handleMouseUp} />
+<svelte:window
+  onmouseup={handleMouseUp}
+  onkeydown={handleKeyDown}
+  oncopy={handleCopy}
+  onpaste={handlePaste}
+  onclick={handleClickOutside}
+/>
 
 <div class="datatable-main-container">
   {#if activeTableData && activeTableData.tableName}
@@ -260,8 +584,24 @@
                       handleMouseEnter(e, "cell", r, c);
                     }
                   }}
+                  ondblclick={() =>
+                    handleDoubleClick(r, c, cell.getValue() as string)}
+                  oncontextmenu={(e) => handleContextMenu(e, r, c)}
                 >
-                  {cell.getValue()}
+                  {#if editingCell?.r === r && editingCell?.c === c}
+                    <!-- svelte-ignore a11y_autofocus -->
+                    <input
+                      bind:this={inputRef}
+                      bind:value={editValue}
+                      onblur={commitEdit}
+                      onkeydown={handleEditKeyDown}
+                      onclick={(e) => e.stopPropagation()}
+                      onmousedown={(e) => e.stopPropagation()}
+                      class="cell-edit-input"
+                    />
+                  {:else}
+                    {cell.getValue()}
+                  {/if}
                 </td>
               {/each}
             </tr>
@@ -272,6 +612,25 @@
   {:else}
     <div class="empty-state">
       <p>No data selected. Click a table in the sidebar to view data.</p>
+    </div>
+  {/if}
+
+  {#if contextMenu && contextMenu.show}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="context-menu"
+      style={`top: ${contextMenu.y}px; left: ${contextMenu.x}px`}
+      onclick={(e) => e.stopPropagation()}
+    >
+      <div class="menu-item" onclick={() => handleCopy()}>
+        Copy
+        <span class="shortcut">Ctrl C</span>
+      </div>
+      <div class="menu-item" onclick={() => handlePaste()}>
+        Paste
+        <span class="shortcut">Ctrl V</span>
+      </div>
     </div>
   {/if}
 </div>
@@ -406,5 +765,51 @@
     height: 100%;
     color: #6b7280;
     font-size: 14px;
+  }
+
+  .context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 4px 0;
+    z-index: 50;
+    min-width: 150px;
+  }
+
+  .menu-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .menu-item:hover {
+    background-color: #f3f4f6;
+  }
+
+  .menu-item .shortcut {
+    color: #9ca3af;
+    font-size: 12px;
+  }
+
+  .cell-edit-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
   }
 </style>
