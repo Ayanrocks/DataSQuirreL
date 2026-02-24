@@ -10,15 +10,138 @@
 
   let { activeTableData } = $props<{ activeTableData: ActiveTable }>();
 
-  let selectedRowId = $state<string | null>(null);
-  let selectedCellId = $state<string | null>(null);
+  let baseSelectedRows = $state<Record<number, boolean>>({});
+  let dragSelectedRows = $state<Record<number, boolean>>({});
+  let selectedRows = $derived({ ...baseSelectedRows, ...dragSelectedRows });
+
+  let baseSelectedCols = $state<Record<number, boolean>>({});
+  let dragSelectedCols = $state<Record<number, boolean>>({});
+  let selectedCols = $derived({ ...baseSelectedCols, ...dragSelectedCols });
+
+  let baseSelectedCells = $state<Record<string, boolean>>({});
+  let dragSelectedCells = $state<Record<string, boolean>>({});
+  let selectedCells = $derived({ ...baseSelectedCells, ...dragSelectedCells });
+
+  let selectionAnchor = $state<{
+    type: "row" | "col" | "cell";
+    r: number;
+    c: number;
+  } | null>(null);
+  let isDragging = $state(false);
 
   $effect(() => {
     // Reset selection when table or page changes
     const _ = activeTableData;
-    selectedRowId = null;
-    selectedCellId = null;
+    baseSelectedRows = {};
+    dragSelectedRows = {};
+    baseSelectedCols = {};
+    dragSelectedCols = {};
+    baseSelectedCells = {};
+    dragSelectedCells = {};
+    selectionAnchor = null;
+    isDragging = false;
   });
+
+  function handleMouseDown(
+    e: MouseEvent,
+    type: "row" | "col" | "cell",
+    r: number,
+    c: number,
+  ) {
+    if (e.button !== 0) return; // only left click
+    isDragging = true;
+
+    if (e.shiftKey && selectionAnchor && selectionAnchor.type === type) {
+      if (!(e.metaKey || e.ctrlKey)) {
+        baseSelectedRows = {};
+        baseSelectedCols = {};
+        baseSelectedCells = {};
+      }
+      updateDragSelection(selectionAnchor, { type, r, c });
+    } else {
+      selectionAnchor = { type, r, c };
+      if (e.metaKey || e.ctrlKey) {
+        if (type === "row") {
+          const newRows = { ...baseSelectedRows };
+          if (newRows[r]) delete newRows[r];
+          else newRows[r] = true;
+          baseSelectedRows = newRows;
+        } else if (type === "col") {
+          const newCols = { ...baseSelectedCols };
+          if (newCols[c]) delete newCols[c];
+          else newCols[c] = true;
+          baseSelectedCols = newCols;
+        } else {
+          const id = `${r}-${c}`;
+          const newCells = { ...baseSelectedCells };
+          if (newCells[id]) delete newCells[id];
+          else newCells[id] = true;
+          baseSelectedCells = newCells;
+        }
+      } else {
+        baseSelectedRows = type === "row" ? { [r]: true } : {};
+        baseSelectedCols = type === "col" ? { [c]: true } : {};
+        baseSelectedCells = type === "cell" ? { [`${r}-${c}`]: true } : {};
+      }
+      dragSelectedRows = {};
+      dragSelectedCols = {};
+      dragSelectedCells = {};
+    }
+  }
+
+  function handleMouseEnter(
+    e: MouseEvent,
+    type: "row" | "col" | "cell",
+    r: number,
+    c: number,
+  ) {
+    if (!isDragging || !selectionAnchor) return;
+    updateDragSelection(selectionAnchor, { type, r, c });
+  }
+
+  function handleMouseUp() {
+    if (isDragging) {
+      isDragging = false;
+      baseSelectedRows = { ...baseSelectedRows, ...dragSelectedRows };
+      baseSelectedCols = { ...baseSelectedCols, ...dragSelectedCols };
+      baseSelectedCells = { ...baseSelectedCells, ...dragSelectedCells };
+      dragSelectedRows = {};
+      dragSelectedCols = {};
+      dragSelectedCells = {};
+    }
+  }
+
+  function updateDragSelection(
+    anchor: { type: "row" | "col" | "cell"; r: number; c: number },
+    current: { type: "row" | "col" | "cell"; r: number; c: number },
+  ) {
+    const newDragRows: Record<number, boolean> = {};
+    const newDragCols: Record<number, boolean> = {};
+    const newDragCells: Record<string, boolean> = {};
+
+    if (anchor.type === "row" && current.type === "row") {
+      const minR = Math.min(anchor.r, current.r);
+      const maxR = Math.max(anchor.r, current.r);
+      for (let i = minR; i <= maxR; i++) newDragRows[i] = true;
+    } else if (anchor.type === "col" && current.type === "col") {
+      const minC = Math.min(anchor.c, current.c);
+      const maxC = Math.max(anchor.c, current.c);
+      for (let i = minC; i <= maxC; i++) newDragCols[i] = true;
+    } else if (anchor.type === "cell" && current.type === "cell") {
+      const minR = Math.min(anchor.r, current.r);
+      const maxR = Math.max(anchor.r, current.r);
+      const minC = Math.min(anchor.c, current.c);
+      const maxC = Math.max(anchor.c, current.c);
+      for (let i = minR; i <= maxR; i++) {
+        for (let j = minC; j <= maxC; j++) {
+          newDragCells[`${i}-${j}`] = true;
+        }
+      }
+    }
+    dragSelectedRows = newDragRows;
+    dragSelectedCols = newDragCols;
+    dragSelectedCells = newDragCells;
+  }
 
   let columns = $derived.by(() => {
     let cols: ColumnDef<any>[] = [
@@ -68,6 +191,8 @@
   });
 </script>
 
+<svelte:window onmouseup={handleMouseUp} />
+
 <div class="datatable-main-container">
   {#if activeTableData && activeTableData.tableName}
     <DataTableToolBar
@@ -87,8 +212,23 @@
         <thead>
           {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
             <tr>
-              {#each headerGroup.headers as header (header.id)}
-                <th colSpan={header.colSpan}>
+              {#each headerGroup.headers as header, c (header.id)}
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <th
+                  colSpan={header.colSpan}
+                  class:selected-col={selectedCols[c]}
+                  onmousedown={(e) => {
+                    if (header.column.id === "index") return;
+                    handleMouseDown(e, "col", 0, c);
+                  }}
+                  onmouseenter={(e) => {
+                    if (header.column.id === "index") return;
+                    handleMouseEnter(e, "col", 0, c);
+                  }}
+                  style:cursor={header.column.id === "index"
+                    ? "default"
+                    : "pointer"}
+                >
                   {#if !header.isPlaceholder}
                     {header.column.columnDef.header}
                   {/if}
@@ -98,21 +238,25 @@
           {/each}
         </thead>
         <tbody>
-          {#each table.getRowModel().rows as row (row.id)}
-            <tr class:selected-row={selectedRowId === row.id}>
-              {#each row.getVisibleCells() as cell (cell.id)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
+          {#each table.getRowModel().rows as row, r (row.id)}
+            <tr class:selected-row={selectedRows[r]}>
+              {#each row.getVisibleCells() as cell, c (cell.id)}
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <td
-                  class:selected-cell={selectedCellId === cell.id &&
-                    selectedRowId !== row.id}
-                  onclick={() => {
+                  class:selected-cell={selectedCells[`${r}-${c}`] ||
+                    selectedCols[c]}
+                  onmousedown={(e) => {
                     if (cell.column.id === "index") {
-                      selectedRowId = selectedRowId === row.id ? null : row.id;
-                      selectedCellId = null;
+                      handleMouseDown(e, "row", r, c);
                     } else {
-                      selectedCellId = cell.id;
-                      selectedRowId = null;
+                      handleMouseDown(e, "cell", r, c);
+                    }
+                  }}
+                  onmouseenter={(e) => {
+                    if (cell.column.id === "index") {
+                      handleMouseEnter(e, "row", r, c);
+                    } else {
+                      handleMouseEnter(e, "cell", r, c);
                     }
                   }}
                 >
@@ -170,10 +314,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 300px;
+    font-family: "JetBrains Mono", monospace;
   }
 
   td {
     cursor: cell;
+    user-select: none; /* prevent native text selection when dragging */
   }
 
   th {
@@ -186,6 +332,11 @@
     border-top: none;
     box-shadow: 0 1px 0 #d1d5db; /* bottom border representation for sticky */
     border-bottom: none; /* we use box-shadow to prevent scroll bug on sticky */
+    user-select: none; /* prevent text selection when dragging columns */
+  }
+
+  th.selected-col {
+    background-color: #bae6fd !important;
   }
 
   /* Index column header */
