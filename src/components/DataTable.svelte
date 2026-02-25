@@ -7,8 +7,12 @@
     type CellContext,
   } from "@tanstack/table-core";
   import { createTable } from "@tanstack/svelte-table";
+  import CellEditor from "./CellEditor.svelte";
+  import { HistoryManager, type HistoryOp } from "../lib/HistoryManager";
 
   let { activeTableData } = $props<{ activeTableData: ActiveTable }>();
+
+  const historyManager = new HistoryManager();
 
   let baseSelectedRows = $state<Record<number, boolean>>({});
   let dragSelectedRows = $state<Record<number, boolean>>({});
@@ -38,7 +42,7 @@
 
   $effect(() => {
     // Reset selection when table or page changes
-    const _ = activeTableData;
+    const _ = activeTableData?.id || activeTableData?.tableName; // re-trigger on table change
     baseSelectedRows = {};
     dragSelectedRows = {};
     baseSelectedCols = {};
@@ -49,25 +53,38 @@
     isDragging = false;
     editingCell = null;
     contextMenu = null;
+    historyManager.clear();
   });
 
-  function handleDoubleClick(r: number, c: number, cellValue: string) {
-    if (c === 0) return; // don't edit the index column
-    editingCell = { r, c };
-    editValue = cellValue;
-    setTimeout(() => {
-      if (inputRef) {
-        inputRef.focus();
-        inputRef.select();
-      }
-    }, 0);
-  }
-
-  function commitEdit() {
+  function commitEdit(newVal: string) {
     if (editingCell) {
-      const { r, c } = editingCell;
-      if (activeTableData?.rows) {
-        activeTableData.rows[r][c - 1] = editValue;
+      if (activeTableData?.rows && activeTableData.columns) {
+        let updatedRows = [...activeTableData.rows];
+        let modified = false;
+        const ops: HistoryOp[] = [];
+
+        // Apply to all selected elements
+        for (let r = 0; r < updatedRows.length; r++) {
+          for (let c = 1; c <= activeTableData.columns.length; c++) {
+            if (
+              selectedRows[r] ||
+              selectedCols[c] ||
+              selectedCells[`${r}-${c}`]
+            ) {
+              const oldVal = updatedRows[r][c - 1];
+              if (oldVal !== newVal) {
+                ops.push({ r, c, oldVal, newVal });
+                updatedRows[r][c - 1] = newVal;
+                modified = true;
+              }
+            }
+          }
+        }
+
+        if (modified) {
+          historyManager.push(ops);
+          activeTableData.rows = updatedRows;
+        }
       }
       editingCell = null;
     }
@@ -77,15 +94,46 @@
     editingCell = null;
   }
 
-  function handleEditKeyDown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
-      commitEdit();
-    } else if (e.key === "Escape") {
-      cancelEdit();
-    }
-  }
-
   function handleKeyDown(e: KeyboardEvent) {
+    // Escape mapping
+    if (e.key === "Escape") {
+      baseSelectedRows = {};
+      baseSelectedCols = {};
+      baseSelectedCells = {};
+      selectionAnchor = null;
+      editingCell = null;
+      return;
+    }
+
+    // Undo/Redo intercept
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      (e.key.toLowerCase() === "z" ||
+        e.key.toLowerCase() === "r" ||
+        e.key.toLowerCase() === "y")
+    ) {
+      // Don't intercept if editing
+      if (editingCell) return;
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      )
+        return;
+
+      e.preventDefault();
+
+      if (e.key.toLowerCase() === "z" && !e.shiftKey) {
+        if (activeTableData && historyManager.undo(activeTableData.rows)) {
+          activeTableData.rows = [...activeTableData.rows];
+        }
+      } else {
+        // Redo (Ctrl+Y, Ctrl+R, or Ctrl+Shift+Z)
+        if (activeTableData && historyManager.redo(activeTableData.rows)) {
+          activeTableData.rows = [...activeTableData.rows];
+        }
+      }
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
       if (
         document.activeElement?.tagName === "INPUT" ||
@@ -123,42 +171,27 @@
         let updatedRows = [...activeTableData.rows];
         let modified = false;
 
-        const sRows = Object.keys(selectedRows).map(Number);
-        if (sRows.length > 0) {
-          sRows.forEach((r) => {
-            for (let c = 0; c < activeTableData.columns.length; c++) {
-              updatedRows[r][c] = "";
-            }
-          });
-          modified = true;
-        }
+        const ops: HistoryOp[] = [];
 
-        const sCols = Object.keys(selectedCols).map(Number);
-        if (sCols.length > 0) {
-          for (let r = 0; r < updatedRows.length; r++) {
-            sCols.forEach((c) => {
-              if (c > 0) {
+        for (let r = 0; r < updatedRows.length; r++) {
+          for (let c = 1; c <= activeTableData.columns.length; c++) {
+            if (
+              selectedRows[r] ||
+              selectedCols[c] ||
+              selectedCells[`${r}-${c}`]
+            ) {
+              const oldVal = updatedRows[r][c - 1];
+              if (oldVal !== "") {
+                ops.push({ r, c, oldVal, newVal: "" });
                 updatedRows[r][c - 1] = "";
+                modified = true;
               }
-            });
-          }
-          modified = true;
-        }
-
-        const sCells = Object.keys(selectedCells);
-        if (sCells.length > 0) {
-          sCells.forEach((id) => {
-            const [rStr, cStr] = id.split("-");
-            const r = parseInt(rStr);
-            const c = parseInt(cStr);
-            if (c > 0) {
-              updatedRows[r][c - 1] = "";
             }
-          });
-          modified = true;
+          }
         }
 
         if (modified) {
+          historyManager.push(ops);
           activeTableData.rows = updatedRows;
         }
       }
@@ -306,6 +339,8 @@
     let updatedRows = [...activeTableData.rows];
     let modified = false;
 
+    let ops: HistoryOp[] = [];
+
     for (let i = 0; i < rows.length; i++) {
       const r = startR + i;
       if (r >= updatedRows.length) break;
@@ -313,13 +348,19 @@
       for (let j = 0; j < rows[i].length; j++) {
         const c = startC + j;
         if (c - 1 < activeTableData.columns.length) {
-          updatedRows[r][c - 1] = rows[i][j];
-          modified = true;
+          const oldVal = updatedRows[r][c - 1];
+          const newVal = rows[i][j];
+          if (oldVal !== newVal) {
+            ops.push({ r, c, oldVal, newVal });
+            updatedRows[r][c - 1] = newVal;
+            modified = true;
+          }
         }
       }
     }
 
     if (modified) {
+      historyManager.push(ops);
       activeTableData.rows = updatedRows;
     }
     contextMenu = null;
@@ -353,6 +394,16 @@
 
   function handleClickOutside(e: MouseEvent) {
     if (contextMenu) contextMenu = null;
+
+    // Clear selection if clicking outside datatable container
+    const target = e.target as HTMLElement;
+    if (target && !target.closest(".datatable-main-container")) {
+      baseSelectedRows = {};
+      baseSelectedCols = {};
+      baseSelectedCells = {};
+      selectionAnchor = null;
+      editingCell = null;
+    }
   }
 
   function handleMouseDown(
@@ -364,7 +415,12 @@
     if (e.button !== 0) return; // only left click
 
     if (editingCell) {
-      commitEdit();
+      commitEdit(
+        document.querySelector(".cell-editor-input")
+          ? (document.querySelector(".cell-editor-input") as HTMLInputElement)
+              .value
+          : "",
+      );
     }
 
     e.preventDefault();
@@ -427,6 +483,12 @@
       dragSelectedRows = {};
       dragSelectedCols = {};
       dragSelectedCells = {};
+
+      if (selectionAnchor && selectionAnchor.type === "cell") {
+        editingCell = { r: selectionAnchor.r, c: selectionAnchor.c };
+      } else {
+        editingCell = null;
+      }
     }
   }
 
@@ -584,23 +646,26 @@
                       handleMouseEnter(e, "cell", r, c);
                     }
                   }}
-                  ondblclick={() =>
-                    handleDoubleClick(r, c, cell.getValue() as string)}
+                  ondblclick={(e) => {
+                    e.stopPropagation();
+                    editingCell = { r, c };
+                  }}
                   oncontextmenu={(e) => handleContextMenu(e, r, c)}
                 >
-                  {#if editingCell?.r === r && editingCell?.c === c}
-                    <!-- svelte-ignore a11y_autofocus -->
-                    <input
-                      bind:this={inputRef}
-                      bind:value={editValue}
-                      onblur={commitEdit}
-                      onkeydown={handleEditKeyDown}
-                      onclick={(e) => e.stopPropagation()}
-                      onmousedown={(e) => e.stopPropagation()}
-                      class="cell-edit-input"
-                    />
-                  {:else}
+                  <span
+                    style="visibility: {editingCell?.r === r &&
+                    editingCell?.c === c
+                      ? 'hidden'
+                      : 'visible'}"
+                  >
                     {cell.getValue()}
+                  </span>
+                  {#if editingCell?.r === r && editingCell?.c === c}
+                    <CellEditor
+                      initialValue={cell.getValue() as string}
+                      onCommit={commitEdit}
+                      onCancel={cancelEdit}
+                    />
                   {/if}
                 </td>
               {/each}
@@ -679,6 +744,7 @@
   }
 
   td {
+    position: relative;
     cursor: cell;
     user-select: none; /* prevent native text selection when dragging */
   }
@@ -797,19 +863,5 @@
   .menu-item .shortcut {
     color: #9ca3af;
     font-size: 12px;
-  }
-
-  .cell-edit-input {
-    width: 100%;
-    height: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-family: inherit;
-    font-size: inherit;
-    color: inherit;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
   }
 </style>
