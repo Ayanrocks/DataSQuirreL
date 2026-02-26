@@ -65,6 +65,7 @@
         tableName: tableName,
         schemaName: schemaName,
         dbName: dbName,
+        displayName: tableName,
         columns: [],
         currentPage: 1,
         maxPage: 0,
@@ -72,6 +73,7 @@
         rows: [],
       });
       activeTabIndex = tabs.length - 1;
+      updateTabNames();
 
       // Fetch initial data
       invokeTableData(dbName, schemaName, tableName, activeTabIndex, 0, 100);
@@ -90,6 +92,27 @@
       activeTabIndex = Math.max(0, index - 1);
     } else if (activeTabIndex > index) {
       activeTabIndex--;
+    }
+    updateTabNames();
+  }
+
+  function updateTabNames() {
+    for (let tab of tabs) {
+      let conflicts = tabs.filter(
+        (t) => t.tableName === tab.tableName && t.id !== tab.id,
+      );
+      if (conflicts.length === 0) {
+        tab.displayName = tab.tableName;
+      } else {
+        let schemaConflicts = conflicts.filter(
+          (t) => t.schemaName === tab.schemaName,
+        );
+        if (schemaConflicts.length === 0) {
+          tab.displayName = `${tab.schemaName}.${tab.tableName}`;
+        } else {
+          tab.displayName = `${tab.dbName}.${tab.schemaName}.${tab.tableName}`;
+        }
+      }
     }
   }
 

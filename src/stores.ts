@@ -28,6 +28,7 @@ export interface ActiveTable {
     tableName: string;
     schemaName: string;
     dbName: string;
+    displayName?: string;
     rows: string[][];
     columns: string[][];
     rowCount: number;

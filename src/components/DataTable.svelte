@@ -12,8 +12,16 @@
 
   let { activeTableData, fetchData } = $props<{
     activeTableData: ActiveTable;
-    fetchData?: (offset: number, limit: number | null) => void;
+    fetchData?: (offset: number, limit: number | null) => void | Promise<void>;
   }>();
+
+  let isRefreshing = $state(false);
+
+  async function handleRefresh() {
+    isRefreshing = true;
+    if (fetchData) await fetchData(offset, limit);
+    isRefreshing = false;
+  }
 
   let limit = $state<number | null>(activeTableData?.currentLimit ?? 100);
   let offset = $state(activeTableData?.currentOffset ?? 0);
@@ -658,6 +666,8 @@
       {gotoPrev}
       {gotoFirst}
       {gotoLast}
+      {isRefreshing}
+      onRefresh={handleRefresh}
     />
 
     <div

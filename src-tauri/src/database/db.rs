@@ -147,6 +147,7 @@ impl ConnPool {
 
     pub async fn fetch_table_rows_count(
         &self,
+        schema_name: &str,
         table_name: &str,
     ) -> Result<TableRowCount, sqlx::Error> {
         log_function!(fetch_table_rows_count);
@@ -155,9 +156,9 @@ impl ConnPool {
             r#"
                 SELECT reltuples::bigint AS row_count
                 FROM pg_class
-                WHERE oid = 'public."{}"'::regclass;
+                WHERE oid = '"{}"."{}"'::regclass;
             "#,
-            table_name,
+            schema_name, table_name,
         );
 
         println!("Printing Query: {}", &query);
@@ -180,6 +181,7 @@ impl ConnPool {
 
     pub async fn fetch_table_data(
         &self,
+        schema_name: &str,
         table_name: &str,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data);
@@ -187,9 +189,10 @@ impl ConnPool {
         let query = format!(
             r#"
                 SELECT *
-                FROM {}
+                FROM "{}"."{}"
                 LIMIT {};
             "#,
+            schema_name,
             table_name,
             constants::INITIAL_PAGE_SIZE
         );
@@ -215,6 +218,7 @@ impl ConnPool {
 
     pub async fn fetch_table_data_with_offset(
         &self,
+        schema_name: &str,
         table_name: &str,
         offset: &u32,
         limit: &Option<u32>,
@@ -230,10 +234,10 @@ impl ConnPool {
         let query = format!(
             r#"
                 SELECT *
-                FROM {}
+                FROM "{}"."{}"
                 LIMIT {} OFFSET {};
             "#,
-            table_name, limit_str, offset
+            schema_name, table_name, limit_str, offset
         );
 
         println!("Printing Query: {}", &query);
@@ -332,15 +336,15 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
     let mut result: Vec<Vec<String>> = Vec::new();
 
     // looping through each row
-    for (rowIndex, r) in row.iter().enumerate() {
+    for (row_index, r) in row.iter().enumerate() {
         let mut row_result: Vec<String> = Vec::new();
         // looping through each column
-        for (colIndex, col) in r.columns().iter().enumerate() {
-            let colType = col.type_info().to_string();
+        for (col_index, col) in r.columns().iter().enumerate() {
+            let col_type = col.type_info().to_string();
 
-            match colType.as_str() {
+            match col_type.as_str() {
                 constants::BOOL => {
-                    let value: Option<bool> = r.get(colIndex);
+                    let value: Option<bool> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -351,7 +355,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::SMALLINT | constants::SMALLSERIAL | constants::INT2 => {
-                    let value: Option<i16> = r.get(colIndex);
+                    let value: Option<i16> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -362,7 +366,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::INT | constants::SERIAL | constants::INT4 => {
-                    let value: Option<i32> = r.get(colIndex);
+                    let value: Option<i32> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -373,7 +377,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::BIGINT | constants::BIGSERIAL | constants::INT8 => {
-                    let value: Option<i64> = r.get(colIndex);
+                    let value: Option<i64> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -384,7 +388,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::FLOAT4 | constants::REAL => {
-                    let value: Option<f32> = r.get(colIndex);
+                    let value: Option<f32> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -395,7 +399,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::FLOAT8 | constants::DOUBLE_PRECISION => {
-                    let value: Option<f64> = r.get(colIndex);
+                    let value: Option<f64> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -410,7 +414,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                 | constants::TEXT
                 | constants::CITEXT
                 | constants::NAME => {
-                    let value: Option<String> = r.get(colIndex);
+                    let value: Option<String> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val);
@@ -421,7 +425,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::TIMESTAMPTZ => {
-                    let value: Option<sqlx::types::chrono::DateTime<Utc>> = r.get(colIndex);
+                    let value: Option<sqlx::types::chrono::DateTime<Utc>> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -432,7 +436,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::TIMESTAMP => {
-                    let value: Option<sqlx::types::chrono::NaiveDateTime> = r.get(colIndex);
+                    let value: Option<sqlx::types::chrono::NaiveDateTime> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -443,7 +447,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     };
                 }
                 constants::JSON | constants::JSONB => {
-                    let value: Option<serde_json::Value> = r.get(colIndex);
+                    let value: Option<serde_json::Value> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());
@@ -454,7 +458,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
                     }
                 }
                 constants::UUID => {
-                    let value: Option<sqlx::types::uuid::Uuid> = r.get(colIndex);
+                    let value: Option<sqlx::types::uuid::Uuid> = r.get(col_index);
                     match value {
                         Some(val) => {
                             row_result.push(val.to_string());

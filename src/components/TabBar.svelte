@@ -25,7 +25,7 @@
         }}
       >
         <i class="fa-solid fa-table tab-icon"></i>
-        <span class="tab-text">{tab.tableName}</span>
+        <span class="tab-text">{tab.displayName || tab.tableName}</span>
       </button>
       <button
         class="tab-close"
@@ -67,7 +67,7 @@
     margin-right: -1px; /* Overlap borders slightly */
     height: 30px;
     min-width: 120px;
-    max-width: 200px;
+    max-width: 300px;
     cursor: pointer;
     position: relative;
     box-sizing: border-box;

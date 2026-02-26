@@ -13,6 +13,8 @@
     gotoLast = () => {},
     limit = 100,
     onLimitChange = () => {},
+    isRefreshing = false,
+    onRefresh = () => {},
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -23,6 +25,8 @@
     gotoLast?: () => void;
     limit?: number | null;
     onLimitChange?: (val: number | null) => void;
+    isRefreshing?: boolean;
+    onRefresh?: () => void;
   }>();
 
   let limitSelection = $state("100");
@@ -87,8 +91,8 @@
       <button class="icon-btn" aria-label="View Option">
         <i class="fa-solid fa-eye"></i>
       </button>
-      <button class="icon-btn" aria-label="Refresh">
-        <i class="fa-solid fa-rotate-right"></i>
+      <button class="icon-btn" aria-label="Refresh" onclick={onRefresh}>
+        <i class="fa-solid fa-rotate-right {isRefreshing ? 'fa-spin' : ''}"></i>
       </button>
       <button class="icon-btn" aria-label="Search">
         <i class="fa-solid fa-magnifying-glass"></i>
@@ -295,5 +299,6 @@
   }
   .custom-limit-input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 </style>

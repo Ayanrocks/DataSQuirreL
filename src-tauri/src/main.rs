@@ -412,7 +412,7 @@ async fn fetch_table_data(
         .await
         .as_ref()
         .unwrap()
-        .fetch_table_data(&req_payload.table_name)
+        .fetch_table_data(&req_payload.schema_name, &req_payload.table_name)
         .await;
 
     let table_data_rows: Vec<Vec<String>> = match table_data_result {
@@ -435,7 +435,7 @@ async fn fetch_table_data(
         .await
         .as_ref()
         .unwrap()
-        .fetch_table_rows_count(&req_payload.table_name)
+        .fetch_table_rows_count(&req_payload.schema_name, &req_payload.table_name)
         .await;
 
     let row_count: String;
@@ -515,7 +515,7 @@ async fn fetch_table_data_with_offset(
         .await
         .as_ref()
         .unwrap()
-        .fetch_table_rows_count(&req_payload.table_name)
+        .fetch_table_rows_count(&req_payload.schema_name, &req_payload.table_name)
         .await;
 
     let row_count: String;
@@ -545,6 +545,7 @@ async fn fetch_table_data_with_offset(
         .as_ref()
         .unwrap()
         .fetch_table_data_with_offset(
+            &req_payload.schema_name,
             &req_payload.table_name,
             &req_payload.offset,
             &req_payload.limit,
