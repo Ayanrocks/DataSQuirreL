@@ -40,6 +40,9 @@
     null,
   );
 
+  let sortColumn = $state<string | null>(null);
+  let sortDirection = $state<"asc" | "desc" | null>(null);
+
   $effect(() => {
     // Reset selection when table or page changes
     const _ = activeTableData?.id || activeTableData?.tableName; // re-trigger on table change
@@ -53,6 +56,8 @@
     isDragging = false;
     editingCell = null;
     contextMenu = null;
+    sortColumn = null;
+    sortDirection = null;
     historyManager.clear();
   });
 
@@ -617,7 +622,90 @@
                     : "pointer"}
                 >
                   {#if !header.isPlaceholder}
-                    {header.column.columnDef.header}
+                    <div class="header-content">
+                      <span class="header-text"
+                        >{header.column.columnDef.header}</span
+                      >
+                      {#if header.column.id !== "index"}
+                        <button
+                          class="sort-btn"
+                          onmousedown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onclick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (sortColumn === header.column.id) {
+                              if (sortDirection === "asc") {
+                                sortDirection = "desc";
+                              } else if (sortDirection === "desc") {
+                                sortColumn = null;
+                                sortDirection = null;
+                              }
+                            } else {
+                              sortColumn = header.column.id;
+                              sortDirection = "asc";
+                            }
+                            console.log(
+                              `Backend sort triggered for column: ${sortColumn || "none"}, direction: ${sortDirection || "none"}`,
+                            );
+                          }}
+                          aria-label="Sort {header.column.id}"
+                        >
+                          {#if sortColumn === header.column.id && sortDirection === "asc"}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              class="lucide lucide-arrow-up"
+                            >
+                              <path d="m5 12 7-7 7 7" />
+                              <path d="M12 19V5" />
+                            </svg>
+                          {:else if sortColumn === header.column.id && sortDirection === "desc"}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              class="lucide lucide-arrow-down"
+                            >
+                              <path d="M12 5v14" />
+                              <path d="m19 12-7 7-7-7" />
+                            </svg>
+                          {:else}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              class="lucide lucide-arrow-up-down"
+                            >
+                              <path d="m21 16-4 4-4-4" />
+                              <path d="M17 20V4" />
+                              <path d="m3 8 4-4 4 4" />
+                              <path d="M7 4v16" />
+                            </svg>
+                          {/if}
+                        </button>
+                      {/if}
+                    </div>
                   {/if}
                 </th>
               {/each}
@@ -801,6 +889,40 @@
     box-shadow:
       inset 0 2px 0 0 #3b82f6,
       inset 0 -2px 0 0 #3b82f6;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .header-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sort-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563; /* grey-600 */
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .sort-btn:hover {
+    background-color: #d1d5db; /* grey-300 */
+    color: #111827; /* grey-900 */
   }
 
   tbody tr.selected-row td:first-child {
