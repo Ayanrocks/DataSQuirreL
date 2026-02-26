@@ -19,6 +19,7 @@
     MAX_RESIZE_EXPANDABLE_SIZE,
     MIN_RESIZE_EXPANDABLE_SIZE,
     INVOKE_GET_TABLE_DATA,
+    INVOKE_FETCH_TABLE_DATA_WITH_OFFSET,
   } from "../constants/constants";
   import MainTopBar from "../components/MainTopBar.svelte";
   import type { IPCResponse, DashboardData } from "../types/response";
@@ -73,7 +74,7 @@
       activeTabIndex = tabs.length - 1;
 
       // Fetch initial data
-      invokeTableData(dbName, schemaName, tableName, activeTabIndex);
+      invokeTableData(dbName, schemaName, tableName, activeTabIndex, 0, 100);
     }
   }
 
@@ -159,23 +160,38 @@
     schema: string,
     tableName: string,
     tabIndex: number,
+    offset: number = 0,
+    limit: number | null = 100,
   ) {
     try {
-      const res = await invoke<IPCResponse<any>>(INVOKE_GET_TABLE_DATA, {
-        reqPayload: {
-          database_name: databaseName,
-          schema_name: schema,
-          table_name: tableName,
+      const res = await invoke<IPCResponse<any>>(
+        INVOKE_FETCH_TABLE_DATA_WITH_OFFSET,
+        {
+          reqPayload: {
+            database_name: databaseName,
+            schema_name: schema,
+            table_name: tableName,
+            offset: offset,
+            limit: limit,
+          },
         },
-      });
+      );
 
       console.log("RES:::", res);
       if (tabs[tabIndex]) {
         tabs[tabIndex].rows = res.data.rows;
         tabs[tabIndex].columns = res.data.columns;
         tabs[tabIndex].rowCount = parseInt(res.data.row_count);
-        tabs[tabIndex].currentPage = res.data.current_page || 1;
-        tabs[tabIndex].maxPage = res.data.max_page || 0;
+        // We manage virtual pages differently now if needed, but let's keep compatibility
+        tabs[tabIndex].currentPage =
+          res.data.current_page || Math.floor(offset / (limit || 100)) + 1;
+        tabs[tabIndex].maxPage =
+          res.data.max_page ||
+          (limit ? Math.ceil(tabs[tabIndex].rowCount / limit) : 1);
+
+        // Also ensure limit/offset can be read if stored on tab
+        (tabs[tabIndex] as any).currentOffset = offset;
+        (tabs[tabIndex] as any).currentLimit = limit;
       }
     } catch (e) {
       console.log("ErrorCatching: ", e);
@@ -202,7 +218,18 @@
             ? 'block'
             : 'none'}; height: 100%; width: 100%;"
         >
-          <DataTable activeTableData={tab} />
+          <DataTable
+            activeTableData={tab}
+            fetchData={(offset, limit) =>
+              invokeTableData(
+                tab.dbName,
+                tab.schemaName,
+                tab.tableName,
+                i,
+                offset,
+                limit,
+              )}
+          />
         </div>
       {/each}
     </div>

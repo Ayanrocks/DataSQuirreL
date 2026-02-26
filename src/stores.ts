@@ -33,6 +33,8 @@ export interface ActiveTable {
     rowCount: number;
     currentPage: number;
     maxPage: number;
+    currentOffset?: number;
+    currentLimit?: number | null;
 }
 
 export const activeTable: Writable<ActiveTable> = writable({

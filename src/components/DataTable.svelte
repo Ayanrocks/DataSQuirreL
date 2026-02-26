@@ -10,7 +10,49 @@
   import CellEditor from "./CellEditor.svelte";
   import { HistoryManager, type HistoryOp } from "../lib/HistoryManager";
 
-  let { activeTableData } = $props<{ activeTableData: ActiveTable }>();
+  let { activeTableData, fetchData } = $props<{
+    activeTableData: ActiveTable;
+    fetchData?: (offset: number, limit: number | null) => void;
+  }>();
+
+  let limit = $state<number | null>(activeTableData?.currentLimit ?? 100);
+  let offset = $state(activeTableData?.currentOffset ?? 0);
+
+  function handleLimitChange(newLimit: number | null) {
+    limit = newLimit;
+    offset = 0; // reset to page 1 on limit change
+    if (fetchData) fetchData(offset, limit);
+  }
+
+  function gotoNext() {
+    if (limit) {
+      offset += limit;
+      if (fetchData) fetchData(offset, limit);
+    }
+  }
+
+  function gotoPrev() {
+    if (limit) {
+      offset = Math.max(0, offset - limit);
+      if (fetchData) fetchData(offset, limit);
+    }
+  }
+
+  function gotoFirst() {
+    offset = 0;
+    if (fetchData) fetchData(offset, limit);
+  }
+
+  function gotoLast() {
+    const total = activeTableData?.rowCount || 0;
+    if (limit) {
+      offset = Math.max(
+        0,
+        total - (total % limit === 0 ? limit : total % limit),
+      );
+      if (fetchData) fetchData(offset, limit);
+    }
+  }
 
   const historyManager = new HistoryManager();
 
@@ -575,6 +617,25 @@
     getCoreRowModel: getCoreRowModel(),
     renderFallbackValue: null,
   });
+
+  // Virtualization state
+  let scrollTop = $state(0);
+  let containerHeight = $state(800);
+  const ROW_HEIGHT = 32;
+
+  let totalRows = $derived(table.getRowModel().rows.length);
+  let startIndex = $derived(
+    Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 15),
+  );
+  let endIndex = $derived(
+    Math.min(
+      totalRows,
+      Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + 15,
+    ),
+  );
+  let visibleRows = $derived(
+    table.getRowModel().rows.slice(startIndex, endIndex),
+  );
 </script>
 
 <svelte:window
@@ -588,24 +649,27 @@
 <div class="datatable-main-container">
   {#if activeTableData && activeTableData.tableName}
     <DataTableToolBar
+      {limit}
+      onLimitChange={handleLimitChange}
       currentPage={activeTableData.currentPage}
       maxPage={activeTableData.maxPage}
       rowCount={activeTableData.rowCount}
-      gotoNext={() => {
-        console.log("Next page requested");
-      }}
-      gotoPrev={() => {
-        console.log("Prev page requested");
-      }}
+      {gotoNext}
+      {gotoPrev}
+      {gotoFirst}
+      {gotoLast}
     />
 
-    <div class="table-scroll-container">
+    <div
+      class="table-scroll-container"
+      onscroll={(e) => (scrollTop = e.currentTarget.scrollTop)}
+      bind:clientHeight={containerHeight}
+    >
       <table>
         <thead>
           {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
             <tr>
               {#each headerGroup.headers as header, c (header.id)}
-                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <th
                   colSpan={header.colSpan}
                   class:selected-col={selectedCols[c]}
@@ -713,10 +777,15 @@
           {/each}
         </thead>
         <tbody>
-          {#each table.getRowModel().rows as row, r (row.id)}
+          {#if startIndex > 0}
+            <tr style="height: {startIndex * ROW_HEIGHT}px">
+              <td colspan={1000} style="padding: 0; border: none;"></td>
+            </tr>
+          {/if}
+          {#each visibleRows as row (row.id)}
+            {@const r = row.index}
             <tr class:selected-row={selectedRows[r]}>
               {#each row.getVisibleCells() as cell, c (cell.id)}
-                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <td
                   class:selected-cell={selectedCells[`${r}-${c}`] ||
                     selectedCols[c]}
@@ -759,6 +828,11 @@
               {/each}
             </tr>
           {/each}
+          {#if endIndex < totalRows}
+            <tr style="height: {(totalRows - endIndex) * ROW_HEIGHT}px">
+              <td colspan={1000} style="padding: 0; border: none;"></td>
+            </tr>
+          {/if}
         </tbody>
       </table>
     </div>
@@ -786,6 +860,30 @@
       </div>
     </div>
   {/if}
+
+  {#if activeTableData && activeTableData.tableName}
+    <div class="datatable-footer">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <span
+        class="pagination-info"
+        onclick={() => {
+          if (fetchData) fetchData(offset, limit);
+        }}
+        title="Click to refresh data"
+      >
+        <i class="fa-solid fa-rotate-right refresh-icon"></i>
+        {#if limit === null}
+          All rows of {activeTableData.rowCount || 0}
+        {:else}
+          {offset + 1}-{Math.min(
+            offset + (limit || 100),
+            activeTableData.rowCount || 0,
+          )} of {activeTableData.rowCount || 0}
+        {/if}
+      </span>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -806,7 +904,43 @@
     width: 100%;
     overscroll-behavior: contain;
     border-bottom: 1px solid #d1d5db;
-    margin-bottom: 24px;
+  }
+
+  .datatable-footer {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 4px 12px;
+    background-color: #f3f4f6; /* Subtle grey background */
+    border-top: 1px solid #d1d5db;
+    height: 30px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #4b5563;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+
+  .pagination-info {
+    cursor: pointer;
+    transition: color 0.15s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pagination-info:hover {
+    color: #111827; /* Darken on hover */
+  }
+
+  .refresh-icon {
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .pagination-info:hover .refresh-icon {
+    color: #3b82f6; /* Highlight refresh icon on hover */
   }
 
   table {

@@ -11,6 +11,8 @@
     gotoPrev = () => {},
     gotoFirst = () => {},
     gotoLast = () => {},
+    limit = 100,
+    onLimitChange = () => {},
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -19,7 +21,31 @@
     gotoPrev?: () => void;
     gotoFirst?: () => void;
     gotoLast?: () => void;
+    limit?: number | null;
+    onLimitChange?: (val: number | null) => void;
   }>();
+
+  let limitSelection = $state("100");
+  let customLimitValue = $state(100);
+
+  function handleSelectionChange(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    limitSelection = val;
+    if (val === "All") {
+      onLimitChange(null);
+    } else if (val !== "Custom") {
+      onLimitChange(parseInt(val, 10));
+    } else {
+      onLimitChange(customLimitValue);
+    }
+  }
+
+  function handleCustomLimitChange(e: Event) {
+    let val = parseInt((e.target as HTMLInputElement).value, 10);
+    if (isNaN(val) || val < 1) val = 1;
+    customLimitValue = val;
+    onLimitChange(customLimitValue);
+  }
 
   // Svelte 5 rune approach to subscription
   $effect(() => {
@@ -92,8 +118,27 @@
       </button>
 
       <div class="row-count-selector">
-        <span>100 rows</span>
-        <i class="fa-solid fa-chevron-down"></i>
+        <select
+          value={limitSelection}
+          onchange={handleSelectionChange}
+          class="pagination-select"
+        >
+          <option value="100">100 rows</option>
+          <option value="1000">1000 rows</option>
+          <option value="5000">5000 rows</option>
+          <option value="10000">10000 rows</option>
+          <option value="Custom">Custom</option>
+          <option value="All">All</option>
+        </select>
+        {#if limitSelection === "Custom"}
+          <input
+            type="number"
+            class="custom-limit-input"
+            value={customLimitValue}
+            onchange={handleCustomLimitChange}
+            autocomplete="off"
+          />
+        {/if}
       </div>
 
       <button
@@ -216,5 +261,39 @@
 
   .row-count-selector:hover {
     color: #111827;
+  }
+
+  .pagination-select {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .pagination-select option {
+    color: #111827;
+  }
+
+  .custom-limit-input {
+    background: transparent;
+    border: 1px solid #9ca3af;
+    border-radius: 4px;
+    width: 60px;
+    padding: 2px 4px;
+    font-size: 12px;
+    color: #111827;
+  }
+
+  /* Remove arrows from number input */
+  .custom-limit-input::-webkit-outer-spin-button,
+  .custom-limit-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .custom-limit-input[type="number"] {
+    -moz-appearance: textfield;
   }
 </style>

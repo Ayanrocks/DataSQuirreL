@@ -3,7 +3,7 @@ use crate::{constants, log_function};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
-use sqlx::{query_as, Column, FromRow, Postgres, Row, ValueRef};
+use sqlx::{Column, FromRow, Postgres, Row, ValueRef, query_as};
 
 // connect_to_db connects to postgres db
 pub async fn connect_to_db(
@@ -56,15 +56,11 @@ impl ConnPool {
 
         println!("Printing Query: {}", &query);
 
-        let query_result = sqlx::query(&query)
-            .fetch_all(&self.pool)
-            .await;
+        let query_result = sqlx::query(&query).fetch_all(&self.pool).await;
 
         match query_result {
             Ok(rows) => {
-                let schemas = rows.into_iter()
-                    .map(|row| row.get("schema_name"))
-                    .collect();
+                let schemas = rows.into_iter().map(|row| row.get("schema_name")).collect();
                 Ok(schemas)
             }
             Err(e) => {
@@ -221,18 +217,23 @@ impl ConnPool {
         &self,
         table_name: &str,
         offset: &u32,
+        limit: &Option<u32>,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data_with_offset);
         // Removed: let mut db_conn = self.pool.acquire().await?;
+
+        let limit_str = match limit {
+            Some(l) => l.to_string(),
+            None => "-1".to_string(),
+        };
+
         let query = format!(
             r#"
                 SELECT *
                 FROM {}
                 LIMIT {} OFFSET {};
             "#,
-            table_name,
-            constants::INITIAL_PAGE_SIZE,
-            offset
+            table_name, limit_str, offset
         );
 
         println!("Printing Query: {}", &query);

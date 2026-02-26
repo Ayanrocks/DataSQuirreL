@@ -470,113 +470,111 @@ async fn fetch_table_data(
 }
 
 #[tauri::command]
-fn fetch_table_data_with_offset(
+async fn fetch_table_data_with_offset(
     req_payload: TableDataOffsetRequest,
-    application_state: State<ApplicationState>,
-) -> IPCResponse<TableData<String>> {
+    application_state: State<'_, ApplicationState>,
+) -> Result<IPCResponse<TableData<String>>, ()> {
     log_function!(fetch_table_data_with_offset);
-    tauri::async_runtime::block_on(async {
-        let mut columns: Vec<(String, String)> = vec![];
+    let mut columns: Vec<(String, String)> = vec![];
 
-        let table_columns_result = application_state
-            .dbpool
-            .lock()
-            .await
-            .as_ref()
-            .unwrap()
-            .fetch_table_columns(
-                &req_payload.database_name,
-                &req_payload.schema_name,
-                &req_payload.table_name,
-            )
-            .await;
+    let table_columns_result = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_columns(
+            &req_payload.database_name.to_lowercase(),
+            &req_payload.schema_name.to_lowercase(),
+            &req_payload.table_name.to_lowercase(),
+        )
+        .await;
 
-        // fetch table columns
-        match table_columns_result {
-            Ok(table_columns) => {
-                for t in table_columns {
-                    columns.push((sql_to_js_type(&t.data_type), t.column_name));
-                }
+    // fetch table columns
+    match table_columns_result {
+        Ok(table_columns) => {
+            for t in table_columns {
+                columns.push((sql_to_js_type(&t.data_type), t.column_name));
             }
-            Err(e) => {
-                return IPCResponse::<_> {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: Some(
-                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
-                    ),
-                    sys_err: Some(e.to_string()),
-                    frontend_msg: Some(e.to_string()),
-                    data: None,
-                };
-            }
-        };
-
-        // fetch table rows count
-        let table_rows_count_result = application_state
-            .dbpool
-            .lock()
-            .await
-            .as_ref()
-            .unwrap()
-            .fetch_table_rows_count(&req_payload.table_name)
-            .await;
-
-        let row_count: String;
-        match table_rows_count_result {
-            Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
-            Err(e) => {
-                return IPCResponse::<_> {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: Some(
-                        constants::ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED.to_string(),
-                    ),
-                    sys_err: Some(e.to_string()),
-                    frontend_msg: Some(e.to_string()),
-                    data: None,
-                };
-            }
-        };
-
-        /*
-           Pass the offset and the table name and return the additional data
-        */
-
-        let table_data_rows: Vec<Vec<String>> = match application_state
-            .dbpool
-            .lock()
-            .await
-            .as_ref()
-            .unwrap()
-            .fetch_table_data_with_offset(&req_payload.table_name, &req_payload.offset)
-            .await
-        {
-            Ok(table_data) => table_data,
-            Err(e) => {
-                return IPCResponse::<_> {
-                    status: http::status::StatusCode::OK.as_u16(),
-                    error_code: Some(
-                        constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string(),
-                    ),
-                    sys_err: Some(e.to_string()),
-                    frontend_msg: Some(e.to_string()),
-                    data: None,
-                };
-            }
-        };
-
-        IPCResponse {
-            status: http::status::StatusCode::OK.as_u16(),
-            error_code: None,
-            sys_err: None,
-            frontend_msg: None,
-            data: Some(TableData {
-                columns,
-                rows: Some(table_data_rows),
-                row_count: Some(row_count),
-                table_name: Some(req_payload.table_name),
-                query_type: constants::QUERY_TYPE_FETCH_OFFSET_TABLE_DATA.to_string(),
-            }),
         }
+        Err(e) => {
+            return Ok(IPCResponse::<_> {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string()),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(e.to_string()),
+                data: None,
+            });
+        }
+    };
+
+    // fetch table rows count
+    let table_rows_count_result = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_rows_count(&req_payload.table_name)
+        .await;
+
+    let row_count: String;
+    match table_rows_count_result {
+        Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
+        Err(e) => {
+            return Ok(IPCResponse::<_> {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(
+                    constants::ERR_CODE_DATABASE_FETCH_TABLE_ROW_COUNT_FAILED.to_string(),
+                ),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(e.to_string()),
+                data: None,
+            });
+        }
+    };
+
+    /*
+       Pass the offset and the table name and return the additional data
+    */
+
+    let table_data_rows: Vec<Vec<String>> = match application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_data_with_offset(
+            &req_payload.table_name,
+            &req_payload.offset,
+            &req_payload.limit,
+        )
+        .await
+    {
+        Ok(table_data) => table_data,
+        Err(e) => {
+            return Ok(IPCResponse::<_> {
+                status: http::status::StatusCode::OK.as_u16(),
+                error_code: Some(constants::ERR_CODE_DATABASE_FETCH_TABLE_DATA_FAILED.to_string()),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(e.to_string()),
+                data: None,
+            });
+        }
+    };
+
+    Ok(IPCResponse {
+        status: http::status::StatusCode::OK.as_u16(),
+        error_code: None,
+        sys_err: None,
+        frontend_msg: None,
+        data: Some(TableData {
+            columns,
+            rows: Some(table_data_rows),
+            row_count: Some(row_count),
+            table_name: Some(req_payload.table_name),
+            query_type: constants::QUERY_TYPE_FETCH_OFFSET_TABLE_DATA.to_string(),
+        }),
     })
 }
 

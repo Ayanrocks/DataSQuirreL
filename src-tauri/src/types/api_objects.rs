@@ -59,6 +59,7 @@ pub struct TableDataOffsetRequest {
     pub schema_name: String,
     pub table_name: String,
     pub offset: u32,
+    pub limit: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

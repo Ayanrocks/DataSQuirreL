@@ -9,3 +9,4 @@ export const MIN_RESIZE_EXPANDABLE_SIZE: number = 250;
 export const PAGINATION_SIZE: number = 40;
 
 export const INVOKE_GET_TABLE_DATA: string = "fetch_table_data";
+export const INVOKE_FETCH_TABLE_DATA_WITH_OFFSET: string = "fetch_table_data_with_offset";
