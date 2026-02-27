@@ -145,6 +145,42 @@ impl ConnPool {
         }
     }
 
+    pub async fn fetch_table_primary_keys(
+        &self,
+        schema_name: &str,
+        table_name: &str,
+    ) -> Result<Vec<String>, sqlx::Error> {
+        log_function!(fetch_table_primary_keys);
+
+        let query = format!(
+            "
+            SELECT kcu.column_name
+            FROM information_schema.table_constraints tco
+            JOIN information_schema.key_column_usage kcu 
+              ON kcu.constraint_name = tco.constraint_name 
+              AND kcu.constraint_schema = tco.constraint_schema 
+              AND kcu.constraint_name = tco.constraint_name 
+            WHERE tco.constraint_type = 'PRIMARY KEY'
+              AND kcu.table_schema = '{}'
+              AND kcu.table_name = '{}';
+            ",
+            schema_name, table_name
+        );
+
+        let query_result = sqlx::query(&query).fetch_all(&self.pool).await;
+
+        match query_result {
+            Ok(rows) => {
+                let pks: Vec<String> = rows.into_iter().map(|row| row.get("column_name")).collect();
+                Ok(pks)
+            }
+            Err(e) => {
+                println!("[fetch_table_primary_keys] Error: {:#?}", e);
+                Err(e)
+            }
+        }
+    }
+
     pub async fn fetch_table_rows_count(
         &self,
         schema_name: &str,
@@ -329,6 +365,169 @@ impl ConnPool {
     //         }
     //     }
     // }
+
+    pub async fn commit_transaction(
+        &self,
+        schema_name: &str,
+        table_name: &str,
+        changes: Vec<crate::types::api_objects::TransactionChange>,
+    ) -> Result<(), sqlx::Error> {
+        use sqlx::Acquire;
+        let mut tx = self.pool.begin().await?;
+
+        // Optional: SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+        // In PostgreSQL, READ COMMITTED is the default.
+
+        for change in changes {
+            match change.r#type.as_str() {
+                "INSERT" => {
+                    let new_vals = change.new_values.unwrap_or_default();
+                    if new_vals.is_empty() {
+                        continue;
+                    }
+
+                    let mut cols = Vec::new();
+                    let mut vals = Vec::new();
+                    let mut placeholders = Vec::new();
+
+                    let mut idx = 1;
+                    for (k, v) in &new_vals {
+                        // Skip empty insertions to let postgres use DEFAULT if applicable?
+                        // Actually let's assume if it's there we insert it.
+                        cols.push(format!("\"{}\"", k));
+                        vals.push(v);
+                        placeholders.push(format!("${}", idx));
+                        idx += 1;
+                    }
+
+                    let query_str = format!(
+                        "INSERT INTO \"{}\".\"{}\" ({}) VALUES ({})",
+                        schema_name,
+                        table_name,
+                        cols.join(", "),
+                        placeholders.join(", ")
+                    );
+
+                    let mut q = sqlx::query(&query_str);
+                    for v in vals {
+                        q = q.bind(v);
+                    }
+
+                    q.execute(&mut *tx).await?;
+                }
+                "UPDATE" => {
+                    let new_vals = change.new_values.unwrap_or_default();
+                    let pk_vals = change.primary_keys.unwrap_or_default();
+                    let orig_vals = change.original_row.unwrap_or_default();
+
+                    if new_vals.is_empty() {
+                        continue;
+                    }
+
+                    // GUARD: Never update without a WHERE clause
+                    if pk_vals.is_empty() && orig_vals.is_empty() {
+                        return Err(sqlx::Error::Protocol(
+                            "Safety Guard: Attempted UPDATE without WHERE clause identifiers"
+                                .to_string(),
+                        ));
+                    }
+
+                    let mut set_clauses = Vec::new();
+                    let mut where_clauses = Vec::new();
+                    let mut binds: Vec<&String> = Vec::new();
+
+                    let mut idx = 1;
+
+                    for (k, v) in &new_vals {
+                        set_clauses.push(format!("\"{}\" = ${}", k, idx));
+                        binds.push(v);
+                        idx += 1;
+                    }
+
+                    // Build WHERE clause
+                    if !pk_vals.is_empty() {
+                        for (k, v) in &pk_vals {
+                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            binds.push(v);
+                            idx += 1;
+                        }
+                    } else {
+                        // fallback to all original columns
+                        for (k, v) in &orig_vals {
+                            // Can't reliably check NULL easily via string bindings without special cases,
+                            // assuming valid strings for now
+                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            binds.push(v);
+                            idx += 1;
+                        }
+                    }
+
+                    let query_str = format!(
+                        "UPDATE \"{}\".\"{}\" SET {} WHERE {}",
+                        schema_name,
+                        table_name,
+                        set_clauses.join(", "),
+                        where_clauses.join(" AND ")
+                    );
+
+                    let mut q = sqlx::query(&query_str);
+                    for b in binds {
+                        q = q.bind(b);
+                    }
+
+                    q.execute(&mut *tx).await?;
+                }
+                "DELETE" => {
+                    let pk_vals = change.primary_keys.unwrap_or_default();
+                    let orig_vals = change.original_row.unwrap_or_default();
+
+                    // GUARD: Never delete without a WHERE clause
+                    if pk_vals.is_empty() && orig_vals.is_empty() {
+                        return Err(sqlx::Error::Protocol(
+                            "Safety Guard: Attempted DELETE without WHERE clause identifiers"
+                                .to_string(),
+                        ));
+                    }
+
+                    let mut where_clauses = Vec::new();
+                    let mut binds: Vec<&String> = Vec::new();
+                    let mut idx = 1;
+
+                    if !pk_vals.is_empty() {
+                        for (k, v) in &pk_vals {
+                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            binds.push(v);
+                            idx += 1;
+                        }
+                    } else {
+                        for (k, v) in &orig_vals {
+                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            binds.push(v);
+                            idx += 1;
+                        }
+                    }
+
+                    let query_str = format!(
+                        "DELETE FROM \"{}\".\"{}\" WHERE {}",
+                        schema_name,
+                        table_name,
+                        where_clauses.join(" AND ")
+                    );
+
+                    let mut q = sqlx::query(&query_str);
+                    for b in binds {
+                        q = q.bind(b);
+                    }
+
+                    q.execute(&mut *tx).await?;
+                }
+                _ => {}
+            }
+        }
+
+        tx.commit().await?;
+        Ok(())
+    }
 }
 
 fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> {

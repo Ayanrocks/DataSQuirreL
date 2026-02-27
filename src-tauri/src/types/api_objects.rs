@@ -34,6 +34,7 @@ pub struct TableData<T> {
     pub row_count: Option<String>,
     pub table_name: Option<String>,
     pub query_type: String,
+    pub primary_keys: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -83,4 +84,22 @@ pub struct SchemaData {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DashboardDataRequest {
     pub connection_window_label: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionChange {
+    pub r#type: String, // "INSERT" | "UPDATE" | "DELETE"
+    pub row_index: usize,
+    pub primary_keys: Option<HashMap<String, String>>,
+    pub original_row: Option<HashMap<String, String>>,
+    pub new_values: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommitTransactionRequest {
+    pub database_name: String,
+    pub schema_name: String,
+    pub table_name: String,
+    pub changes: Vec<TransactionChange>,
 }

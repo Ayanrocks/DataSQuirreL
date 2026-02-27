@@ -27,6 +27,7 @@ export interface TableData<T> {
     row_count?: string;
     table_name?: string;
     query_type: string;
+    primary_keys?: string[];
 }
 
 export interface DashboardData {

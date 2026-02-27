@@ -465,6 +465,7 @@ async fn fetch_table_data(
             row_count: Some(row_count),
             table_name: Some(req_payload.table_name),
             query_type: constants::QUERY_TYPE_FETCH_INITIAL_TABLE_DATA.to_string(),
+            primary_keys: None,
         }),
     })
 }
@@ -575,6 +576,7 @@ async fn fetch_table_data_with_offset(
             row_count: Some(row_count),
             table_name: Some(req_payload.table_name),
             query_type: constants::QUERY_TYPE_FETCH_OFFSET_TABLE_DATA.to_string(),
+            primary_keys: None,
         }),
     })
 }
@@ -702,6 +704,54 @@ async fn fetch_table_rows(
     Ok((rows, total))
 }
 
+#[tauri::command]
+async fn commit_transaction_cmd(
+    req_payload: types::api_objects::CommitTransactionRequest,
+    state: tauri::State<'_, ApplicationState>,
+) -> Result<IPCResponse<()>, String> {
+    log_function!(commit_transaction_cmd);
+
+    let dbpool = state.dbpool.lock().await;
+
+    if let Some(pool) = &*dbpool {
+        let commit_res = pool
+            .commit_transaction(
+                &req_payload.schema_name,
+                &req_payload.table_name,
+                req_payload.changes,
+            )
+            .await;
+
+        match commit_res {
+            Ok(_) => Ok(IPCResponse {
+                status: 200,
+                error_code: None,
+                sys_err: None,
+                frontend_msg: Some("Transaction committed successfully!".to_string()),
+                data: None,
+            }),
+            Err(e) => {
+                println!("[commit_transaction_cmd] Error: {:#?}", e);
+                Ok(IPCResponse {
+                    status: 500,
+                    error_code: Some("COMMIT_ERROR".to_string()),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(format!("Failed to commit: {}", e)),
+                    data: None,
+                })
+            }
+        }
+    } else {
+        Ok(IPCResponse {
+            status: 400,
+            error_code: Some("NO_CONNECTION".to_string()),
+            sys_err: None,
+            frontend_msg: Some("No active database connection found.".to_string()),
+            data: None,
+        })
+    }
+}
+
 #[tokio::main]
 async fn main() {
     // Initialize logger
@@ -818,6 +868,7 @@ async fn main() {
             save_cache_entry,
             get_cache_entry,
             clear_cache,
+            commit_transaction_cmd,
         ])
         .setup(|app| {
             log_info!("Application setup started");

@@ -9,6 +9,17 @@
   import { createTable } from "@tanstack/svelte-table";
   import CellEditor from "./CellEditor.svelte";
   import { HistoryManager, type HistoryOp } from "../lib/HistoryManager";
+  import {
+    TransactionManager,
+    type TransactionChange,
+  } from "../lib/TransactionManager";
+  import { invoke } from "@tauri-apps/api/core";
+  import { notificationMsg } from "../stores";
+  import {
+    NOTIFICATION_TYPE_SUCCESS,
+    NOTIFICATION_TYPE_ERROR,
+    INVOKE_COMMIT_TRANSACTION,
+  } from "../constants/constants";
 
   let { activeTableData, fetchData } = $props<{
     activeTableData: ActiveTable;
@@ -63,6 +74,10 @@
   }
 
   const historyManager = new HistoryManager();
+  const transactionManager = new TransactionManager();
+
+  // Make changes reactive so UI updates
+  let transactionChangesMap = $state(new Map<number, TransactionChange>());
 
   let baseSelectedRows = $state<Record<number, boolean>>({});
   let dragSelectedRows = $state<Record<number, boolean>>({});
@@ -131,6 +146,40 @@
                 ops.push({ r, c, oldVal, newVal });
                 updatedRows[r][c - 1] = newVal;
                 modified = true;
+
+                // Also record in TransactionManager
+                let rowDict: Record<string, string> = {};
+                activeTableData.columns.forEach(
+                  (col: string[], idx: number) => {
+                    rowDict[col[1]] = updatedRows[r][idx]; // Record with updated values
+                  },
+                );
+
+                let origDict: Record<string, string> = {};
+                activeTableData.columns.forEach(
+                  (col: string[], idx: number) => {
+                    // Reconstruct original from activeTableData before it was clobbered, or just fallback
+                    origDict[col[1]] = activeTableData.rows[r][idx];
+                  },
+                );
+
+                let pkDict: Record<string, string> | null = null;
+                if (
+                  activeTableData.primaryKeys &&
+                  activeTableData.primaryKeys.length > 0
+                ) {
+                  pkDict = {};
+                  activeTableData.primaryKeys.forEach((pk: string) => {
+                    let colIdx = activeTableData.columns.findIndex(
+                      (c: string[]) => c[1] === pk,
+                    );
+                    if (colIdx >= 0) {
+                      pkDict![pk] = activeTableData.rows[r][colIdx];
+                    }
+                  });
+                }
+
+                transactionManager.updateRow(r, pkDict, origDict, rowDict);
               }
             }
           }
@@ -139,6 +188,7 @@
         if (modified) {
           historyManager.push(ops);
           activeTableData.rows = updatedRows;
+          transactionChangesMap = new Map(transactionManager["changes"]); // Force reactivity
         }
       }
       editingCell = null;
@@ -603,6 +653,126 @@
     return cols;
   });
 
+  function handleAddRow() {
+    if (!activeTableData?.columns) return;
+
+    // Create an array of empty strings matching column count
+    const emptyRowArray = new Array(activeTableData.columns.length).fill("");
+    const newIndex = activeTableData.rows.length;
+
+    // Append to underlying data
+    activeTableData.rows = [...activeTableData.rows, emptyRowArray];
+
+    // Record in TransactionManager
+    let newRowDict: Record<string, string> = {};
+    activeTableData.columns.forEach((col: string[]) => {
+      newRowDict[col[1]] = "";
+    });
+
+    transactionManager.addRow(newIndex, newRowDict);
+    transactionChangesMap = new Map(transactionManager["changes"]);
+
+    // Scroll table to the bottom slowly or instantly
+    setTimeout(() => {
+      const container = document.querySelector(".table-scroll-container");
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 50);
+  }
+
+  function handleRemoveRow() {
+    // Determine selected rows to delete
+    let rowsToDelete = Object.keys(selectedRows).map(Number);
+
+    // If no explicit row selection, check cell selection
+    if (rowsToDelete.length === 0) {
+      const cellKeys = Object.keys(selectedCells);
+      if (cellKeys.length > 0) {
+        // Extract unique row indices from selected cells
+        const rowsSet = new Set(cellKeys.map((k) => Number(k.split("-")[0])));
+        rowsToDelete = Array.from(rowsSet);
+      }
+    }
+
+    if (rowsToDelete.length === 0 || !activeTableData?.columns) return;
+
+    rowsToDelete.forEach((r) => {
+      let origDict: Record<string, string> = {};
+      activeTableData.columns.forEach((col: string[], idx: number) => {
+        origDict[col[1]] = activeTableData.rows[r][idx];
+      });
+
+      let pkDict: Record<string, string> | null = null;
+      if (
+        activeTableData.primaryKeys &&
+        activeTableData.primaryKeys.length > 0
+      ) {
+        pkDict = {};
+        activeTableData.primaryKeys.forEach((pk: string) => {
+          let colIdx = activeTableData.columns.findIndex(
+            (c: string[]) => c[1] === pk,
+          );
+          if (colIdx >= 0) {
+            pkDict![pk] = activeTableData.rows[r][colIdx];
+          }
+        });
+      }
+
+      transactionManager.deleteRow(r, pkDict, origDict);
+    });
+
+    transactionChangesMap = new Map(transactionManager["changes"]);
+    baseSelectedRows = {};
+    baseSelectedCells = {};
+  }
+
+  async function handleCommit() {
+    console.log("Committing changes:", transactionManager.getAllChanges());
+
+    if (transactionManager.getAllChanges().length === 0) {
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_SUCCESS,
+        message: "No changes to commit.",
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        database_name: activeTableData.dbName,
+        schema_name: activeTableData.schemaName,
+        table_name: activeTableData.tableName,
+        changes: transactionManager.getAllChanges(),
+      };
+
+      const res: any = await invoke(INVOKE_COMMIT_TRANSACTION, {
+        reqPayload: payload,
+      });
+
+      if (res.error_code) {
+        notificationMsg.set({
+          type: NOTIFICATION_TYPE_ERROR,
+          message: res.frontend_msg || "Commit failed",
+        });
+      } else {
+        notificationMsg.set({
+          type: NOTIFICATION_TYPE_SUCCESS,
+          message: "Transaction committed!",
+        });
+        transactionManager.clear();
+        transactionChangesMap = new Map();
+        if (fetchData) fetchData(offset, limit); // Refresh UI
+      }
+    } catch (e) {
+      console.error(e);
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_ERROR,
+        message: "An unexpected error occurred during commit.",
+      });
+    }
+  }
+
   let data = $derived.by(() => {
     if (!activeTableData?.rows || !activeTableData?.columns) return [];
     return activeTableData.rows.map((row: string[]) => {
@@ -668,6 +838,9 @@
       {gotoLast}
       {isRefreshing}
       onRefresh={handleRefresh}
+      onAddRow={handleAddRow}
+      onRemoveRow={handleRemoveRow}
+      onCommit={handleCommit}
     />
 
     <div
@@ -794,7 +967,13 @@
           {/if}
           {#each visibleRows as row (row.id)}
             {@const r = row.index}
-            <tr class:selected-row={selectedRows[r]}>
+            {@const change = transactionChangesMap.get(r)}
+            <tr
+              class:selected-row={selectedRows[r]}
+              class:inserted-row={change?.type === "INSERT"}
+              class:updated-row={change?.type === "UPDATE"}
+              class:deleted-row={change?.type === "DELETE"}
+            >
               {#each row.getVisibleCells() as cell, c (cell.id)}
                 <td
                   class:selected-cell={selectedCells[`${r}-${c}`] ||

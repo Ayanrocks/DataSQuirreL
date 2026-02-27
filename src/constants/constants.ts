@@ -10,3 +10,4 @@ export const PAGINATION_SIZE: number = 40;
 
 export const INVOKE_GET_TABLE_DATA: string = "fetch_table_data";
 export const INVOKE_FETCH_TABLE_DATA_WITH_OFFSET: string = "fetch_table_data_with_offset";
+export const INVOKE_COMMIT_TRANSACTION: string = "commit_transaction_cmd";

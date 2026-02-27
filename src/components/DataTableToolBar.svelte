@@ -15,6 +15,9 @@
     onLimitChange = () => {},
     isRefreshing = false,
     onRefresh = () => {},
+    onAddRow = () => {},
+    onRemoveRow = () => {},
+    onCommit = () => {},
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -27,6 +30,9 @@
     onLimitChange?: (val: number | null) => void;
     isRefreshing?: boolean;
     onRefresh?: () => void;
+    onAddRow?: () => void;
+    onRemoveRow?: () => void;
+    onCommit?: () => void;
   }>();
 
   let limitSelection = $state("100");
@@ -73,15 +79,20 @@
 <div class="data-table-toolbar__container">
   <div class="data-table-toolbar-controls__container">
     <div class="data-table-toolbar__controls--left">
-      <button class="icon-btn" aria-label="Add Row">
+      <button class="icon-btn" aria-label="Add Row" onclick={onAddRow}>
         <i class="fa-solid fa-plus"></i>
       </button>
-      <button class="icon-btn" aria-label="Delete Row">
+      <button class="icon-btn" aria-label="Delete Row" onclick={onRemoveRow}>
         <i class="fa-solid fa-minus"></i>
       </button>
       <div class="divider"></div>
-      <button class="icon-btn" aria-label="Upload">
-        <i class="fa-solid fa-upload"></i>
+      <button
+        class="icon-btn"
+        aria-label="Commit Changes"
+        title="Commit"
+        onclick={onCommit}
+      >
+        <i class="fa-solid fa-paper-plane"></i>
       </button>
       <button class="icon-btn" aria-label="Export">
         <i class="fa-solid fa-download"></i>
