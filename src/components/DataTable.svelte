@@ -14,6 +14,7 @@
     type TransactionChange,
   } from "../lib/TransactionManager";
   import { invoke } from "@tauri-apps/api/core";
+  import { confirm } from "@tauri-apps/plugin-dialog";
   import { notificationMsg } from "../stores";
   import {
     NOTIFICATION_TYPE_SUCCESS,
@@ -29,6 +30,17 @@
   let isRefreshing = $state(false);
 
   async function handleRefresh() {
+    if (transactionManager.hasChanges()) {
+      const doDiscard = await confirm(
+        "You have uncommitted changes. Are you sure you want to discard them?",
+        { title: "Discard Changes", kind: "warning" },
+      );
+      if (!doDiscard) {
+        return;
+      }
+      transactionManager.clear();
+      transactionChangesMap = new Map();
+    }
     isRefreshing = true;
     if (fetchData) await fetchData(offset, limit);
     isRefreshing = false;
@@ -154,6 +166,20 @@
                 const oldVal = updatedRows[r][c - 1];
                 if (oldVal !== newVal) {
                   ops.push({ r, c, oldVal, newVal });
+
+                  let origDict: Record<string, string> = {};
+                  activeTableData.columns.forEach(
+                    (col: string[], idx: number) => {
+                      // Reconstruct original from activeTableData before it is clobbered
+                      origDict[col[1]] = activeTableData.rows[r][idx];
+                    },
+                  );
+
+                  // Decouple the row array to avoid mutating original state directly
+                  if (updatedRows[r] === activeTableData.rows[r]) {
+                    updatedRows[r] = [...activeTableData.rows[r]];
+                  }
+
                   updatedRows[r][c - 1] = newVal;
                   modified = true;
 
@@ -162,14 +188,6 @@
                   activeTableData.columns.forEach(
                     (col: string[], idx: number) => {
                       rowDict[col[1]] = updatedRows[r][idx]; // Record with updated values
-                    },
-                  );
-
-                  let origDict: Record<string, string> = {};
-                  activeTableData.columns.forEach(
-                    (col: string[], idx: number) => {
-                      // Reconstruct original from activeTableData before it was clobbered, or just fallback
-                      origDict[col[1]] = activeTableData.rows[r][idx];
                     },
                   );
 
@@ -201,17 +219,22 @@
           const oldVal = updatedRows[r][c - 1];
           if (oldVal !== newVal) {
             ops.push({ r, c, oldVal, newVal });
+
+            let origDict: Record<string, string> = {};
+            activeTableData.columns.forEach((col: string[], idx: number) => {
+              origDict[col[1]] = activeTableData.rows[r][idx];
+            });
+
+            if (updatedRows[r] === activeTableData.rows[r]) {
+              updatedRows[r] = [...activeTableData.rows[r]];
+            }
+
             updatedRows[r][c - 1] = newVal;
             modified = true;
 
             let rowDict: Record<string, string> = {};
             activeTableData.columns.forEach((col: string[], idx: number) => {
               rowDict[col[1]] = updatedRows[r][idx];
-            });
-
-            let origDict: Record<string, string> = {};
-            activeTableData.columns.forEach((col: string[], idx: number) => {
-              origDict[col[1]] = activeTableData.rows[r][idx];
             });
 
             let pkDict: Record<string, string> | null = null;
@@ -293,15 +316,41 @@
     }
   }
 
-  function handleKeyDown(e: KeyboardEvent) {
+  async function handleKeyDown(e: KeyboardEvent) {
     // Escape mapping
     if (e.key === "Escape") {
-      baseSelectedRows = {};
-      baseSelectedCols = {};
-      baseSelectedCells = {};
-      selectionAnchor = null;
-      blurEditingInput();
-      editingCell = null;
+      if (editingCell) {
+        blurEditingInput();
+        editingCell = null;
+        return;
+      }
+
+      const hasSelection =
+        Object.keys(selectedCells).length > 0 ||
+        Object.keys(selectedRows).length > 0 ||
+        Object.keys(selectedCols).length > 0 ||
+        selectionAnchor !== null;
+
+      if (hasSelection) {
+        baseSelectedRows = {};
+        baseSelectedCols = {};
+        baseSelectedCells = {};
+        selectionAnchor = null;
+        return;
+      }
+
+      // No edit and no selection, ask to discard changes
+      if (transactionManager.hasChanges()) {
+        const doDiscard = await confirm(
+          "You have uncommitted changes. Are you sure you want to discard them?",
+          { title: "Discard Changes", kind: "warning" },
+        );
+        if (doDiscard) {
+          transactionManager.clear();
+          transactionChangesMap = new Map();
+          if (fetchData) fetchData(offset, limit);
+        }
+      }
       return;
     }
 
@@ -862,14 +911,39 @@
   }
 
   async function handleCommit() {
-    console.log("Committing changes:", transactionManager.getAllChanges());
+    const changes = transactionManager.getAllChanges();
+    console.log("Committing changes:", changes);
 
-    if (transactionManager.getAllChanges().length === 0) {
+    if (changes.length === 0) {
       notificationMsg.set({
         type: NOTIFICATION_TYPE_SUCCESS,
         message: "No changes to commit.",
       });
       return;
+    }
+
+    // Safeguard: Prevent empty rows
+    for (const change of changes) {
+      if (change.type === "INSERT" || change.type === "UPDATE") {
+        let isAllEmpty = true;
+        if (change.newValues) {
+          for (const key of Object.keys(change.newValues)) {
+            const val = change.newValues[key];
+            if (val !== undefined && val !== null && val.trim() !== "") {
+              isAllEmpty = false;
+              break;
+            }
+          }
+        }
+        if (isAllEmpty) {
+          notificationMsg.set({
+            type: NOTIFICATION_TYPE_ERROR,
+            message:
+              "Cannot commit an empty row. Please fill in at least one cell or delete the empty row.",
+          });
+          return;
+        }
+      }
     }
 
     try {
@@ -1112,9 +1186,19 @@
               class:deleted-row={change?.type === "DELETE"}
             >
               {#each row.getVisibleCells() as cell, c (cell.id)}
+                {@const colName = cell.column.id}
+                {@const isModified = change
+                  ? change.type === "UPDATE"
+                    ? change.newValues?.[colName] !==
+                      change.originalRow?.[colName]
+                    : change.type === "INSERT"
+                      ? change.newValues?.[colName] !== ""
+                      : false
+                  : false}
                 <td
                   class:selected-cell={selectedCells[`${r}-${c}`] ||
                     selectedCols[c]}
+                  class:modified-cell={colName !== "index" && isModified}
                   onmousedown={(e) => {
                     if (cell.column.id === "index") {
                       handleMouseDown(e, "row", r, c);
@@ -1349,6 +1433,53 @@
 
   tbody tr:hover td:not(:first-child) {
     background-color: #f3f4f6;
+  }
+
+  /* Uncommitted Changes Highlight Row Gradients */
+  tbody tr.inserted-row td,
+  tbody tr.updated-row td,
+  tbody tr.deleted-row td {
+    background: linear-gradient(
+      to bottom,
+      #fff1f2,
+      #ffe4e6
+    ) !important; /* rose-50 to rose-100 */
+    box-shadow:
+      inset 0 2px 0 0 #fb7185,
+      /* rose-400 */ inset 0 -2px 0 0 #e11d48; /* rose-600 */
+  }
+
+  tbody tr.inserted-row td:first-child,
+  tbody tr.updated-row td:first-child,
+  tbody tr.deleted-row td:first-child {
+    background: linear-gradient(
+      to bottom,
+      #ffe4e6,
+      #fecdd3
+    ) !important; /* rose-100 to rose-200 */
+    box-shadow:
+      inset 0 2px 0 0 #fb7185,
+      inset 0 -2px 0 0 #e11d48,
+      inset 2px 0 0 0 #fb7185;
+  }
+
+  tbody tr.inserted-row td:last-child,
+  tbody tr.updated-row td:last-child,
+  tbody tr.deleted-row td:last-child {
+    box-shadow:
+      inset 0 2px 0 0 #fb7185,
+      inset 0 -2px 0 0 #e11d48,
+      inset -2px 0 0 0 #e11d48;
+  }
+
+  /* Uncommitted Changes Highlight - Modified Cell (Highest Priority) */
+  tbody tr td.modified-cell {
+    background-color: #fca5a5 !important; /* red-300 */
+    color: #991b1b !important; /* red-800 - dark red text */
+    outline: 2px solid #ef4444 !important; /* red-500 */
+    outline-offset: -2px;
+    box-shadow: none !important; /* ensure row gradients don't overlap the cell */
+    z-index: 2; /* Ensure it stays above row gradients */
   }
 
   tbody tr.selected-row td {

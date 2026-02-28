@@ -386,6 +386,20 @@ impl ConnPool {
                         continue;
                     }
 
+                    // GUARD: Never commit a completely empty insert row
+                    let mut is_all_empty = true;
+                    for v in new_vals.values() {
+                        if !v.trim().is_empty() {
+                            is_all_empty = false;
+                            break;
+                        }
+                    }
+                    if is_all_empty {
+                        return Err(sqlx::Error::Protocol(
+                            "Safety Guard: Attempted to insert a completely empty row".to_string(),
+                        ));
+                    }
+
                     let mut cols = Vec::new();
                     let mut vals = Vec::new();
                     let mut placeholders = Vec::new();
