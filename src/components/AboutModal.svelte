@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MainLogo from "../assets/MainLogo.svg?raw";
+  import MainLogo from "../assets/MainLogo.png";
 
   let { isOpen = false, onClose }: { isOpen: boolean; onClose: () => void } =
     $props();
@@ -27,7 +27,7 @@
 
       <div class="modal-body">
         <div class="logo-container">
-          {@html MainLogo}
+          <img src={MainLogo} alt="DataSQuirreL Logo" />
         </div>
 
         <div class="info-section">
@@ -138,7 +138,7 @@
     margin-bottom: 20px;
   }
 
-  :global(.logo-container svg) {
+  :global(.logo-container img) {
     width: 100%;
     height: auto;
   }
