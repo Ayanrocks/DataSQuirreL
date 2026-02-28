@@ -1,54 +1,54 @@
 export interface HistoryOp {
-    r: number;
-    c: number;
-    oldVal: string;
-    newVal: string;
+  r: number;
+  c: number;
+  oldVal: string;
+  newVal: string;
 }
 
 export class HistoryManager {
-    private undoStack: HistoryOp[][] = [];
-    private redoStack: HistoryOp[][] = [];
+  private undoStack: HistoryOp[][] = [];
+  private redoStack: HistoryOp[][] = [];
 
-    constructor() { }
+  constructor() {}
 
-    push(ops: HistoryOp[]) {
-        if (ops.length === 0) return;
-        this.undoStack.push(ops);
-        this.redoStack = []; // Clear redo stack on new action
+  push(ops: HistoryOp[]) {
+    if (ops.length === 0) return;
+    this.undoStack.push(ops);
+    this.redoStack = []; // Clear redo stack on new action
+  }
+
+  undo(rows: string[][]): boolean {
+    if (this.undoStack.length === 0) return false;
+    const ops = this.undoStack.pop()!;
+
+    // Apply old values
+    for (const op of ops) {
+      if (rows[op.r] && rows[op.r].length >= op.c) {
+        rows[op.r][op.c - 1] = op.oldVal;
+      }
     }
 
-    undo(rows: string[][]): boolean {
-        if (this.undoStack.length === 0) return false;
-        const ops = this.undoStack.pop()!;
+    this.redoStack.push(ops);
+    return true;
+  }
 
-        // Apply old values
-        for (const op of ops) {
-            if (rows[op.r] && rows[op.r].length >= op.c) {
-                rows[op.r][op.c - 1] = op.oldVal;
-            }
-        }
+  redo(rows: string[][]): boolean {
+    if (this.redoStack.length === 0) return false;
+    const ops = this.redoStack.pop()!;
 
-        this.redoStack.push(ops);
-        return true;
+    // Apply new values
+    for (const op of ops) {
+      if (rows[op.r] && rows[op.r].length >= op.c) {
+        rows[op.r][op.c - 1] = op.newVal;
+      }
     }
 
-    redo(rows: string[][]): boolean {
-        if (this.redoStack.length === 0) return false;
-        const ops = this.redoStack.pop()!;
+    this.undoStack.push(ops);
+    return true;
+  }
 
-        // Apply new values
-        for (const op of ops) {
-            if (rows[op.r] && rows[op.r].length >= op.c) {
-                rows[op.r][op.c - 1] = op.newVal;
-            }
-        }
-
-        this.undoStack.push(ops);
-        return true;
-    }
-
-    clear() {
-        this.undoStack = [];
-        this.redoStack = [];
-    }
+  clear() {
+    this.undoStack = [];
+    this.redoStack = [];
+  }
 }

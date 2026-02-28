@@ -1,11 +1,11 @@
-import { writable } from 'svelte/store';
-import type { RowData } from '../cache';
-import { fetchAndCache, loadCachedRow } from '../cache';
+import { writable } from "svelte/store";
+import type { RowData } from "../cache";
+import { fetchAndCache, loadCachedRow } from "../cache";
 
 export interface TabState {
   id: string;
   title: string;
-  type: 'table' | 'query';
+  type: "table" | "query";
   // UI + data
   rows: RowData[];
   totalRows: number;
@@ -24,31 +24,31 @@ function createTabs() {
       const newTab: TabState = {
         id: tabId,
         title,
-        type: 'table',
+        type: "table",
         rows: [],
         totalRows: 0,
         pageSize,
         offset: 0,
-        isLoading: true
+        isLoading: true,
       };
-      update(tabs => [...tabs, newTab]);
+      update((tabs) => [...tabs, newTab]);
 
       // load first chunk
       const { rows, total } = await fetchAndCache(tabId, 0, pageSize);
-      update(tabs =>
-        tabs.map(t =>
+      update((tabs) =>
+        tabs.map((t) =>
           t.id === tabId
             ? { ...t, rows, totalRows: total, isLoading: false }
-            : t
-        )
+            : t,
+        ),
       );
     },
 
     async loadMore(tabId: string) {
       let stateToUse: TabState | undefined;
 
-      update(tabs => {
-        const updatedTabs = tabs.map(t => {
+      update((tabs) => {
+        const updatedTabs = tabs.map((t) => {
           if (t.id === tabId) {
             stateToUse = { ...t, isLoading: true };
             return stateToUse;
@@ -73,35 +73,39 @@ function createTabs() {
       }
       if (cachedRows.length === stateToUse.pageSize) {
         // full page in cache
-        update(tabs =>
-          tabs.map(t =>
+        update((tabs) =>
+          tabs.map((t) =>
             t.id === tabId
               ? {
                   ...t,
                   rows: [...t.rows, ...cachedRows],
                   offset: nextOffset,
-                  isLoading: false
+                  isLoading: false,
                 }
-              : t
-          )
+              : t,
+          ),
         );
       } else {
         // fetch fresh and cache
-        const { rows } = await fetchAndCache(tabId, nextOffset, stateToUse.pageSize);
-        update(tabs =>
-          tabs.map(t =>
+        const { rows } = await fetchAndCache(
+          tabId,
+          nextOffset,
+          stateToUse.pageSize,
+        );
+        update((tabs) =>
+          tabs.map((t) =>
             t.id === tabId
               ? {
                   ...t,
                   rows: [...t.rows, ...rows],
                   offset: nextOffset,
-                  isLoading: false
+                  isLoading: false,
                 }
-              : t
-          )
+              : t,
+          ),
         );
       }
-    }
+    },
   };
 }
 

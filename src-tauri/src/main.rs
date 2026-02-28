@@ -31,6 +31,7 @@ pub mod config;
 pub mod constants;
 mod database;
 mod logging;
+mod menu;
 pub mod sql_console_storage;
 mod storage;
 mod types;
@@ -872,6 +873,7 @@ async fn main() {
         ])
         .setup(|app| {
             log_info!("Application setup started");
+            let _ = menu::create_menu(app);
 
             // Get the main window that was created by the configuration
             if let Some(window) = app.get_webview_window("main") {

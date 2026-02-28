@@ -15,14 +15,14 @@
       console.warn("Error getting platform:", e);
       // Fallback to browser detection if Tauri plugin fails
       const userAgent = navigator.userAgent.toLowerCase();
-      if (userAgent.includes('mac')) {
-        return 'darwin';
-      } else if (userAgent.includes('win')) {
-        return 'win32';
-      } else if (userAgent.includes('linux')) {
-        return 'linux';
+      if (userAgent.includes("mac")) {
+        return "darwin";
+      } else if (userAgent.includes("win")) {
+        return "win32";
+      } else if (userAgent.includes("linux")) {
+        return "linux";
       }
-      return ''; // Default fallback
+      return ""; // Default fallback
     }
   }
 
@@ -33,14 +33,14 @@
       console.warn("Error getting platform:", e);
       // Fallback to browser detection
       const userAgent = navigator.userAgent.toLowerCase();
-      if (userAgent.includes('mac')) {
-        currentPlatform = 'darwin';
-      } else if (userAgent.includes('win')) {
-        currentPlatform = 'win32';
-      } else if (userAgent.includes('linux')) {
-        currentPlatform = 'linux';
+      if (userAgent.includes("mac")) {
+        currentPlatform = "darwin";
+      } else if (userAgent.includes("win")) {
+        currentPlatform = "win32";
+      } else if (userAgent.includes("linux")) {
+        currentPlatform = "linux";
       } else {
-        currentPlatform = ''; // Default fallback
+        currentPlatform = ""; // Default fallback
       }
     }
   });
@@ -74,9 +74,7 @@
 >
   {#if currentPlatform === "darwin" || currentPlatform === "macos"}
     <!-- macOS controls -->
-    <div class="mac-controls">
-     
-    </div>
+    <div class="mac-controls"></div>
   {:else if currentPlatform === "win32" || currentPlatform === "windows"}
     <!-- Windows controls -->
     <div class="win-controls">

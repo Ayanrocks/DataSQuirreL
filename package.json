@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "bump": "node scripts/bump-version.js",
     "lint": "eslint --fix --ext .js,.ts,.svelte .",
     "format": "prettier --write .",
     "test": "vitest run",

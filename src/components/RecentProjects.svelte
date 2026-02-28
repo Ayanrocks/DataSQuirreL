@@ -26,8 +26,6 @@
       onConnect(project);
     }
   }
-
-
 </script>
 
 <div class="recent-projects w-full">
@@ -52,7 +50,9 @@
               <div class="icon-container flex items-center">
                 <div class="loader-container mr-2 scale-75 h-5 w-5">
                   <Loader
-                    loaderActive={recentProjectsLoading && project.id && connectingProjectId === project.id}
+                    loaderActive={recentProjectsLoading &&
+                      project.id &&
+                      connectingProjectId === project.id}
                     color="#1363df"
                   />
                 </div>

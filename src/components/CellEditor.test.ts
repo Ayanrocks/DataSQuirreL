@@ -1,84 +1,84 @@
-import { render, screen, fireEvent } from '@testing-library/svelte';
-import { describe, it, expect, vi } from 'vitest';
-import CellEditor from './CellEditor.svelte';
+import { render, screen, fireEvent } from "@testing-library/svelte";
+import { describe, it, expect, vi } from "vitest";
+import CellEditor from "./CellEditor.svelte";
 
-describe('CellEditor Component', () => {
-    it('renders correctly with initial value', () => {
-        const onCommit = vi.fn();
-        const onCancel = vi.fn();
+describe("CellEditor Component", () => {
+  it("renders correctly with initial value", () => {
+    const onCommit = vi.fn();
+    const onCancel = vi.fn();
 
-        const { container } = render(CellEditor, {
-            initialValue: 'Test Value',
-            onCommit,
-            onCancel,
-        });
-
-        const input = screen.getByRole('textbox') as HTMLInputElement;
-        expect(input).toBeInTheDocument();
-        expect(input.value).toBe('Test Value');
+    const { container } = render(CellEditor, {
+      initialValue: "Test Value",
+      onCommit,
+      onCancel,
     });
 
-    it('calls onCommit on blur', async () => {
-        const onCommit = vi.fn();
-        const onCancel = vi.fn();
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.value).toBe("Test Value");
+  });
 
-        render(CellEditor, {
-            initialValue: 'Test Value',
-            onCommit,
-            onCancel,
-        });
+  it("calls onCommit on blur", async () => {
+    const onCommit = vi.fn();
+    const onCancel = vi.fn();
 
-        const input = screen.getByRole('textbox');
-        await fireEvent.blur(input);
-
-        expect(onCommit).toHaveBeenCalledWith('Test Value', 'none');
+    render(CellEditor, {
+      initialValue: "Test Value",
+      onCommit,
+      onCancel,
     });
 
-    it('calls onCommit with "down" on Enter key', async () => {
-        const onCommit = vi.fn();
-        const onCancel = vi.fn();
+    const input = screen.getByRole("textbox");
+    await fireEvent.blur(input);
 
-        render(CellEditor, {
-            initialValue: 'Test Value',
-            onCommit,
-            onCancel,
-        });
+    expect(onCommit).toHaveBeenCalledWith("Test Value", "none");
+  });
 
-        const input = screen.getByRole('textbox');
-        await fireEvent.keyDown(input, { key: 'Enter' });
+  it('calls onCommit with "down" on Enter key', async () => {
+    const onCommit = vi.fn();
+    const onCancel = vi.fn();
 
-        expect(onCommit).toHaveBeenCalledWith('Test Value', 'down');
+    render(CellEditor, {
+      initialValue: "Test Value",
+      onCommit,
+      onCancel,
     });
 
-    it('calls onCommit with "next" on Tab key', async () => {
-        const onCommit = vi.fn();
-        const onCancel = vi.fn();
+    const input = screen.getByRole("textbox");
+    await fireEvent.keyDown(input, { key: "Enter" });
 
-        render(CellEditor, {
-            initialValue: 'Test Value',
-            onCommit,
-            onCancel,
-        });
+    expect(onCommit).toHaveBeenCalledWith("Test Value", "down");
+  });
 
-        const input = screen.getByRole('textbox');
-        await fireEvent.keyDown(input, { key: 'Tab' });
+  it('calls onCommit with "next" on Tab key', async () => {
+    const onCommit = vi.fn();
+    const onCancel = vi.fn();
 
-        expect(onCommit).toHaveBeenCalledWith('Test Value', 'next');
+    render(CellEditor, {
+      initialValue: "Test Value",
+      onCommit,
+      onCancel,
     });
 
-    it('calls onCancel on Escape key', async () => {
-        const onCommit = vi.fn();
-        const onCancel = vi.fn();
+    const input = screen.getByRole("textbox");
+    await fireEvent.keyDown(input, { key: "Tab" });
 
-        render(CellEditor, {
-            initialValue: 'Test Value',
-            onCommit,
-            onCancel,
-        });
+    expect(onCommit).toHaveBeenCalledWith("Test Value", "next");
+  });
 
-        const input = screen.getByRole('textbox');
-        await fireEvent.keyDown(input, { key: 'Escape' });
+  it("calls onCancel on Escape key", async () => {
+    const onCommit = vi.fn();
+    const onCancel = vi.fn();
 
-        expect(onCancel).toHaveBeenCalled();
+    render(CellEditor, {
+      initialValue: "Test Value",
+      onCommit,
+      onCancel,
     });
+
+    const input = screen.getByRole("textbox");
+    await fireEvent.keyDown(input, { key: "Escape" });
+
+    expect(onCancel).toHaveBeenCalled();
+  });
 });

@@ -4,13 +4,13 @@
 
   // take props from the parent component
   let {
-    projectName = $bindable(''),
-    hostName = $bindable(''),
+    projectName = $bindable(""),
+    hostName = $bindable(""),
     port = $bindable(0),
-    userName = $bindable(''),
-    password = $bindable(''),
-    dbName = $bindable(''),
-    dbType = $bindable(''),
+    userName = $bindable(""),
+    password = $bindable(""),
+    dbName = $bindable(""),
+    dbType = $bindable(""),
     loaderActive = $bindable(false),
     OnClickConnect,
   } = $props<{
@@ -24,8 +24,6 @@
     loaderActive: boolean;
     OnClickConnect: (e: MouseEvent) => void;
   }>();
-
-  
 </script>
 
 <div

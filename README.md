@@ -2,7 +2,6 @@
 
 An lightweight, full fledged database viewer with a modern and sleek UI
 
-
 # Running
 
 To run the project, use the following commands

@@ -63,7 +63,11 @@
   {#if item.children && item.children.length > 0 && item.isExpanded}
     <div transition:slide>
       {#each item.children as child}
-        <RecursiveSidebarItem item={child} parentContext={currentContext} {handleTableClick} />
+        <RecursiveSidebarItem
+          item={child}
+          parentContext={currentContext}
+          {handleTableClick}
+        />
       {/each}
     </div>
   {/if}
