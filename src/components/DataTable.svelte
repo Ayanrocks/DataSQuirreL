@@ -632,10 +632,8 @@
               .value
           : "",
       );
-      // Explicitly prevent dragging from starting if we were just closing an edit box
-      selectionAnchor = null;
-      isDragging = false;
-      return;
+      // We do not return here! We want the click to count as starting a new selection
+      // on the cell we just clicked!
     }
 
     e.preventDefault();
@@ -692,6 +690,12 @@
   function handleMouseUp() {
     if (isDragging) {
       isDragging = false;
+
+      const wasMultiDrag =
+        Object.keys(dragSelectedCells).length > 0 ||
+        Object.keys(dragSelectedRows).length > 0 ||
+        Object.keys(dragSelectedCols).length > 0;
+
       baseSelectedRows = { ...baseSelectedRows, ...dragSelectedRows };
       baseSelectedCols = { ...baseSelectedCols, ...dragSelectedCols };
       baseSelectedCells = { ...baseSelectedCells, ...dragSelectedCells };
@@ -699,7 +703,7 @@
       dragSelectedCols = {};
       dragSelectedCells = {};
 
-      if (selectionAnchor && selectionAnchor.type === "cell") {
+      if (selectionAnchor && selectionAnchor.type === "cell" && !wasMultiDrag) {
         editingCell = { r: selectionAnchor.r, c: selectionAnchor.c };
       } else {
         editingCell = null;
