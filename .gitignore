@@ -12,3 +12,7 @@ target/
 # TypeScript generated files
 *.js.map
 src/**/*.js
+
+# Testing
+__snapshots__/
+coverage/

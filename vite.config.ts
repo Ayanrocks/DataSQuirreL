@@ -1,6 +1,8 @@
-import { defineConfig } from 'vite';
+/// <reference types="vitest" />
+import { defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 // import svg from 'vite-plugin-svelte-svg';
 
 const host = process.env.TAURI_DEV_HOST;
@@ -8,12 +10,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig({
   clearScreen: false,
   base: "./",
-  plugins: [tailwindcss(), svelte(),
-  // svg({
-  //   svgoConfig: {}, // optional SVGO config
-  //   requireSuffix: true, // generates Icon and IconUrl exports
-  // }),
-  ],
+  plugins: [tailwindcss(), svelte(), svelteTesting()],
   // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`.
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {
@@ -45,4 +42,23 @@ export default defineConfig({
       ignored: ['**/src-tauri/**'],
     },
   },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'src/test/**',
+        'src-tauri/**',
+        'postcss.config.js',
+        'tailwind.config.js',
+        'svelte.config.js',
+        'vite.config.ts',
+        'eslint.config.js',
+        '.svelte-kit/**'
+      ],
+    }
+  }
 });

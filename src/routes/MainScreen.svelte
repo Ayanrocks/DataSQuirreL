@@ -36,9 +36,14 @@
   let tabs = $state<({ id: string } & ActiveTable)[]>([]);
   let activeTabIndex = $state(-1);
 
-  onDestroy(() => {
+  onDestroy(async () => {
     if (unlisten) {
-      unlisten();
+      if (typeof unlisten === "function") {
+        unlisten();
+      } else if (unlisten.then) {
+        const fn = await unlisten;
+        fn();
+      }
     }
   });
 
