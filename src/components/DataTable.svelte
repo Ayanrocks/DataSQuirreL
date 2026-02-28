@@ -126,7 +126,10 @@
     historyManager.clear();
   });
 
-  function commitEdit(newVal: string) {
+  function commitEdit(
+    newVal: string,
+    direction: "none" | "next" | "down" = "none",
+  ) {
     if (editingCell) {
       if (activeTableData?.rows && activeTableData.columns) {
         let updatedRows = [...activeTableData.rows];
@@ -134,54 +137,99 @@
         const ops: HistoryOp[] = [];
 
         // Apply to all selected elements
-        for (let r = 0; r < updatedRows.length; r++) {
-          for (let c = 1; c <= activeTableData.columns.length; c++) {
-            if (
-              selectedRows[r] ||
-              selectedCols[c] ||
-              selectedCells[`${r}-${c}`]
-            ) {
-              const oldVal = updatedRows[r][c - 1];
-              if (oldVal !== newVal) {
-                ops.push({ r, c, oldVal, newVal });
-                updatedRows[r][c - 1] = newVal;
-                modified = true;
+        // Only apply if the current cell is actually in the selection! (If there's no selection, just apply to the cell itself)
+        const isEditingCellSelected =
+          selectedRows[editingCell.r] ||
+          selectedCols[editingCell.c] ||
+          selectedCells[`${editingCell.r}-${editingCell.c}`];
 
-                // Also record in TransactionManager
-                let rowDict: Record<string, string> = {};
-                activeTableData.columns.forEach(
-                  (col: string[], idx: number) => {
-                    rowDict[col[1]] = updatedRows[r][idx]; // Record with updated values
-                  },
-                );
+        if (isEditingCellSelected) {
+          for (let r = 0; r < updatedRows.length; r++) {
+            for (let c = 1; c <= activeTableData.columns.length; c++) {
+              if (
+                selectedRows[r] ||
+                selectedCols[c] ||
+                selectedCells[`${r}-${c}`]
+              ) {
+                const oldVal = updatedRows[r][c - 1];
+                if (oldVal !== newVal) {
+                  ops.push({ r, c, oldVal, newVal });
+                  updatedRows[r][c - 1] = newVal;
+                  modified = true;
 
-                let origDict: Record<string, string> = {};
-                activeTableData.columns.forEach(
-                  (col: string[], idx: number) => {
-                    // Reconstruct original from activeTableData before it was clobbered, or just fallback
-                    origDict[col[1]] = activeTableData.rows[r][idx];
-                  },
-                );
+                  // Also record in TransactionManager
+                  let rowDict: Record<string, string> = {};
+                  activeTableData.columns.forEach(
+                    (col: string[], idx: number) => {
+                      rowDict[col[1]] = updatedRows[r][idx]; // Record with updated values
+                    },
+                  );
 
-                let pkDict: Record<string, string> | null = null;
-                if (
-                  activeTableData.primaryKeys &&
-                  activeTableData.primaryKeys.length > 0
-                ) {
-                  pkDict = {};
-                  activeTableData.primaryKeys.forEach((pk: string) => {
-                    let colIdx = activeTableData.columns.findIndex(
-                      (c: string[]) => c[1] === pk,
-                    );
-                    if (colIdx >= 0) {
-                      pkDict![pk] = activeTableData.rows[r][colIdx];
-                    }
-                  });
+                  let origDict: Record<string, string> = {};
+                  activeTableData.columns.forEach(
+                    (col: string[], idx: number) => {
+                      // Reconstruct original from activeTableData before it was clobbered, or just fallback
+                      origDict[col[1]] = activeTableData.rows[r][idx];
+                    },
+                  );
+
+                  let pkDict: Record<string, string> | null = null;
+                  if (
+                    activeTableData.primaryKeys &&
+                    activeTableData.primaryKeys.length > 0
+                  ) {
+                    pkDict = {};
+                    activeTableData.primaryKeys.forEach((pk: string) => {
+                      let colIdx = activeTableData.columns.findIndex(
+                        (c: string[]) => c[1] === pk,
+                      );
+                      if (colIdx >= 0) {
+                        pkDict![pk] = activeTableData.rows[r][colIdx];
+                      }
+                    });
+                  }
+
+                  transactionManager.updateRow(r, pkDict, origDict, rowDict);
                 }
-
-                transactionManager.updateRow(r, pkDict, origDict, rowDict);
               }
             }
+          }
+        } else {
+          // Just apply to the single cell since the selection doesn't cover it
+          const r = editingCell.r;
+          const c = editingCell.c;
+          const oldVal = updatedRows[r][c - 1];
+          if (oldVal !== newVal) {
+            ops.push({ r, c, oldVal, newVal });
+            updatedRows[r][c - 1] = newVal;
+            modified = true;
+
+            let rowDict: Record<string, string> = {};
+            activeTableData.columns.forEach((col: string[], idx: number) => {
+              rowDict[col[1]] = updatedRows[r][idx];
+            });
+
+            let origDict: Record<string, string> = {};
+            activeTableData.columns.forEach((col: string[], idx: number) => {
+              origDict[col[1]] = activeTableData.rows[r][idx];
+            });
+
+            let pkDict: Record<string, string> | null = null;
+            if (
+              activeTableData.primaryKeys &&
+              activeTableData.primaryKeys.length > 0
+            ) {
+              pkDict = {};
+              activeTableData.primaryKeys.forEach((pk: string) => {
+                let colIdx = activeTableData.columns.findIndex(
+                  (c: string[]) => c[1] === pk,
+                );
+                if (colIdx >= 0) {
+                  pkDict![pk] = activeTableData.rows[r][colIdx];
+                }
+              });
+            }
+            transactionManager.updateRow(r, pkDict, origDict, rowDict);
           }
         }
 
@@ -191,12 +239,58 @@
           transactionChangesMap = new Map(transactionManager["changes"]); // Force reactivity
         }
       }
-      editingCell = null;
+
+      if (activeTableData?.columns && activeTableData?.rows) {
+        if (direction === "next") {
+          let newC = editingCell.c + 1;
+          let newR = editingCell.r;
+
+          // wrap around to next row if we hit the end of the columns
+          if (newC > activeTableData.columns.length) {
+            newC = 1;
+            newR += 1;
+          }
+
+          if (newR < activeTableData.rows.length) {
+            editingCell = { r: newR, c: newC };
+          } else {
+            editingCell = null;
+          }
+        } else if (direction === "down") {
+          let newR = editingCell.r + 1;
+
+          if (newR < activeTableData.rows.length) {
+            editingCell = { r: newR, c: editingCell.c };
+          } else {
+            editingCell = null;
+          }
+        } else {
+          blurEditingInput();
+          editingCell = null;
+        }
+      } else {
+        blurEditingInput();
+        editingCell = null;
+      }
     }
   }
 
   function cancelEdit() {
+    blurEditingInput();
     editingCell = null;
+  }
+
+  /**
+   * Blur the active cell editor input and redirect focus to the scroll container
+   * so the browser doesn't try to restore focus (and scroll) to the deleted input element.
+   */
+  function blurEditingInput() {
+    const input =
+      document.querySelector<HTMLInputElement>(".cell-editor-input");
+    if (input) {
+      // Move focus to the scroll container (which is non-scrolling) before removing the input
+      scrollContainerEl?.focus({ preventScroll: true });
+    }
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -206,6 +300,7 @@
       baseSelectedCols = {};
       baseSelectedCells = {};
       selectionAnchor = null;
+      blurEditingInput();
       editingCell = null;
       return;
     }
@@ -517,6 +612,17 @@
     r: number,
     c: number,
   ) {
+    // If user clicks on an active input (like CellEditor or Toolbar), don't trigger cell selection drag
+    const target = e.target as HTMLElement;
+    if (
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT")
+    ) {
+      return;
+    }
+
     if (e.button !== 0) return; // only left click
 
     if (editingCell) {
@@ -526,6 +632,10 @@
               .value
           : "",
       );
+      // Explicitly prevent dragging from starting if we were just closing an edit box
+      selectionAnchor = null;
+      isDragging = false;
+      return;
     }
 
     e.preventDefault();
@@ -594,6 +704,12 @@
       } else {
         editingCell = null;
       }
+    } else if (selectionAnchor && selectionAnchor.type === "cell") {
+      // If we clicked (mousedown -> mouseup without drag), check if we should enter edit mode
+      // Only do this if we aren't currently editing another cell that we just blurred
+      if (!editingCell) {
+        editingCell = { r: selectionAnchor.r, c: selectionAnchor.c };
+      }
     }
   }
 
@@ -624,9 +740,16 @@
         }
       }
     }
-    dragSelectedRows = newDragRows;
-    dragSelectedCols = newDragCols;
-    dragSelectedCells = newDragCells;
+    // Only apply drag selections if we actually moved from the anchor
+    if (!(anchor.r === current.r && anchor.c === current.c)) {
+      dragSelectedRows = newDragRows;
+      dragSelectedCols = newDragCols;
+      dragSelectedCells = newDragCells;
+    } else {
+      dragSelectedRows = {};
+      dragSelectedCols = {};
+      dragSelectedCells = {};
+    }
   }
 
   let columns = $derived.by(() => {
@@ -659,6 +782,13 @@
     // Create an array of empty strings matching column count
     const emptyRowArray = new Array(activeTableData.columns.length).fill("");
     const newIndex = activeTableData.rows.length;
+
+    // Clear any previous selections that might cross over index references
+    baseSelectedRows = {};
+    baseSelectedCols = {};
+    baseSelectedCells = {};
+    selectionAnchor = null;
+    editingCell = null;
 
     // Append to underlying data
     activeTableData.rows = [...activeTableData.rows, emptyRowArray];
@@ -799,6 +929,7 @@
   // Virtualization state
   let scrollTop = $state(0);
   let containerHeight = $state(800);
+  let scrollContainerEl = $state<HTMLElement | null>(null);
   const ROW_HEIGHT = 32;
 
   let totalRows = $derived(table.getRowModel().rows.length);
@@ -845,8 +976,10 @@
 
     <div
       class="table-scroll-container"
+      bind:this={scrollContainerEl}
       onscroll={(e) => (scrollTop = e.currentTarget.scrollTop)}
       bind:clientHeight={containerHeight}
+      tabindex="-1"
     >
       <table>
         <thead>
@@ -1152,6 +1285,13 @@
     text-overflow: ellipsis;
     max-width: 300px;
     font-family: "JetBrains Mono", monospace;
+    height: 32px;
+    box-sizing: border-box;
+  }
+
+  tbody tr {
+    height: 32px;
+    box-sizing: border-box;
   }
 
   td {

@@ -7,7 +7,7 @@
     onCancel,
   } = $props<{
     initialValue?: string;
-    onCommit: (val: string) => void;
+    onCommit: (val: string, direction: "none" | "next" | "down") => void;
     onCancel: () => void;
   }>();
 
@@ -16,18 +16,22 @@
 
   onMount(() => {
     if (inputRef) {
-      inputRef.focus();
+      inputRef.focus({ preventScroll: true });
       inputRef.select();
     }
   });
 
   function handleBlur() {
-    onCommit(editValue);
+    onCommit(editValue, "none");
   }
 
   function handleKeyDown(e: KeyboardEvent) {
     if (e.key === "Enter") {
-      onCommit(editValue);
+      e.preventDefault();
+      onCommit(editValue, "down");
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      onCommit(editValue, "next");
     } else if (e.key === "Escape") {
       onCancel();
     }
