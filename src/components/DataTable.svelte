@@ -757,12 +757,6 @@
       } else {
         editingCell = null;
       }
-    } else if (selectionAnchor && selectionAnchor.type === "cell") {
-      // If we clicked (mousedown -> mouseup without drag), check if we should enter edit mode
-      // Only do this if we aren't currently editing another cell that we just blurred
-      if (!editingCell) {
-        editingCell = { r: selectionAnchor.r, c: selectionAnchor.c };
-      }
     }
   }
 
@@ -813,6 +807,7 @@
         accessorFn: (_row, index) =>
           index + 1 + ((activeTableData?.currentPage || 1) - 1) * 100,
         size: 50,
+        minSize: 30,
       },
     ];
 
@@ -823,6 +818,8 @@
           accessorKey: colName,
           header: colName,
           cell: (info: CellContext<any, any>) => info.getValue(),
+          size: 150,
+          minSize: 50,
         });
       });
     }
@@ -993,12 +990,64 @@
     });
   });
 
+  let columnSizing = $state<Record<string, number>>({});
+
+  function autoFitColumn(columnId: string) {
+    if (!activeTableData?.columns || !activeTableData?.rows) return;
+
+    let colIndex = -1;
+    if (columnId === "index") {
+      const maxIndexStr = String(
+        startIndex +
+          visibleRows.length +
+          1 +
+          ((activeTableData?.currentPage || 1) - 1) * 100,
+      );
+      columnSizing = {
+        ...columnSizing,
+        [columnId]: Math.max(50, maxIndexStr.length * 10 + 24),
+      };
+      return;
+    } else {
+      colIndex = activeTableData.columns.findIndex(
+        (c: string[]) => c[1] === columnId,
+      );
+    }
+
+    if (colIndex === -1) return;
+
+    let maxLength = columnId.length;
+    for (const row of visibleRows) {
+      const rowData = activeTableData.rows[row.index];
+      if (rowData && rowData[colIndex]) {
+        maxLength = Math.max(maxLength, String(rowData[colIndex]).length);
+      }
+    }
+
+    const newWidth = Math.min(800, Math.max(50, maxLength * 8 + 48)); // +48 for padding and sort icon
+    columnSizing = { ...columnSizing, [columnId]: newWidth };
+  }
+
   let table = createTable({
     get data() {
       return data;
     },
     get columns() {
       return columns;
+    },
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    state: {
+      get columnSizing() {
+        return columnSizing;
+      },
+    },
+    onColumnSizingChange: (updater) => {
+      if (typeof updater === "function") {
+        columnSizing = updater(columnSizing);
+      } else {
+        columnSizing = updater;
+      }
     },
     getCoreRowModel: getCoreRowModel(),
     renderFallbackValue: null,
@@ -1059,7 +1108,12 @@
       bind:clientHeight={containerHeight}
       tabindex="-1"
     >
-      <table>
+      <table style="table-layout: fixed; width: {table.getTotalSize()}px;">
+        <colgroup>
+          {#each table.getFlatHeaders() as header (header.id)}
+            <col style="width: {header.getSize()}px;" />
+          {/each}
+        </colgroup>
         <thead>
           {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
             <tr>
@@ -1164,6 +1218,22 @@
                         </button>
                       {/if}
                     </div>
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <div
+                      class="resizer"
+                      class:is-resizing={header.column.getIsResizing()}
+                      onmousedown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const handler = header.getResizeHandler();
+                        handler?.(e);
+                      }}
+                      ondblclick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        autoFitColumn(header.column.id);
+                      }}
+                    ></div>
                   {/if}
                 </th>
               {/each}
@@ -1313,6 +1383,7 @@
     overflow: auto;
     width: 100%;
     overscroll-behavior: contain;
+    overflow-anchor: none;
     border-bottom: 1px solid #d1d5db;
   }
 
@@ -1371,7 +1442,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 300px;
     font-family: "JetBrains Mono", monospace;
     height: 32px;
     box-sizing: border-box;
@@ -1583,5 +1653,22 @@
   .menu-item .shortcut {
     color: #9ca3af;
     font-size: 12px;
+  }
+
+  .resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background-color: transparent;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 10;
+  }
+
+  .resizer:hover,
+  .resizer.is-resizing {
+    background-color: #3b82f6;
   }
 </style>
