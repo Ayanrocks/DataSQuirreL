@@ -29,12 +29,13 @@ pub struct DBConnectionRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableData<T> {
-    pub columns: Vec<(String, String)>,
+    pub columns: Vec<(String, String, String)>,
     pub rows: Option<Vec<Vec<T>>>,
     pub row_count: Option<String>,
     pub table_name: Option<String>,
     pub query_type: String,
     pub primary_keys: Option<Vec<String>>,
+    pub foreign_keys: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -102,4 +103,5 @@ pub struct CommitTransactionRequest {
     pub schema_name: String,
     pub table_name: String,
     pub changes: Vec<TransactionChange>,
+    pub column_types: Option<HashMap<String, String>>,
 }

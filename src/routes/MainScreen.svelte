@@ -220,6 +220,12 @@
         // Also ensure limit/offset can be read if stored on tab
         (tabs[tabIndex] as any).currentOffset = offset;
         (tabs[tabIndex] as any).currentLimit = limit;
+        if (res.data.primary_keys) {
+          tabs[tabIndex].primaryKeys = res.data.primary_keys;
+        }
+        if (res.data.foreign_keys) {
+          tabs[tabIndex].foreignKeys = res.data.foreign_keys;
+        }
       }
     } catch (e) {
       console.log("ErrorCatching: ", e);

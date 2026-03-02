@@ -799,6 +799,21 @@
     }
   }
 
+  function getShorthandType(rawType: string) {
+    if (!rawType) return "";
+    const lower = rawType.toLowerCase();
+    if (lower.startsWith("timestamp with time zone")) return "timestamptz";
+    if (lower.startsWith("timestamp without time zone")) return "timestamp";
+    if (lower.startsWith("character varying")) return "varchar";
+    if (lower.startsWith("double precision")) return "float8";
+    if (lower.startsWith("real")) return "float4";
+    if (lower.startsWith("boolean")) return "bool";
+    if (lower.startsWith("integer")) return "int";
+    if (lower.startsWith("smallint")) return "int2";
+    if (lower.startsWith("bigint")) return "int8";
+    return rawType;
+  }
+
   let columns = $derived.by(() => {
     let cols: ColumnDef<any>[] = [
       {
@@ -812,11 +827,16 @@
     ];
 
     if (activeTableData?.columns) {
-      activeTableData.columns.forEach((col: string[]) => {
+      activeTableData.columns.forEach((col: any) => {
         let colName = col[1];
+        let rawType = col[2];
+        let isPk = activeTableData.primaryKeys?.includes(colName) ?? false;
+        let isFk = activeTableData.foreignKeys?.includes(colName) ?? false;
+
         cols.push({
           accessorKey: colName,
           header: colName,
+          meta: { rawType: getShorthandType(rawType), isPk, isFk },
           cell: (info: CellContext<any, any>) => info.getValue(),
           size: 150,
           minSize: 50,
@@ -944,11 +964,17 @@
     }
 
     try {
+      let columnTypesDict: Record<string, string> = {};
+      activeTableData.columns.forEach((col: any) => {
+        columnTypesDict[col[1]] = col[2];
+      });
+
       const payload = {
         database_name: activeTableData.dbName,
         schema_name: activeTableData.schemaName,
         table_name: activeTableData.tableName,
         changes: transactionManager.getAllChanges(),
+        column_types: columnTypesDict,
       };
 
       const res: any = await invoke(INVOKE_COMMIT_TRANSACTION, {
@@ -1135,9 +1161,28 @@
                 >
                   {#if !header.isPlaceholder}
                     <div class="header-content">
-                      <span class="header-text"
-                        >{header.column.columnDef.header}</span
-                      >
+                      <span class="header-text">
+                        <span
+                          class:pk-col={(header.column.columnDef.meta as any)
+                            ?.isPk}
+                        >
+                          {header.column.columnDef.header}
+                        </span>
+                        {#if (header.column.columnDef.meta as any)?.isPk || (header.column.columnDef.meta as any)?.isFk}
+                          <span class="datatype-text">
+                            ({#if (header.column.columnDef.meta as any)?.isPk && (header.column.columnDef.meta as any)?.isFk}pk,
+                              fk
+                            {:else if (header.column.columnDef.meta as any)?.isPk}pk
+                            {:else}fk{/if})
+                          </span>
+                        {/if}
+                        {#if (header.column.columnDef.meta as any)?.rawType}
+                          <span class="datatype-text"
+                            >({(header.column.columnDef.meta as any)
+                              .rawType})</span
+                          >
+                        {/if}
+                      </span>
                       {#if header.column.id !== "index"}
                         <button
                           class="sort-btn"
@@ -1269,6 +1314,8 @@
                   class:selected-cell={selectedCells[`${r}-${c}`] ||
                     selectedCols[c]}
                   class:modified-cell={colName !== "index" && isModified}
+                  class:editing-cell={editingCell?.r === r &&
+                    editingCell?.c === c}
                   onmousedown={(e) => {
                     if (cell.column.id === "index") {
                       handleMouseDown(e, "row", r, c);
@@ -1298,10 +1345,17 @@
                     {cell.getValue()}
                   </span>
                   {#if editingCell?.r === r && editingCell?.c === c}
+                    {@const colDef = activeTableData.columns.find(
+                      (cDef: any) => cDef[1] === colName,
+                    )}
+                    {@const jsType = colDef ? colDef[0] : "string"}
+                    {@const rawType = colDef ? colDef[2] : "text"}
                     <CellEditor
                       initialValue={cell.getValue() as string}
                       onCommit={commitEdit}
                       onCancel={cancelEdit}
+                      {jsType}
+                      {rawType}
                     />
                   {/if}
                 </td>
@@ -1573,6 +1627,17 @@
     text-overflow: ellipsis;
   }
 
+  .pk-col {
+    color: #b45309; /* Yellow/amber text for primary keys */
+  }
+
+  .datatype-text {
+    color: #4b5563; /* grey-600 */
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+
   .sort-btn {
     background: transparent;
     border: none;
@@ -1612,6 +1677,11 @@
     outline: 2px solid #3b82f6; /* blue outline */
     outline-offset: -2px;
     background-color: #e0f2fe !important;
+  }
+
+  td.editing-cell {
+    overflow: visible !important;
+    z-index: 50 !important;
   }
 
   .empty-state {

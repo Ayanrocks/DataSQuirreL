@@ -372,7 +372,7 @@ async fn fetch_table_data(
            3. first 600 rows
     */
 
-    let mut columns: Vec<(String, String)> = vec![];
+    let mut columns: Vec<(String, String, String)> = vec![];
 
     let table_columns_result = application_state
         .dbpool
@@ -392,7 +392,7 @@ async fn fetch_table_data(
         Ok(table_columns) => {
             for t in table_columns {
                 // Convert the data type to js data type
-                columns.push((sql_to_js_type(&t.data_type), t.column_name));
+                columns.push((sql_to_js_type(&t.data_type), t.column_name, t.data_type));
             }
         }
         Err(e) => {
@@ -455,6 +455,27 @@ async fn fetch_table_data(
         }
     };
 
+    // fetch primary and foreign keys
+    let pks = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_primary_keys(&req_payload.schema_name, &req_payload.table_name)
+        .await
+        .unwrap_or_default();
+
+    let fks = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_foreign_keys(&req_payload.schema_name, &req_payload.table_name)
+        .await
+        .unwrap_or_default();
+
     Ok(IPCResponse {
         status: http::status::StatusCode::OK.as_u16(),
         error_code: None,
@@ -466,7 +487,8 @@ async fn fetch_table_data(
             row_count: Some(row_count),
             table_name: Some(req_payload.table_name),
             query_type: constants::QUERY_TYPE_FETCH_INITIAL_TABLE_DATA.to_string(),
-            primary_keys: None,
+            primary_keys: Some(pks),
+            foreign_keys: Some(fks),
         }),
     })
 }
@@ -477,7 +499,7 @@ async fn fetch_table_data_with_offset(
     application_state: State<'_, ApplicationState>,
 ) -> Result<IPCResponse<TableData<String>>, ()> {
     log_function!(fetch_table_data_with_offset);
-    let mut columns: Vec<(String, String)> = vec![];
+    let mut columns: Vec<(String, String, String)> = vec![];
 
     let table_columns_result = application_state
         .dbpool
@@ -496,7 +518,7 @@ async fn fetch_table_data_with_offset(
     match table_columns_result {
         Ok(table_columns) => {
             for t in table_columns {
-                columns.push((sql_to_js_type(&t.data_type), t.column_name));
+                columns.push((sql_to_js_type(&t.data_type), t.column_name, t.data_type));
             }
         }
         Err(e) => {
@@ -566,6 +588,27 @@ async fn fetch_table_data_with_offset(
         }
     };
 
+    // fetch primary and foreign keys
+    let pks = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_primary_keys(&req_payload.schema_name, &req_payload.table_name)
+        .await
+        .unwrap_or_default();
+
+    let fks = application_state
+        .dbpool
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .fetch_table_foreign_keys(&req_payload.schema_name, &req_payload.table_name)
+        .await
+        .unwrap_or_default();
+
     Ok(IPCResponse {
         status: http::status::StatusCode::OK.as_u16(),
         error_code: None,
@@ -577,7 +620,8 @@ async fn fetch_table_data_with_offset(
             row_count: Some(row_count),
             table_name: Some(req_payload.table_name),
             query_type: constants::QUERY_TYPE_FETCH_OFFSET_TABLE_DATA.to_string(),
-            primary_keys: None,
+            primary_keys: Some(pks),
+            foreign_keys: Some(fks),
         }),
     })
 }
@@ -720,6 +764,7 @@ async fn commit_transaction_cmd(
                 &req_payload.schema_name,
                 &req_payload.table_name,
                 req_payload.changes,
+                req_payload.column_types,
             )
             .await;
 

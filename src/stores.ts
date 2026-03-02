@@ -37,6 +37,7 @@ export interface ActiveTable {
   currentOffset?: number;
   currentLimit?: number | null;
   primaryKeys?: string[];
+  foreignKeys?: string[];
 }
 
 export const activeTable: Writable<ActiveTable> = writable({

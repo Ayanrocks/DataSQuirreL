@@ -181,6 +181,42 @@ impl ConnPool {
         }
     }
 
+    pub async fn fetch_table_foreign_keys(
+        &self,
+        schema_name: &str,
+        table_name: &str,
+    ) -> Result<Vec<String>, sqlx::Error> {
+        log_function!(fetch_table_foreign_keys);
+
+        let query = format!(
+            "
+            SELECT kcu.column_name
+            FROM information_schema.table_constraints tco
+            JOIN information_schema.key_column_usage kcu 
+              ON kcu.constraint_name = tco.constraint_name 
+              AND kcu.constraint_schema = tco.constraint_schema 
+              AND kcu.constraint_name = tco.constraint_name 
+            WHERE tco.constraint_type = 'FOREIGN KEY'
+              AND kcu.table_schema = '{}'
+              AND kcu.table_name = '{}';
+            ",
+            schema_name, table_name
+        );
+
+        let query_result = sqlx::query(&query).fetch_all(&self.pool).await;
+
+        match query_result {
+            Ok(rows) => {
+                let fks: Vec<String> = rows.into_iter().map(|row| row.get("column_name")).collect();
+                Ok(fks)
+            }
+            Err(e) => {
+                println!("[fetch_table_foreign_keys] Error: {:#?}", e);
+                Err(e)
+            }
+        }
+    }
+
     pub async fn fetch_table_rows_count(
         &self,
         schema_name: &str,
@@ -371,6 +407,7 @@ impl ConnPool {
         schema_name: &str,
         table_name: &str,
         changes: Vec<crate::types::api_objects::TransactionChange>,
+        column_types: Option<std::collections::HashMap<String, String>>,
     ) -> Result<(), sqlx::Error> {
         use sqlx::Acquire;
         let mut tx = self.pool.begin().await?;
@@ -406,11 +443,16 @@ impl ConnPool {
 
                     let mut idx = 1;
                     for (k, v) in &new_vals {
-                        // Skip empty insertions to let postgres use DEFAULT if applicable?
-                        // Actually let's assume if it's there we insert it.
+                        let cast = match &column_types {
+                            Some(types_map) => match types_map.get(k) {
+                                Some(raw_type) => format!("::{}", raw_type),
+                                None => "".to_string(),
+                            },
+                            None => "".to_string(),
+                        };
                         cols.push(format!("\"{}\"", k));
                         vals.push(v);
-                        placeholders.push(format!("${}", idx));
+                        placeholders.push(format!("${}{}", idx, cast));
                         idx += 1;
                     }
 
@@ -453,7 +495,14 @@ impl ConnPool {
                     let mut idx = 1;
 
                     for (k, v) in &new_vals {
-                        set_clauses.push(format!("\"{}\" = ${}", k, idx));
+                        let cast = match &column_types {
+                            Some(types_map) => match types_map.get(k) {
+                                Some(raw_type) => format!("::{}", raw_type),
+                                None => "".to_string(),
+                            },
+                            None => "".to_string(),
+                        };
+                        set_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
                         binds.push(v);
                         idx += 1;
                     }
@@ -461,16 +510,28 @@ impl ConnPool {
                     // Build WHERE clause
                     if !pk_vals.is_empty() {
                         for (k, v) in &pk_vals {
-                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            let cast = match &column_types {
+                                Some(types_map) => match types_map.get(k) {
+                                    Some(raw_type) => format!("::{}", raw_type),
+                                    None => "".to_string(),
+                                },
+                                None => "".to_string(),
+                            };
+                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
                             binds.push(v);
                             idx += 1;
                         }
                     } else {
                         // fallback to all original columns
                         for (k, v) in &orig_vals {
-                            // Can't reliably check NULL easily via string bindings without special cases,
-                            // assuming valid strings for now
-                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            let cast = match &column_types {
+                                Some(types_map) => match types_map.get(k) {
+                                    Some(raw_type) => format!("::{}", raw_type),
+                                    None => "".to_string(),
+                                },
+                                None => "".to_string(),
+                            };
+                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
                             binds.push(v);
                             idx += 1;
                         }
@@ -509,13 +570,27 @@ impl ConnPool {
 
                     if !pk_vals.is_empty() {
                         for (k, v) in &pk_vals {
-                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            let cast = match &column_types {
+                                Some(types_map) => match types_map.get(k) {
+                                    Some(raw_type) => format!("::{}", raw_type),
+                                    None => "".to_string(),
+                                },
+                                None => "".to_string(),
+                            };
+                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
                             binds.push(v);
                             idx += 1;
                         }
                     } else {
                         for (k, v) in &orig_vals {
-                            where_clauses.push(format!("\"{}\" = ${}", k, idx));
+                            let cast = match &column_types {
+                                Some(types_map) => match types_map.get(k) {
+                                    Some(raw_type) => format!("::{}", raw_type),
+                                    None => "".to_string(),
+                                },
+                                None => "".to_string(),
+                            };
+                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
                             binds.push(v);
                             idx += 1;
                         }
