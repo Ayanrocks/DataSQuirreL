@@ -43,8 +43,19 @@
     onPreview?: () => void;
   }>();
 
-  let limitSelection = $state("100");
-  let customLimitValue = $state(100);
+  let limitSelection = $state(
+    limit === null
+      ? "All"
+      : ["100", "1000", "5000", "10000"].includes(limit.toString())
+        ? limit.toString()
+        : "Custom",
+  );
+  let customLimitValue = $state(
+    limit === null ||
+      ["100", "1000", "5000", "10000"].includes(limit.toString())
+      ? 100
+      : limit,
+  );
 
   function handleSelectionChange(e: Event) {
     const val = (e.target as HTMLSelectElement).value;

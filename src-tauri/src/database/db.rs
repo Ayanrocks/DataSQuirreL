@@ -300,7 +300,7 @@ impl ConnPool {
 
         let limit_str = match limit {
             Some(l) => l.to_string(),
-            None => "-1".to_string(),
+            None => "ALL".to_string(),
         };
 
         let query = format!(
