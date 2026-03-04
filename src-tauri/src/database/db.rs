@@ -257,6 +257,8 @@ impl ConnPool {
         table_name: &str,
         columns: &Vec<TableColumns>,
         mapper: &dyn crate::database::types_mapper::DbTypeMapper,
+        sort_column: &Option<String>,
+        sort_direction: &Option<String>,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data);
 
@@ -270,16 +272,33 @@ impl ConnPool {
             select_cols.join(", ")
         };
 
+        let mut order_by_str = String::new();
+        if let Some(col) = sort_column {
+            if let Some(dir) = sort_direction {
+                if dir.to_lowercase() == "asc" || dir.to_lowercase() == "desc" {
+                    order_by_str = format!(
+                        "ORDER BY \"{}\".\"{}\".\"{}\" {}",
+                        schema_name,
+                        table_name,
+                        col,
+                        dir.to_uppercase()
+                    );
+                }
+            }
+        }
+
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
                 SELECT {}
                 FROM "{}"."{}"
+                {}
                 LIMIT {};
             "#,
             cols_str,
             schema_name,
             table_name,
+            order_by_str,
             constants::INITIAL_PAGE_SIZE
         );
 
@@ -310,6 +329,8 @@ impl ConnPool {
         limit: &Option<u32>,
         columns: &Vec<TableColumns>,
         mapper: &dyn crate::database::types_mapper::DbTypeMapper,
+        sort_column: &Option<String>,
+        sort_direction: &Option<String>,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data_with_offset);
         // Removed: let mut db_conn = self.pool.acquire().await?;
@@ -329,13 +350,29 @@ impl ConnPool {
             None => "ALL".to_string(),
         };
 
+        let mut order_by_str = String::new();
+        if let Some(col) = sort_column {
+            if let Some(dir) = sort_direction {
+                if dir.to_lowercase() == "asc" || dir.to_lowercase() == "desc" {
+                    order_by_str = format!(
+                        "ORDER BY \"{}\".\"{}\".\"{}\" {}",
+                        schema_name,
+                        table_name,
+                        col,
+                        dir.to_uppercase()
+                    );
+                }
+            }
+        }
+
         let query = format!(
             r#"
                 SELECT {}
                 FROM "{}"."{}"
+                {}
                 LIMIT {} OFFSET {};
             "#,
-            cols_str, schema_name, table_name, limit_str, offset
+            cols_str, schema_name, table_name, order_by_str, limit_str, offset
         );
 
         println!("Printing Query: {}", &query);

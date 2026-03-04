@@ -190,6 +190,8 @@
     tabIndex: number,
     offset: number = 0,
     limit: number | null = 100,
+    sortColumn: string | null = null,
+    sortDirection: string | null = null,
   ) {
     try {
       const res = await invoke<IPCResponse<any>>(
@@ -201,6 +203,8 @@
             table_name: tableName,
             offset: offset,
             limit: limit,
+            sort_column: sortColumn,
+            sort_direction: sortDirection,
           },
         },
       );
@@ -254,7 +258,7 @@
         >
           <DataTable
             bind:activeTableData={tabs[i]}
-            fetchData={(offset, limit) =>
+            fetchData={(offset, limit, sortColumn, sortDirection) =>
               invokeTableData(
                 tab.dbName,
                 tab.schemaName,
@@ -262,6 +266,8 @@
                 i,
                 offset,
                 limit,
+                sortColumn,
+                sortDirection,
               )}
           />
         </div>

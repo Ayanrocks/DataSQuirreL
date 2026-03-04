@@ -427,6 +427,8 @@ async fn fetch_table_data(
             &req_payload.table_name,
             &db_columns,
             &mapper,
+            &req_payload.sort_column,
+            &req_payload.sort_direction,
         )
         .await;
 
@@ -597,6 +599,8 @@ async fn fetch_table_data_with_offset(
             &req_payload.limit,
             &db_columns,
             &mapper,
+            &req_payload.sort_column,
+            &req_payload.sort_direction,
         )
         .await
     {

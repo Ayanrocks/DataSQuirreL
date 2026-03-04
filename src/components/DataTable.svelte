@@ -27,7 +27,12 @@
 
   let { activeTableData = $bindable(), fetchData } = $props<{
     activeTableData: ActiveTable;
-    fetchData?: (offset: number, limit: number | null) => void | Promise<void>;
+    fetchData?: (
+      offset: number,
+      limit: number | null,
+      sortColumn?: string | null,
+      sortDirection?: string | null,
+    ) => void | Promise<void>;
   }>();
 
   let isRefreshing = $state(false);
@@ -45,7 +50,7 @@
       transactionChangesMap = new Map();
     }
     isRefreshing = true;
-    if (fetchData) await fetchData(offset, limit);
+    if (fetchData) await fetchData(offset, limit, sortColumn, sortDirection);
     isRefreshing = false;
   }
 
@@ -87,26 +92,26 @@
   function handleLimitChange(newLimit: number | null) {
     limit = newLimit;
     offset = 0; // reset to page 1 on limit change
-    if (fetchData) fetchData(offset, limit);
+    if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
   }
 
   function gotoNext() {
     if (limit) {
       offset += limit;
-      if (fetchData) fetchData(offset, limit);
+      if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
     }
   }
 
   function gotoPrev() {
     if (limit) {
       offset = Math.max(0, offset - limit);
-      if (fetchData) fetchData(offset, limit);
+      if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
     }
   }
 
   function gotoFirst() {
     offset = 0;
-    if (fetchData) fetchData(offset, limit);
+    if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
   }
 
   function gotoLast() {
@@ -116,7 +121,7 @@
         0,
         total - (total % limit === 0 ? limit : total % limit),
       );
-      if (fetchData) fetchData(offset, limit);
+      if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
     }
   }
 
@@ -389,7 +394,7 @@
         if (doDiscard) {
           transactionManager.clear();
           transactionChangesMap = new Map();
-          if (fetchData) fetchData(offset, limit);
+          if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
         }
       }
       return;
@@ -1087,7 +1092,7 @@
         });
         transactionManager.clear();
         transactionChangesMap = new Map();
-        if (fetchData) fetchData(offset, limit); // Refresh UI
+        if (fetchData) fetchData(offset, limit, sortColumn, sortDirection); // Refresh UI
       }
     } catch (e) {
       console.error(e);
@@ -1293,7 +1298,7 @@
                           onmousedown={(e) => {
                             e.stopPropagation();
                           }}
-                          onclick={(e) => {
+                          onclick={async (e) => {
                             e.stopPropagation();
                             e.preventDefault();
                             if (sortColumn === header.column.id) {
@@ -1310,6 +1315,13 @@
                             console.log(
                               `Backend sort triggered for column: ${sortColumn || "none"}, direction: ${sortDirection || "none"}`,
                             );
+                            if (fetchData)
+                              await fetchData(
+                                offset,
+                                limit,
+                                sortColumn,
+                                sortDirection,
+                              );
                           }}
                           aria-label="Sort {header.column.id}"
                         >
@@ -1524,7 +1536,7 @@
       <span
         class="pagination-info"
         onclick={() => {
-          if (fetchData) fetchData(offset, limit);
+          if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
         }}
         title="Click to refresh data"
       >
