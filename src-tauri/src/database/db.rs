@@ -255,15 +255,29 @@ impl ConnPool {
         &self,
         schema_name: &str,
         table_name: &str,
+        columns: &Vec<TableColumns>,
+        mapper: &dyn crate::database::types_mapper::DbTypeMapper,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data);
+
+        let mut select_cols = Vec::new();
+        for col in columns {
+            select_cols.push(mapper.cast_to_text_expr(&col.column_name, &col.data_type));
+        }
+        let cols_str = if select_cols.is_empty() {
+            "*".to_string()
+        } else {
+            select_cols.join(", ")
+        };
+
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
-                SELECT *
+                SELECT {}
                 FROM "{}"."{}"
                 LIMIT {};
             "#,
+            cols_str,
             schema_name,
             table_name,
             constants::INITIAL_PAGE_SIZE
@@ -294,9 +308,21 @@ impl ConnPool {
         table_name: &str,
         offset: &u32,
         limit: &Option<u32>,
+        columns: &Vec<TableColumns>,
+        mapper: &dyn crate::database::types_mapper::DbTypeMapper,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data_with_offset);
         // Removed: let mut db_conn = self.pool.acquire().await?;
+
+        let mut select_cols = Vec::new();
+        for col in columns {
+            select_cols.push(mapper.cast_to_text_expr(&col.column_name, &col.data_type));
+        }
+        let cols_str = if select_cols.is_empty() {
+            "*".to_string()
+        } else {
+            select_cols.join(", ")
+        };
 
         let limit_str = match limit {
             Some(l) => l.to_string(),
@@ -305,11 +331,11 @@ impl ConnPool {
 
         let query = format!(
             r#"
-                SELECT *
+                SELECT {}
                 FROM "{}"."{}"
                 LIMIT {} OFFSET {};
             "#,
-            schema_name, table_name, limit_str, offset
+            cols_str, schema_name, table_name, limit_str, offset
         );
 
         println!("Printing Query: {}", &query);

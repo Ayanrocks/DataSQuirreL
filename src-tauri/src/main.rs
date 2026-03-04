@@ -18,11 +18,12 @@ use crate::cache::{
     CacheDB, RowData, clear_cache, get_cache_entry, init_cache_db, save_cache_entry,
 };
 use crate::constants::APP_NAME;
+use crate::database::postgres_mapper::PostgresMapper;
+use crate::database::types_mapper::DbTypeMapper;
 use crate::types::api_objects::{
     ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
     SchemaData, TableData, TableDataOffsetRequest, TableDataRequest,
 };
-use crate::types::db::sql_to_js_type;
 use serde_json;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{Connection, SqliteConnection};
@@ -387,12 +388,20 @@ async fn fetch_table_data(
         )
         .await;
 
+    let mapper = PostgresMapper;
+    let mut db_columns: Vec<crate::types::db::TableColumns> = vec![];
+
     // fetch table columns
     match table_columns_result {
         Ok(table_columns) => {
+            db_columns = table_columns.clone();
             for t in table_columns {
                 // Convert the data type to js data type
-                columns.push((sql_to_js_type(&t.data_type), t.column_name, t.data_type));
+                columns.push((
+                    mapper.sql_to_js_type(&t.data_type),
+                    t.column_name,
+                    t.data_type,
+                ));
             }
         }
         Err(e) => {
@@ -413,7 +422,12 @@ async fn fetch_table_data(
         .await
         .as_ref()
         .unwrap()
-        .fetch_table_data(&req_payload.schema_name, &req_payload.table_name)
+        .fetch_table_data(
+            &req_payload.schema_name,
+            &req_payload.table_name,
+            &db_columns,
+            &mapper,
+        )
         .await;
 
     let table_data_rows: Vec<Vec<String>> = match table_data_result {
@@ -514,11 +528,19 @@ async fn fetch_table_data_with_offset(
         )
         .await;
 
+    let mapper = PostgresMapper;
+    let mut db_columns: Vec<crate::types::db::TableColumns> = vec![];
+
     // fetch table columns
     match table_columns_result {
         Ok(table_columns) => {
+            db_columns = table_columns.clone();
             for t in table_columns {
-                columns.push((sql_to_js_type(&t.data_type), t.column_name, t.data_type));
+                columns.push((
+                    mapper.sql_to_js_type(&t.data_type),
+                    t.column_name,
+                    t.data_type,
+                ));
             }
         }
         Err(e) => {
@@ -573,6 +595,8 @@ async fn fetch_table_data_with_offset(
             &req_payload.table_name,
             &req_payload.offset,
             &req_payload.limit,
+            &db_columns,
+            &mapper,
         )
         .await
     {
