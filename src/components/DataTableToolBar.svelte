@@ -18,6 +18,8 @@
     onAddRow = () => {},
     onRemoveRow = () => {},
     onCommit = () => {},
+    onRevert = () => {},
+    hasChanges = false,
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -33,6 +35,8 @@
     onAddRow?: () => void;
     onRemoveRow?: () => void;
     onCommit?: () => void;
+    onRevert?: () => void;
+    hasChanges?: boolean;
   }>();
 
   let limitSelection = $state("100");
@@ -91,8 +95,18 @@
         aria-label="Commit Changes"
         title="Commit"
         onclick={onCommit}
+        disabled={!hasChanges}
       >
         <i class="fa-solid fa-paper-plane"></i>
+      </button>
+      <button
+        class="icon-btn"
+        aria-label="Revert"
+        title="Revert"
+        onclick={onRevert}
+        disabled={!hasChanges}
+      >
+        <i class="fa-solid fa-rotate-left"></i>
       </button>
       <button class="icon-btn" aria-label="Export">
         <i class="fa-solid fa-download"></i>

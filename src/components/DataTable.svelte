@@ -22,7 +22,7 @@
     INVOKE_COMMIT_TRANSACTION,
   } from "../constants/constants";
 
-  let { activeTableData, fetchData } = $props<{
+  let { activeTableData = $bindable(), fetchData } = $props<{
     activeTableData: ActiveTable;
     fetchData?: (offset: number, limit: number | null) => void | Promise<void>;
   }>();
@@ -44,6 +44,38 @@
     isRefreshing = true;
     if (fetchData) await fetchData(offset, limit);
     isRefreshing = false;
+  }
+
+  async function handleRevert() {
+    console.log("Revert clicked! hasChanges:", transactionManager.hasChanges());
+    if (transactionManager.hasChanges()) {
+      let start = Date.now();
+      let doRevert = await confirm(
+        "Are you sure you want to revert all local changes?",
+        { title: "Revert Changes", kind: "warning" },
+      );
+
+      if (!doRevert && Date.now() - start < 200) {
+        doRevert = window.confirm(
+          "Are you sure you want to revert all local changes?",
+        );
+      }
+
+      console.log("Coming Here for revert", doRevert);
+
+      if (!doRevert) return;
+
+      if (activeTableData?.rows) {
+        let updatedRows = [...activeTableData.rows];
+        while (historyManager.undo(updatedRows)) {}
+        // Svelte 5: replace entire object to safely trigger bindable update
+        activeTableData = { ...activeTableData, rows: updatedRows };
+      }
+
+      transactionManager.clear();
+      transactionChangesMap = new Map();
+      historyManager.clear();
+    }
   }
 
   let limit = $state<number | null>(activeTableData?.currentLimit ?? 100);
@@ -1125,6 +1157,8 @@
       onAddRow={handleAddRow}
       onRemoveRow={handleRemoveRow}
       onCommit={handleCommit}
+      onRevert={handleRevert}
+      hasChanges={transactionChangesMap.size > 0}
     />
 
     <div

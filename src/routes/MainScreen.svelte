@@ -253,7 +253,7 @@
             : 'none'}; height: 100%; width: 100%;"
         >
           <DataTable
-            activeTableData={tab}
+            bind:activeTableData={tabs[i]}
             fetchData={(offset, limit) =>
               invokeTableData(
                 tab.dbName,
