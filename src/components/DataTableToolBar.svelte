@@ -20,6 +20,7 @@
     onCommit = () => {},
     onRevert = () => {},
     hasChanges = false,
+    hasSelection = false,
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -37,6 +38,7 @@
     onCommit?: () => void;
     onRevert?: () => void;
     hasChanges?: boolean;
+    hasSelection?: boolean;
   }>();
 
   let limitSelection = $state("100");
@@ -86,7 +88,12 @@
       <button class="icon-btn" aria-label="Add Row" onclick={onAddRow}>
         <i class="fa-solid fa-plus"></i>
       </button>
-      <button class="icon-btn" aria-label="Delete Row" onclick={onRemoveRow}>
+      <button
+        class="icon-btn"
+        aria-label="Delete Row"
+        onclick={onRemoveRow}
+        disabled={!hasSelection}
+      >
         <i class="fa-solid fa-minus"></i>
       </button>
       <div class="divider"></div>

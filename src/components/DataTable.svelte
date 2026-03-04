@@ -142,6 +142,12 @@
   } | null>(null);
   let isDragging = $state(false);
 
+  let hasSelection = $derived(
+    Object.keys(selectedRows).length > 0 ||
+      Object.keys(selectedCols).length > 0 ||
+      Object.keys(selectedCells).length > 0,
+  );
+
   let editingCell = $state<{ r: number; c: number } | null>(null);
   let editValue = $state("");
   let inputRef = $state<HTMLInputElement | null>(null);
@@ -1159,6 +1165,7 @@
       onCommit={handleCommit}
       onRevert={handleRevert}
       hasChanges={transactionChangesMap.size > 0}
+      {hasSelection}
     />
 
     <div
@@ -1370,14 +1377,32 @@
                   }}
                   oncontextmenu={(e) => handleContextMenu(e, r, c)}
                 >
-                  <span
-                    style="visibility: {editingCell?.r === r &&
-                    editingCell?.c === c
-                      ? 'hidden'
-                      : 'visible'}"
-                  >
-                    {cell.getValue()}
-                  </span>
+                  <div class="cell-content-wrapper">
+                    <span
+                      style="visibility: {editingCell?.r === r &&
+                      editingCell?.c === c
+                        ? 'hidden'
+                        : 'visible'}"
+                    >
+                      {cell.getValue()}
+                    </span>
+                    {#if colName === "index" && change?.type === "DELETE"}
+                      <button
+                        class="row-revert-btn"
+                        title="Revert Deletion"
+                        aria-label="Revert Deletion"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          transactionManager.revertChange(r);
+                          transactionChangesMap = new Map(
+                            transactionManager["changes"],
+                          );
+                        }}
+                      >
+                        <i class="fa-solid fa-rotate-left"></i>
+                      </button>
+                    {/if}
+                  </div>
                   {#if editingCell?.r === r && editingCell?.c === c}
                     {@const colDef = activeTableData.columns.find(
                       (cDef: any) => cDef[1] === colName,
@@ -1595,8 +1620,7 @@
 
   /* Uncommitted Changes Highlight Row Gradients */
   tbody tr.inserted-row td,
-  tbody tr.updated-row td,
-  tbody tr.deleted-row td {
+  tbody tr.updated-row td {
     background: linear-gradient(
       to bottom,
       #fff1f2,
@@ -1608,8 +1632,7 @@
   }
 
   tbody tr.inserted-row td:first-child,
-  tbody tr.updated-row td:first-child,
-  tbody tr.deleted-row td:first-child {
+  tbody tr.updated-row td:first-child {
     background: linear-gradient(
       to bottom,
       #ffe4e6,
@@ -1622,12 +1645,31 @@
   }
 
   tbody tr.inserted-row td:last-child,
-  tbody tr.updated-row td:last-child,
-  tbody tr.deleted-row td:last-child {
+  tbody tr.updated-row td:last-child {
     box-shadow:
       inset 0 2px 0 0 #fb7185,
       inset 0 -2px 0 0 #e11d48,
       inset -2px 0 0 0 #e11d48;
+  }
+
+  /* Deleted State Styling */
+  tbody tr.deleted-row td {
+    background-color: #fef2f2 !important; /* very light red */
+    color: #9ca3af !important; /* muted grey text */
+    text-decoration: line-through;
+    box-shadow: none !important;
+    pointer-events: none; /* Make deleted rows non-interactive */
+  }
+
+  tbody tr.deleted-row td:first-child {
+    pointer-events: auto; /* allow clicking revert in index col */
+    background-color: #fee2e2 !important;
+  }
+
+  tbody tr.deleted-row td.modified-cell {
+    background-color: #fef2f2 !important;
+    color: #9ca3af !important;
+    outline: none !important;
   }
 
   /* Uncommitted Changes Highlight - Modified Cell (Highest Priority) */
@@ -1670,6 +1712,35 @@
     font-size: 11px;
     font-weight: 500;
     margin-left: 4px;
+  }
+
+  .cell-content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    gap: 4px;
+  }
+
+  .row-revert-btn {
+    background: transparent;
+    border: none;
+    color: #ef4444; /* red-500 */
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+
+  .row-revert-btn:hover {
+    background-color: #fee2e2; /* red-100 */
+    color: #b91c1c; /* red-700 */
   }
 
   .sort-btn {

@@ -89,4 +89,8 @@ export class TransactionManager {
   public clear() {
     this.changes.clear();
   }
+
+  public revertChange(rowIndex: number) {
+    this.changes.delete(rowIndex);
+  }
 }
