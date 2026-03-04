@@ -495,6 +495,12 @@ impl ConnPool {
                     let mut idx = 1;
 
                     for (k, v) in &new_vals {
+                        if let Some(orig_v) = orig_vals.get(k) {
+                            if orig_v == v {
+                                continue;
+                            }
+                        }
+
                         let cast = match &column_types {
                             Some(types_map) => match types_map.get(k) {
                                 Some(raw_type) => format!("::{}", raw_type),
@@ -505,6 +511,10 @@ impl ConnPool {
                         set_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
                         binds.push(v);
                         idx += 1;
+                    }
+
+                    if set_clauses.is_empty() {
+                        continue;
                     }
 
                     // Build WHERE clause

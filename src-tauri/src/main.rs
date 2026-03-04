@@ -750,6 +750,40 @@ async fn fetch_table_rows(
 }
 
 #[tauri::command]
+async fn generate_preview_queries_cmd(
+    req_payload: types::api_objects::CommitTransactionRequest,
+) -> Result<IPCResponse<Vec<String>>, String> {
+    log_function!(generate_preview_queries_cmd);
+
+    let res = database::query_generator::generate_preview_queries(
+        &req_payload.schema_name,
+        &req_payload.table_name,
+        req_payload.changes,
+        req_payload.column_types,
+    );
+
+    match res {
+        Ok(queries) => Ok(IPCResponse {
+            status: 200,
+            error_code: None,
+            sys_err: None,
+            frontend_msg: Some("Preview queries generated successfully!".to_string()),
+            data: Some(queries),
+        }),
+        Err(e) => {
+            println!("[generate_preview_queries_cmd] Error: {:#?}", e);
+            Ok(IPCResponse {
+                status: 500,
+                error_code: Some("PREVIEW_ERROR".to_string()),
+                sys_err: Some(e.to_string()),
+                frontend_msg: Some(format!("Failed to generate preview: {}", e)),
+                data: None,
+            })
+        }
+    }
+}
+
+#[tauri::command]
 async fn commit_transaction_cmd(
     req_payload: types::api_objects::CommitTransactionRequest,
     state: tauri::State<'_, ApplicationState>,
@@ -915,6 +949,7 @@ async fn main() {
             save_cache_entry,
             get_cache_entry,
             clear_cache,
+            generate_preview_queries_cmd,
             commit_transaction_cmd,
         ])
         .setup(|app| {

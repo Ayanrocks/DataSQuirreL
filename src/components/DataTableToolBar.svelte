@@ -21,6 +21,7 @@
     onRevert = () => {},
     hasChanges = false,
     hasSelection = false,
+    onPreview = () => {},
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -39,6 +40,7 @@
     onRevert?: () => void;
     hasChanges?: boolean;
     hasSelection?: boolean;
+    onPreview?: () => void;
   }>();
 
   let limitSelection = $state("100");
@@ -120,7 +122,13 @@
         <!-- Replaced with download/export -->
       </button>
       <div class="divider"></div>
-      <button class="icon-btn" aria-label="View Option">
+      <button
+        class="icon-btn"
+        aria-label="Preview Queries"
+        title="Preview Queries"
+        onclick={onPreview}
+        disabled={!hasChanges}
+      >
         <i class="fa-solid fa-eye"></i>
       </button>
       <button class="icon-btn" aria-label="Refresh" onclick={onRefresh}>

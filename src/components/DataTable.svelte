@@ -1,5 +1,6 @@
 <script lang="ts">
   import DataTableToolBar from "./DataTableToolBar.svelte";
+  import QueryPreviewModal from "./QueryPreviewModal.svelte";
   import type { ActiveTable } from "../stores";
   import {
     type ColumnDef,
@@ -965,6 +966,55 @@
     baseSelectedCells = {};
   }
 
+  let showPreviewModal = $state(false);
+  let previewQueries = $state<string[]>([]);
+
+  async function handlePreview() {
+    const changes = transactionManager.getAllChanges();
+    if (changes.length === 0) {
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_SUCCESS,
+        message: "No changes to preview.",
+      });
+      return;
+    }
+
+    try {
+      let columnTypesDict: Record<string, string> = {};
+      activeTableData.columns.forEach((col: any) => {
+        columnTypesDict[col[1]] = col[2];
+      });
+
+      const payload = {
+        database_name: activeTableData.dbName,
+        schema_name: activeTableData.schemaName,
+        table_name: activeTableData.tableName,
+        changes: transactionManager.getAllChanges(),
+        column_types: columnTypesDict,
+      };
+
+      const res: any = await invoke("generate_preview_queries_cmd", {
+        reqPayload: payload,
+      });
+
+      if (res.error_code) {
+        notificationMsg.set({
+          type: NOTIFICATION_TYPE_ERROR,
+          message: res.frontend_msg || "Generate preview failed",
+        });
+      } else {
+        previewQueries = res.data || [];
+        showPreviewModal = true;
+      }
+    } catch (e) {
+      console.error(e);
+      notificationMsg.set({
+        type: NOTIFICATION_TYPE_ERROR,
+        message: "An unexpected error occurred during preview generation.",
+      });
+    }
+  }
+
   async function handleCommit() {
     const changes = transactionManager.getAllChanges();
     console.log("Committing changes:", changes);
@@ -1163,6 +1213,7 @@
       onAddRow={handleAddRow}
       onRemoveRow={handleRemoveRow}
       onCommit={handleCommit}
+      onPreview={handlePreview}
       onRevert={handleRevert}
       hasChanges={transactionChangesMap.size > 0}
       {hasSelection}
@@ -1477,6 +1528,18 @@
       </span>
     </div>
   {/if}
+
+  <QueryPreviewModal
+    show={showPreviewModal}
+    queries={previewQueries}
+    onClose={() => {
+      showPreviewModal = false;
+    }}
+    onSubmit={() => {
+      showPreviewModal = false;
+      handleCommit();
+    }}
+  />
 </div>
 
 <style>
