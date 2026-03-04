@@ -1,6 +1,7 @@
 <script lang="ts">
   import DataTableToolBar from "./DataTableToolBar.svelte";
   import QueryPreviewModal from "./QueryPreviewModal.svelte";
+  import Loader from "./Loader.svelte";
   import type { ActiveTable } from "../stores";
   import {
     type ColumnDef,
@@ -10,6 +11,7 @@
   import { createTable } from "@tanstack/svelte-table";
   import CellEditor from "./CellEditor.svelte";
   import { HistoryManager, type HistoryOp } from "../lib/HistoryManager";
+  import { isShortcut, Shortcuts } from "../lib/shortcuts";
   import {
     TransactionManager,
     type TransactionChange,
@@ -393,12 +395,16 @@
       return;
     }
 
+    if (isShortcut(e, Shortcuts.Refresh)) {
+      e.preventDefault();
+      await handleRefresh();
+      return;
+    }
+
     // Undo/Redo intercept
     if (
       (e.ctrlKey || e.metaKey) &&
-      (e.key.toLowerCase() === "z" ||
-        e.key.toLowerCase() === "r" ||
-        e.key.toLowerCase() === "y")
+      (e.key.toLowerCase() === "z" || e.key.toLowerCase() === "y")
     ) {
       // Don't intercept if editing
       if (editingCell) return;
@@ -415,7 +421,7 @@
           activeTableData.rows = [...activeTableData.rows];
         }
       } else {
-        // Redo (Ctrl+Y, Ctrl+R, or Ctrl+Shift+Z)
+        // Redo (Ctrl+Y or Ctrl+Shift+Z)
         if (activeTableData && historyManager.redo(activeTableData.rows)) {
           activeTableData.rows = [...activeTableData.rows];
         }
@@ -1197,6 +1203,12 @@
 />
 
 <div class="datatable-main-container">
+  {#if isRefreshing}
+    <div class="loader-overlay">
+      <Loader loaderActive={true} width="32px" height="32px" color="#3b82f6" />
+    </div>
+  {/if}
+
   {#if activeTableData && activeTableData.tableName}
     <DataTableToolBar
       {limit}
@@ -1550,6 +1562,24 @@
     flex-direction: column;
     background-color: #ffffff;
     overflow: hidden;
+    position: relative;
+  }
+
+  .loader-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   .table-scroll-container {

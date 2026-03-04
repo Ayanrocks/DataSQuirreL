@@ -131,7 +131,12 @@
       >
         <i class="fa-solid fa-eye"></i>
       </button>
-      <button class="icon-btn" aria-label="Refresh" onclick={onRefresh}>
+      <button
+        class="icon-btn"
+        aria-label="Refresh"
+        title="Refresh (Cmd/Ctrl + R)"
+        onclick={onRefresh}
+      >
         <i class="fa-solid fa-rotate-right {isRefreshing ? 'fa-spin' : ''}"></i>
       </button>
       <button class="icon-btn" aria-label="Search">
