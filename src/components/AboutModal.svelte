@@ -49,7 +49,7 @@
           </div>
 
           <div class="footer">
-            <p>Made with ❤️ by Ayan Banerje</p>
+            <p>Made with ❤️ by Ayan Banerjee</p>
           </div>
         </div>
       </div>
