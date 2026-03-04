@@ -5,6 +5,7 @@
   import folderIcon from "../assets/icons/folder.svg?raw";
   import type { RecentProjects as RecentProjectsType } from "../types/props";
   import Loader from "./Loader.svelte";
+  import { isShortcut, Shortcuts } from "../lib/shortcuts";
 
   // Get props for recent projects and handlers
   const { projects, onConnect, onEdit, onDelete, recentProjectsLoading } =
@@ -61,7 +62,8 @@
                   class="connectIcon-container text-gray-500 hover:text-green-400 scale-75 cursor-pointer bg-transparent border-none"
                   title="Connect to Project"
                   onclick={() => handleConnect(project)}
-                  onkeydown={(e) => e.key === "Enter" && handleConnect(project)}
+                  onkeydown={(e) =>
+                    isShortcut(e, Shortcuts.Enter) && handleConnect(project)}
                   disabled={recentProjectsLoading}
                 >
                   {@html connectIcon}
@@ -71,7 +73,8 @@
                   class="ml-2 text-gray-500 hover:text-blue-400 cursor-pointer scale-75 bg-transparent border-none"
                   title="Edit Project"
                   onclick={() => onEdit(project)}
-                  onkeydown={(e) => e.key === "Enter" && onEdit(project)}
+                  onkeydown={(e) =>
+                    isShortcut(e, Shortcuts.Enter) && onEdit(project)}
                   disabled={recentProjectsLoading}
                 >
                   {@html editIcon}
@@ -81,7 +84,8 @@
                   class="ml-2 text-gray-500 hover:text-red-400 cursor-pointer scale-75 bg-transparent border-none"
                   title="Delete Project"
                   onclick={() => onDelete(project)}
-                  onkeydown={(e) => e.key === "Enter" && onDelete(project)}
+                  onkeydown={(e) =>
+                    isShortcut(e, Shortcuts.Enter) && onDelete(project)}
                   disabled={recentProjectsLoading}
                 >
                   {@html deleteIcon}

@@ -5,6 +5,7 @@
   import PostgreSQLIcon from "../assets/icons/postgresql.svg?raw";
   import ArrowRightIcon from "../assets/icons/arrowRight.svg?raw";
   import ConsoleIcon from "../assets/icons/console.svg?raw";
+  import { isShortcut, Shortcuts } from "../lib/shortcuts";
 
   let {
     entityName,
@@ -33,7 +34,7 @@
   const handleKeyDown = (e: KeyboardEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (e.key === "Enter" || e.key === " ") {
+    if (isShortcut(e, Shortcuts.Enter) || isShortcut(e, Shortcuts.Space)) {
       handleTableClick(entityType, fullPath);
     }
   };

@@ -359,7 +359,7 @@
 
   async function handleKeyDown(e: KeyboardEvent) {
     // Escape mapping
-    if (e.key === "Escape") {
+    if (isShortcut(e, Shortcuts.Escape)) {
       if (editingCell) {
         blurEditingInput();
         editingCell = null;
@@ -445,7 +445,7 @@
       return;
     }
 
-    if (e.key === "Delete" || e.key === "Backspace") {
+    if (isShortcut(e, Shortcuts.Delete) || isShortcut(e, Shortcuts.Backspace)) {
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"

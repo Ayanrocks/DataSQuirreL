@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-
   import DateEditor from "./DateEditor.svelte";
+  import { isShortcut, Shortcuts } from "../lib/shortcuts";
 
   let {
     initialValue = "",
@@ -32,13 +32,13 @@
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
+    if (isShortcut(e, Shortcuts.Enter)) {
       e.preventDefault();
       onCommit(editValue, "down");
-    } else if (e.key === "Tab") {
+    } else if (isShortcut(e, Shortcuts.Tab)) {
       e.preventDefault();
       onCommit(editValue, "next");
-    } else if (e.key === "Escape") {
+    } else if (isShortcut(e, Shortcuts.Escape)) {
       onCancel();
     }
   }

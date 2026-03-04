@@ -21,4 +21,10 @@ export function isShortcut(e: KeyboardEvent, config: ShortcutConfig): boolean {
 export const Shortcuts = {
     Refresh: { key: "r", ctrlCmd: true },
     Save: { key: "s", ctrlCmd: true }, // For future commit shortcut if needed
+    Escape: { key: "Escape" },
+    Tab: { key: "Tab" },
+    Enter: { key: "Enter" },
+    Space: { key: " " },
+    Delete: { key: "Delete" },
+    Backspace: { key: "Backspace" },
 };

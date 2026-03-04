@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ActiveTable } from "../stores";
+  import { isShortcut, Shortcuts } from "../lib/shortcuts";
 
   let {
     tabs = [],
@@ -21,7 +22,7 @@
         class="tab-label"
         onclick={() => onTabChange(i)}
         onkeydown={(e) => {
-          if (e.key === "Enter") onTabChange(i);
+          if (isShortcut(e, Shortcuts.Enter)) onTabChange(i);
         }}
       >
         <i class="fa-solid fa-table tab-icon"></i>
