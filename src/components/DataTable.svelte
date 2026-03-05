@@ -33,6 +33,7 @@
       limit: number | null,
       sortColumn?: string | null,
       sortDirection?: string | null,
+      whereClause?: string | null,
     ) => void | Promise<void>;
   }>();
 
@@ -51,7 +52,8 @@
       transactionChangesMap = new Map();
     }
     isRefreshing = true;
-    if (fetchData) await fetchData(offset, limit, sortColumn, sortDirection);
+    if (fetchData)
+      await fetchData(offset, limit, sortColumn, sortDirection, whereClause);
     isRefreshing = false;
   }
 
@@ -99,26 +101,30 @@
   function handleLimitChange(newLimit: number | null) {
     limit = newLimit;
     offset = 0; // reset to page 1 on limit change
-    if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
+    if (fetchData)
+      fetchData(offset, limit, sortColumn, sortDirection, whereClause);
   }
 
   function gotoNext() {
     if (limit) {
       offset += limit;
-      if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
+      if (fetchData)
+        fetchData(offset, limit, sortColumn, sortDirection, whereClause);
     }
   }
 
   function gotoPrev() {
     if (limit) {
       offset = Math.max(0, offset - limit);
-      if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
+      if (fetchData)
+        fetchData(offset, limit, sortColumn, sortDirection, whereClause);
     }
   }
 
   function gotoFirst() {
     offset = 0;
-    if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
+    if (fetchData)
+      fetchData(offset, limit, sortColumn, sortDirection, whereClause);
   }
 
   function gotoLast() {
@@ -128,7 +134,8 @@
         0,
         total - (total % limit === 0 ? limit : total % limit),
       );
-      if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
+      if (fetchData)
+        fetchData(offset, limit, sortColumn, sortDirection, whereClause);
     }
   }
 
@@ -172,6 +179,13 @@
 
   let sortColumn = $state<string | null>(null);
   let sortDirection = $state<"asc" | "desc" | null>(null);
+  let whereClause = $state<string>("");
+
+  function handleWhereEnter() {
+    offset = 0;
+    if (fetchData)
+      fetchData(offset, limit, sortColumn, sortDirection, whereClause);
+  }
 
   $effect(() => {
     // Reset selection when table or page changes
@@ -188,6 +202,7 @@
     contextMenu = null;
     sortColumn = null;
     sortDirection = null;
+    whereClause = "";
     historyManager.clear();
   });
 
@@ -401,7 +416,8 @@
         if (doDiscard) {
           transactionManager.clear();
           transactionChangesMap = new Map();
-          if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
+          if (fetchData)
+            fetchData(offset, limit, sortColumn, sortDirection, whereClause);
         }
       }
       return;
@@ -422,7 +438,8 @@
       if (editingCell) return;
       if (
         document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
+        document.activeElement?.tagName === "TEXTAREA" ||
+        (document.activeElement as HTMLElement)?.isContentEditable
       )
         return;
 
@@ -443,7 +460,8 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
       if (
         document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
+        document.activeElement?.tagName === "TEXTAREA" ||
+        (document.activeElement as HTMLElement)?.isContentEditable
       )
         return;
       e.preventDefault();
@@ -460,7 +478,8 @@
     if (isShortcut(e, Shortcuts.Delete) || isShortcut(e, Shortcuts.Backspace)) {
       if (
         document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
+        document.activeElement?.tagName === "TEXTAREA" ||
+        (document.activeElement as HTMLElement)?.isContentEditable
       )
         return;
       if (editingCell) return;
@@ -569,7 +588,8 @@
   async function handleCopy(e: ClipboardEvent | undefined = undefined) {
     if (
       document.activeElement?.tagName === "INPUT" ||
-      document.activeElement?.tagName === "TEXTAREA"
+      document.activeElement?.tagName === "TEXTAREA" ||
+      (document.activeElement as HTMLElement)?.isContentEditable
     )
       return;
     if (editingCell) return;
@@ -593,7 +613,8 @@
   async function handlePaste(e: ClipboardEvent | undefined = undefined) {
     if (
       document.activeElement?.tagName === "INPUT" ||
-      document.activeElement?.tagName === "TEXTAREA"
+      document.activeElement?.tagName === "TEXTAREA" ||
+      (document.activeElement as HTMLElement)?.isContentEditable
     )
       return;
     if (editingCell) return;
@@ -724,7 +745,8 @@
       target &&
       (target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
-        target.tagName === "SELECT")
+        target.tagName === "SELECT" ||
+        target.isContentEditable)
     ) {
       return;
     }
@@ -1099,7 +1121,8 @@
         });
         transactionManager.clear();
         transactionChangesMap = new Map();
-        if (fetchData) fetchData(offset, limit, sortColumn, sortDirection); // Refresh UI
+        if (fetchData)
+          fetchData(offset, limit, sortColumn, sortDirection, whereClause); // Refresh UI
       }
     } catch (e) {
       console.error(e);
@@ -1231,6 +1254,9 @@
       {gotoNext}
       {gotoPrev}
       {gotoFirst}
+      columns={activeTableData?.columns?.map((c: string[]) => c[1]) || []}
+      bind:whereClause
+      onWhereEnter={handleWhereEnter}
       {gotoLast}
       {isRefreshing}
       onRefresh={handleRefresh}
@@ -1557,7 +1583,8 @@
       <span
         class="pagination-info"
         onclick={() => {
-          if (fetchData) fetchData(offset, limit, sortColumn, sortDirection);
+          if (fetchData)
+            fetchData(offset, limit, sortColumn, sortDirection, whereClause);
         }}
         title="Click to refresh data"
       >

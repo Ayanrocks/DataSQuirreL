@@ -55,6 +55,7 @@ pub struct TableDataRequest {
     pub table_name: String,
     pub sort_column: Option<String>,
     pub sort_direction: Option<String>,
+    pub where_clause: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,6 +67,7 @@ pub struct TableDataOffsetRequest {
     pub limit: Option<u32>,
     pub sort_column: Option<String>,
     pub sort_direction: Option<String>,
+    pub where_clause: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

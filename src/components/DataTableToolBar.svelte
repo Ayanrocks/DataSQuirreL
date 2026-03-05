@@ -1,5 +1,6 @@
 <script lang="ts">
   import { activeTable } from "../stores";
+  import WhereClauseEditor from "./WhereClauseEditor.svelte";
 
   let activeTableName = $state("");
 
@@ -23,6 +24,9 @@
     hasSelection = false,
     onPreview = () => {},
     onExport = () => {},
+    columns = [],
+    whereClause = $bindable(""),
+    onWhereEnter = () => {},
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -43,6 +47,9 @@
     hasSelection?: boolean;
     onPreview?: () => void;
     onExport?: () => void;
+    columns?: string[];
+    whereClause?: string;
+    onWhereEnter?: () => void;
   }>();
 
   let limitSelection = $state(
@@ -151,12 +158,13 @@
       >
         <i class="fa-solid fa-rotate-right {isRefreshing ? 'fa-spin' : ''}"></i>
       </button>
-      <button class="icon-btn" aria-label="Search">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </button>
       <div class="where-clause-container">
         <span class="where-label">WHERE</span>
-        <input type="text" class="where-input" placeholder="" />
+        <WhereClauseEditor
+          {columns}
+          bind:value={whereClause}
+          onEnter={onWhereEnter}
+        />
       </div>
     </div>
 
@@ -246,11 +254,19 @@
     align-items: center;
   }
 
-  .data-table-toolbar__controls--left,
+  .data-table-toolbar__controls--left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
   .data-table-toolbar__controls--right {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
   }
 
   .icon-btn {
@@ -286,6 +302,8 @@
     align-items: center;
     margin-left: 8px;
     background: transparent;
+    flex: 1;
+    min-width: 0;
   }
 
   .where-label {
@@ -293,21 +311,6 @@
     color: #4b5563;
     margin-right: 8px;
     font-size: 13px;
-  }
-
-  .where-input {
-    background: transparent;
-    border: none;
-    border-left: 2px solid #fca5a5; /* orange cursor indication */
-    outline: none;
-    width: 250px;
-    color: #111827;
-    font-family: inherit;
-    font-size: 13px;
-  }
-
-  .where-input:focus {
-    border-left: 2px solid #ef4444;
   }
 
   .row-count-selector {

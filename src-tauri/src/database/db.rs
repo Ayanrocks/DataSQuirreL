@@ -3,7 +3,7 @@ use crate::{constants, log_function};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
-use sqlx::{Column, FromRow, Postgres, Row, ValueRef, query_as};
+use sqlx::{Column, FromRow, Postgres, Row, query_as};
 
 // connect_to_db connects to postgres db
 pub async fn connect_to_db(
@@ -259,6 +259,7 @@ impl ConnPool {
         mapper: &dyn crate::database::types_mapper::DbTypeMapper,
         sort_column: &Option<String>,
         sort_direction: &Option<String>,
+        where_clause: &Option<String>,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data);
 
@@ -287,17 +288,26 @@ impl ConnPool {
             }
         }
 
+        let mut where_str = String::new();
+        if let Some(clause) = where_clause {
+            if !clause.trim().is_empty() {
+                where_str = format!("WHERE {}", clause);
+            }
+        }
+
         // Removed: let mut db_conn = self.pool.acquire().await?;
         let query = format!(
             r#"
                 SELECT {}
                 FROM "{}"."{}"
                 {}
+                {}
                 LIMIT {};
             "#,
             cols_str,
             schema_name,
             table_name,
+            where_str,
             order_by_str,
             constants::INITIAL_PAGE_SIZE
         );
@@ -331,6 +341,7 @@ impl ConnPool {
         mapper: &dyn crate::database::types_mapper::DbTypeMapper,
         sort_column: &Option<String>,
         sort_direction: &Option<String>,
+        where_clause: &Option<String>,
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data_with_offset);
         // Removed: let mut db_conn = self.pool.acquire().await?;
@@ -365,14 +376,22 @@ impl ConnPool {
             }
         }
 
+        let mut where_str = String::new();
+        if let Some(clause) = where_clause {
+            if !clause.trim().is_empty() {
+                where_str = format!("WHERE {}", clause);
+            }
+        }
+
         let query = format!(
             r#"
                 SELECT {}
                 FROM "{}"."{}"
                 {}
+                {}
                 LIMIT {} OFFSET {};
             "#,
-            cols_str, schema_name, table_name, order_by_str, limit_str, offset
+            cols_str, schema_name, table_name, where_str, order_by_str, limit_str, offset
         );
 
         println!("Printing Query: {}", &query);
@@ -472,7 +491,6 @@ impl ConnPool {
         changes: Vec<crate::types::api_objects::TransactionChange>,
         column_types: Option<std::collections::HashMap<String, String>>,
     ) -> Result<(), sqlx::Error> {
-        use sqlx::Acquire;
         let mut tx = self.pool.begin().await?;
 
         // Optional: SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
@@ -697,7 +715,7 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
     let mut result: Vec<Vec<String>> = Vec::new();
 
     // looping through each row
-    for (row_index, r) in row.iter().enumerate() {
+    for (_, r) in row.iter().enumerate() {
         let mut row_result: Vec<String> = Vec::new();
         // looping through each column
         for (col_index, col) in r.columns().iter().enumerate() {

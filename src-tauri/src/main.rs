@@ -429,6 +429,7 @@ async fn fetch_table_data(
             &mapper,
             &req_payload.sort_column,
             &req_payload.sort_direction,
+            &req_payload.where_clause,
         )
         .await;
 
@@ -601,6 +602,7 @@ async fn fetch_table_data_with_offset(
             &mapper,
             &req_payload.sort_column,
             &req_payload.sort_direction,
+            &req_payload.where_clause,
         )
         .await
     {
