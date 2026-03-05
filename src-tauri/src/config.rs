@@ -14,6 +14,11 @@ pub enum ConfigType {
     Connections,
 }
 
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct AppConfig {
+    pub export_path: Option<String>,
+}
+
 pub struct ConfigManager {
     config_dir: PathBuf,
 }

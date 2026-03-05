@@ -22,6 +22,7 @@
     hasChanges = false,
     hasSelection = false,
     onPreview = () => {},
+    onExport = () => {},
   } = $props<{
     currentPage?: number;
     maxPage?: number;
@@ -41,6 +42,7 @@
     hasChanges?: boolean;
     hasSelection?: boolean;
     onPreview?: () => void;
+    onExport?: () => void;
   }>();
 
   let limitSelection = $state(
@@ -128,9 +130,8 @@
       >
         <i class="fa-solid fa-rotate-left"></i>
       </button>
-      <button class="icon-btn" aria-label="Export">
+      <button class="icon-btn" aria-label="Export" onclick={onExport}>
         <i class="fa-solid fa-download"></i>
-        <!-- Replaced with download/export -->
       </button>
       <div class="divider"></div>
       <button

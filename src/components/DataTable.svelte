@@ -1,6 +1,7 @@
 <script lang="ts">
   import DataTableToolBar from "./DataTableToolBar.svelte";
   import QueryPreviewModal from "./QueryPreviewModal.svelte";
+  import ExportModal from "./ExportModal.svelte";
   import Loader from "./Loader.svelte";
   import type { ActiveTable } from "../stores";
   import {
@@ -88,6 +89,12 @@
 
   let limit = $state<number | null>(activeTableData?.currentLimit ?? 100);
   let offset = $state(activeTableData?.currentOffset ?? 0);
+
+  let showExportModal = $state(false);
+
+  function handleExport() {
+    showExportModal = true;
+  }
 
   function handleLimitChange(newLimit: number | null) {
     limit = newLimit;
@@ -1234,6 +1241,20 @@
       onRevert={handleRevert}
       hasChanges={transactionChangesMap.size > 0}
       {hasSelection}
+      onExport={handleExport}
+    />
+
+    <ExportModal
+      bind:showModal={showExportModal}
+      columns={activeTableData.columns.map((c: string[]) => c[1])}
+      data={activeTableData.rows.map((row: string[]) => {
+        let rowObj: Record<string, any> = {};
+        activeTableData.columns.forEach((col: string[], idx: number) => {
+          rowObj[col[1]] = row[idx];
+        });
+        return rowObj;
+      })}
+      onClose={() => (showExportModal = false)}
     />
 
     <div

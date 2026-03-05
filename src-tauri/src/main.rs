@@ -812,6 +812,86 @@ async fn generate_preview_queries_cmd(
 }
 
 #[tauri::command]
+async fn get_export_path() -> Result<IPCResponse<String>, ()> {
+    log_function!(get_export_path);
+    let config_manager = config::get_config_manager().lock().unwrap();
+    let app_config_result =
+        config_manager.read_config::<config::AppConfig>(&config::ConfigType::Config);
+
+    match app_config_result {
+        Ok(app_config) => {
+            if let Some(path) = app_config.export_path {
+                return Ok(IPCResponse {
+                    status: 200,
+                    error_code: None,
+                    sys_err: None,
+                    frontend_msg: None,
+                    data: Some(path),
+                });
+            }
+        }
+        Err(_) => {
+            // Ignore error, we will return default path
+        }
+    }
+
+    // Default to Downloads folder
+    if let Some(download_dir) = dirs::download_dir() {
+        return Ok(IPCResponse {
+            status: 200,
+            error_code: None,
+            sys_err: None,
+            frontend_msg: None,
+            data: Some(download_dir.to_string_lossy().into_owned()),
+        });
+    }
+
+    // Fallback if even downloads dir is not found
+    Ok(IPCResponse {
+        status: 200,
+        error_code: None,
+        sys_err: None,
+        frontend_msg: None,
+        data: Some(String::from("")),
+    })
+}
+
+#[tauri::command]
+async fn save_export_path(path: String) -> Result<IPCResponse<()>, ()> {
+    log_function!(save_export_path, "path" => path);
+    // Extract just the directory using std::path::Path
+    let path_obj = std::path::Path::new(&path);
+    let dir_path = match path_obj.parent() {
+        Some(parent) => parent.to_string_lossy().into_owned(),
+        None => path, // Fallback to whatever was provided
+    };
+
+    let config_manager = config::get_config_manager().lock().unwrap();
+    let mut app_config = config_manager
+        .read_config::<config::AppConfig>(&config::ConfigType::Config)
+        .unwrap_or_default();
+
+    app_config.export_path = Some(dir_path);
+
+    match config_manager.write_config(&config::ConfigType::Config, &app_config) {
+        Ok(_) => Ok(IPCResponse {
+            status: 200,
+            error_code: None,
+            sys_err: None,
+            frontend_msg: Some("Export path saved successfully".to_string()),
+            data: None,
+        }),
+        Err(e) => Ok(IPCResponse {
+            status: 500,
+            error_code: Some("ERR_CONFIG_SAVE_FAILED".to_string()),
+            sys_err: Some(e.to_string()),
+            frontend_msg: Some("Failed to save export path.".to_string()),
+            data: None,
+        }),
+    }
+}
+
+#[tauri::command]
 async fn commit_transaction_cmd(
     req_payload: types::api_objects::CommitTransactionRequest,
     state: tauri::State<'_, ApplicationState>,
@@ -952,6 +1032,7 @@ async fn main() {
     .expect("failed to create cache_entries table");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(ApplicationState {
@@ -979,6 +1060,8 @@ async fn main() {
             clear_cache,
             generate_preview_queries_cmd,
             commit_transaction_cmd,
+            get_export_path,
+            save_export_path,
         ])
         .setup(|app| {
             log_info!("Application setup started");
