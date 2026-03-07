@@ -61,7 +61,7 @@ Engineered with the incredibly fast **Tauri** framework and highly reactive **Sv
 ### Prerequisites
 
 You will need `Node.js`, `npm` (or your preferred package manager), and the Rust toolchain installed on your machine.
-For setting up Tauri prerequisites for your specific OS, please refer to the [Tauri setup guide](https://tauri.app/v1/guides/getting-started/prerequisites).
+For setting up Tauri prerequisites for your specific OS, please refer to the [Tauri setup guide](https://tauri.app/start/prerequisites/).
 
 ### Installation
 

@@ -9,7 +9,13 @@ import fs from "fs";
 import { execSync } from "child_process";
 
 const host = process.env.TAURI_DEV_HOST;
-const appVersion = fs.readFileSync("./VERSION", "utf8").trim();
+const appVersion = (() => {
+  try {
+    return fs.readFileSync("./VERSION", "utf8").trim();
+  } catch (_e) {
+    return "unknown";
+  }
+})();
 const getGitHash = () => {
   try {
     return execSync("git rev-parse --short HEAD").toString().trim();
@@ -44,10 +50,10 @@ export default defineConfig({
     host: host || false,
     hmr: host
       ? {
-          protocol: "ws",
-          host,
-          port: 3001,
-        }
+        protocol: "ws",
+        host,
+        port: 3001,
+      }
       : undefined,
 
     watch: {

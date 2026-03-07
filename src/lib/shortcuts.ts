@@ -27,4 +27,4 @@ export const Shortcuts = {
   Space: { key: " " },
   Delete: { key: "Delete" },
   Backspace: { key: "Backspace" },
-};
+} as const;

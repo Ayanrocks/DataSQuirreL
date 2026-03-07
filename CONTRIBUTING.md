@@ -30,7 +30,7 @@ We gladly accept Merge/Pull Requests! Here is the workflow:
 3. **Write tests** where applicable to cover your changes.
 4. **Make sure all tests pass** locally before submitting your PR.
 5. **Follow Conventional Commits** for your commit messages (e.g., `feat: add awesome feature`, `fix: resolve crash on startup`).
-6. **Push to your fork** and open a Pull Request against the `main` branch.
+6. **Push to your fork** and open a Pull Request against the `master` branch.
 
 In your PR description, explain what the PR does, link to the relevant issue, and add screenshots if your PR includes UI changes.
 
@@ -40,7 +40,7 @@ To set up the development environment locally:
 
 1. Install [Node.js](https://nodejs.org/) (v18+ recommended) and `npm`.
 2. Install the Rust toolchain (via [rustup](https://rustup.rs/)).
-3. Follow the Tauri prerequisites for your specific OS (available on the [Tauri getting started page](https://tauri.app/v1/guides/getting-started/prerequisites)).
+3. Follow the Tauri prerequisites for your specific OS (available on the [Tauri prerequisites page](https://tauri.app/start/prerequisites/)).
 4. Clone your fork and run the following in the project root:
 
 ```bash

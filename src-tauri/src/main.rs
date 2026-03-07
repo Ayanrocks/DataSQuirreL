@@ -2,7 +2,6 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 extern crate core;
 
@@ -485,15 +484,37 @@ async fn fetch_table_data(
     };
 
     // fetch primary and foreign keys
-    let pks = pool
+    let pks = match pool
         .fetch_table_primary_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
-        .unwrap_or_default();
+    {
+        Ok(keys) => keys,
+        Err(e) => {
+            log_error!(
+                "Failed to fetch primary keys for {}.{}: {}",
+                req_payload.schema_name,
+                req_payload.table_name,
+                e
+            );
+            vec![]
+        }
+    };
 
-    let fks = pool
+    let fks = match pool
         .fetch_table_foreign_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
-        .unwrap_or_default();
+    {
+        Ok(keys) => keys,
+        Err(e) => {
+            log_error!(
+                "Failed to fetch foreign keys for {}.{}: {}",
+                req_payload.schema_name,
+                req_payload.table_name,
+                e
+            );
+            vec![]
+        }
+    };
 
     Ok(IPCResponse {
         status: http::status::StatusCode::OK.as_u16(),
@@ -622,15 +643,37 @@ async fn fetch_table_data_with_offset(
     };
 
     // fetch primary and foreign keys
-    let pks = pool
+    let pks = match pool
         .fetch_table_primary_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
-        .unwrap_or_default();
+    {
+        Ok(keys) => keys,
+        Err(e) => {
+            log_error!(
+                "Failed to fetch primary keys for {}.{}: {}",
+                req_payload.schema_name,
+                req_payload.table_name,
+                e
+            );
+            vec![]
+        }
+    };
 
-    let fks = pool
+    let fks = match pool
         .fetch_table_foreign_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
-        .unwrap_or_default();
+    {
+        Ok(keys) => keys,
+        Err(e) => {
+            log_error!(
+                "Failed to fetch foreign keys for {}.{}: {}",
+                req_payload.schema_name,
+                req_payload.table_name,
+                e
+            );
+            vec![]
+        }
+    };
 
     Ok(IPCResponse {
         status: http::status::StatusCode::OK.as_u16(),
@@ -755,6 +798,8 @@ fn delete_console_file_cmd(
 }
 
 /// Simulate fetching from real DB
+// TODO: Replace with real query via sqlx when implementing virtual scrolling
+#[allow(dead_code)]
 async fn fetch_table_rows(
     _tab_id: String,
     offset: u32,
@@ -793,7 +838,7 @@ async fn generate_preview_queries_cmd(
             data: Some(queries),
         }),
         Err(e) => {
-            println!("[generate_preview_queries_cmd] Error: {:#?}", e);
+            log_error!("[generate_preview_queries_cmd] Error: {:#?}", e);
             Ok(IPCResponse {
                 status: 500,
                 error_code: Some("PREVIEW_ERROR".to_string()),
@@ -920,7 +965,7 @@ async fn commit_transaction_cmd(
                 data: None,
             }),
             Err(e) => {
-                println!("[commit_transaction_cmd] Error: {:#?}", e);
+                log_error!("[commit_transaction_cmd] Error: {:#?}", e);
                 Ok(IPCResponse {
                     status: 500,
                     error_code: Some("COMMIT_ERROR".to_string()),
@@ -998,13 +1043,20 @@ async fn main() {
 
     // Get SQLite Cache DB
     let db_path = dirs::data_local_dir()
-        .unwrap()
+        .expect("Failed to determine local data directory (dirs::data_local_dir returned None)")
         .join("DataSquirrel")
         .join("cache.db");
 
     // Ensure the directory exists
     if let Some(parent) = db_path.parent() {
-        std::fs::create_dir_all(parent).expect("Failed to create cache directory");
+        std::fs::create_dir_all(parent).unwrap_or_else(|e| {
+            eprintln!(
+                "Failed to create cache directory {}: {}",
+                parent.display(),
+                e
+            );
+            std::process::exit(1);
+        });
     }
 
     let mut connection = SqliteConnection::connect_with(
@@ -1013,7 +1065,14 @@ async fn main() {
             .create_if_missing(true),
     )
     .await
-    .expect("failed to open SQLite");
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "Failed to open SQLite database at {}: {}",
+            db_path.display(),
+            e
+        );
+        std::process::exit(1);
+    });
 
     // Ensure cache table exists before starting the app
     sqlx::query(

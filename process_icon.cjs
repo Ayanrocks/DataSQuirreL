@@ -1,10 +1,23 @@
 const sharp = require("sharp");
 const path = require("path");
+const fs = require("fs");
 
 async function processOriginal() {
-  const imgPath = process.argv[2];
-  if (!imgPath) {
-    console.error("Usage: node process_icon.cjs <image_path>");
+  const rawImgPath =
+    process.argv[2] || process.env.IMAGE_PATH || "./assets/icon.png";
+
+  const imgPath = path.resolve(rawImgPath);
+
+  try {
+    const stat = fs.statSync(imgPath);
+    if (!stat.isFile()) {
+      console.error(`Error: "${imgPath}" is not a file.`);
+      process.exit(1);
+    }
+  } catch {
+    console.error(
+      `Error: Image not found or not readable at "${imgPath}".`,
+    );
     process.exit(1);
   }
 
@@ -20,7 +33,7 @@ async function processOriginal() {
     </svg>`,
   );
 
-  const img = sharp(path.resolve(imgPath));
+  const img = sharp(imgPath);
 
   // Apply the squircle mask
   // Wait, if the generated image's squircle is smaller or larger, this mask might clip it or leave a white border.
@@ -64,4 +77,7 @@ async function processOriginal() {
   console.log("Successfully generated icon.png");
 }
 
-processOriginal().catch(console.error);
+processOriginal().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

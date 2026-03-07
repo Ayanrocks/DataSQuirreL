@@ -78,7 +78,7 @@
   }
 
   function handleTableClick(entityType: string, fullPath: string) {
-    if (entityType === "Table") {
+    if (entityType === "Table" || entityType === "Console") {
       onTableSelect(entityType, fullPath);
     }
   }

@@ -57,7 +57,9 @@
     class="sidebar-item-content"
     onclick={handleMouseTableClick}
     onkeydown={handleKeyDown}
-    tabindex={entityType === "Table" || entityType === "Console" ? 0 : -1}
+    tabindex={entityType === "Table" || entityType === "Console" || hasChildren
+      ? 0
+      : -1}
     aria-label={entityType === "Table"
       ? `Select table ${entityName}`
       : entityType === "Console"
@@ -80,6 +82,9 @@
             toggle();
           }}
           aria-expanded={isExpanded}
+          aria-label={isExpanded
+            ? `Collapse ${entityName}`
+            : `Expand ${entityName}`}
         >
           <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html isExpanded ? ExpandableArrowIcon : ArrowRightIcon}
