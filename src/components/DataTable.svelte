@@ -1292,7 +1292,19 @@
     <div
       class="table-scroll-container"
       bind:this={scrollContainerEl}
-      onscroll={(e) => (scrollTop = e.currentTarget.scrollTop)}
+      onscroll={(e) => {
+        if (editingCell) {
+          const input = document.querySelector<
+            HTMLInputElement | HTMLTextAreaElement
+          >(".cell-editor-input");
+          if (input) {
+            commitEdit(input.value, "none");
+          } else {
+            editingCell = null;
+          }
+        }
+        scrollTop = e.currentTarget.scrollTop;
+      }}
       bind:clientHeight={containerHeight}
       tabindex="-1"
     >

@@ -19,6 +19,7 @@ describe("CellEditor Component", () => {
   });
 
   it("calls onCommit on blur", async () => {
+    vi.useFakeTimers();
     const onCommit = vi.fn();
     const onCancel = vi.fn();
 
@@ -31,7 +32,11 @@ describe("CellEditor Component", () => {
     const input = screen.getByRole("textbox");
     await fireEvent.blur(input);
 
+    // handleBlur uses setTimeout to defer the commit
+    vi.advanceTimersByTime(0);
+
     expect(onCommit).toHaveBeenCalledWith("Test Value", "none");
+    vi.useRealTimers();
   });
 
   it('calls onCommit with "down" on Enter key', async () => {
