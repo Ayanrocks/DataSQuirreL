@@ -11,6 +11,7 @@ pub fn create_menu(app: &tauri::App) -> Result<(), tauri::Error> {
         None::<&str>,
     )?;
 
+    #[cfg(target_os = "macos")]
     let mac_app_submenu = Submenu::with_items(
         handle,
         "DataSquirrel",
@@ -23,6 +24,18 @@ pub fn create_menu(app: &tauri::App) -> Result<(), tauri::Error> {
             &PredefinedMenuItem::hide(handle, None)?,
             &PredefinedMenuItem::hide_others(handle, None)?,
             &PredefinedMenuItem::show_all(handle, None)?,
+            &PredefinedMenuItem::separator(handle)?,
+            &PredefinedMenuItem::quit(handle, None)?,
+        ],
+    )?;
+
+    #[cfg(not(target_os = "macos"))]
+    let mac_app_submenu = Submenu::with_items(
+        handle,
+        "DataSquirrel",
+        true,
+        &[
+            &about_item,
             &PredefinedMenuItem::separator(handle)?,
             &PredefinedMenuItem::quit(handle, None)?,
         ],

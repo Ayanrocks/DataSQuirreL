@@ -1,7 +1,12 @@
 const sharp = require('sharp');
+const path = require('path');
 
 async function processOriginal() {
-    const imgPath = '/Users/ayanrocks/.gemini/antigravity/brain/5a0339e2-2ad4-459f-9c5f-f9de2df2aa81/datasquirrel_engulfed_logo_1772307034489.png';
+    const imgPath = process.argv[2];
+    if (!imgPath) {
+        console.error("Usage: node process_icon.cjs <image_path>");
+        process.exit(1);
+    }
 
     // create squircle mask
     const width = 640;
@@ -15,7 +20,7 @@ async function processOriginal() {
     </svg>`
     );
 
-    const img = sharp(imgPath);
+    const img = sharp(path.resolve(imgPath));
 
     // Apply the squircle mask
     // Wait, if the generated image's squircle is smaller or larger, this mask might clip it or leave a white border.

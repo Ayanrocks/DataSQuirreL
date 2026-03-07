@@ -2,8 +2,12 @@ const sharp = require('sharp');
 const path = require('path');
 
 async function analyze() {
-    const imgPath = '/Users/ayanrocks/.gemini/antigravity/brain/5a0339e2-2ad4-459f-9c5f-f9de2df2aa81/datasquirrel_engulfed_logo_1772307034489.png';
-    const img = sharp(imgPath);
+    const imgPath = process.argv[2];
+    if (!imgPath) {
+        console.error("Usage: node analyze_icon.cjs <image_path>");
+        process.exit(1);
+    }
+    const img = sharp(path.resolve(imgPath));
     const metadata = await img.metadata();
     console.log('Size:', metadata.width, metadata.height);
 

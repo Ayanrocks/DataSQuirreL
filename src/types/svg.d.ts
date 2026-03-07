@@ -1,6 +1,7 @@
 declare module "*.svg" {
-  import { SvelteComponentTyped } from "svelte";
-  export default class extends SvelteComponentTyped<any, any, any> {}
+  import type { Component } from "svelte";
+  const component: Component<any>;
+  export default component;
 }
 
 declare module "*.svg?raw" {
