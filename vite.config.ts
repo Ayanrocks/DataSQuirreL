@@ -9,7 +9,7 @@ import fs from "fs";
 import { execSync } from "child_process";
 
 const host = process.env.TAURI_DEV_HOST;
-const packageJson = JSON.parse(fs.readFileSync("./package.json", "utf8"));
+const appVersion = fs.readFileSync("./VERSION", "utf8").trim();
 const getGitHash = () => {
   try {
     return execSync("git rev-parse --short HEAD").toString().trim();
@@ -23,7 +23,7 @@ export default defineConfig({
   base: "./",
   plugins: [tailwindcss(), svelte(), svelteTesting()],
   define: {
-    __APP_VERSION__: JSON.stringify(packageJson.version),
+    __APP_VERSION__: JSON.stringify(appVersion),
     __GIT_HASH__: JSON.stringify(getGitHash()),
   },
   // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`.
@@ -44,10 +44,10 @@ export default defineConfig({
     host: host || false,
     hmr: host
       ? {
-          protocol: "ws",
-          host,
-          port: 3001,
-        }
+        protocol: "ws",
+        host,
+        port: 3001,
+      }
       : undefined,
 
     watch: {

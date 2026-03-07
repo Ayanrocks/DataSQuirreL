@@ -1,5 +1,4 @@
 import fs from "fs";
-import { execSync } from "child_process";
 import path from "path";
 
 const bumpType = process.argv[2];
@@ -11,13 +10,13 @@ if (!["major", "minor", "patch"].includes(bumpType)) {
   process.exit(1);
 }
 
+const versionFilePath = path.resolve("VERSION");
 const packageJsonPath = path.resolve("package.json");
 const tauriConfPath = path.resolve("src-tauri/tauri.conf.json");
 const cargoTomlPath = path.resolve("src-tauri/Cargo.toml");
 
-// Read current version from package.json
-const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-const currentVersion = pkg.version;
+// Read current version from VERSION file (single source of truth)
+const currentVersion = fs.readFileSync(versionFilePath, "utf8").trim();
 const [major, minor, patch] = currentVersion.split(".").map(Number);
 
 let newVersion;
@@ -29,7 +28,12 @@ if (bumpType === "major") {
   newVersion = `${major}.${minor}.${patch + 1}`;
 }
 
+// Update VERSION file
+fs.writeFileSync(versionFilePath, newVersion + "\n");
+console.log(`Updated VERSION to ${newVersion}`);
+
 // Update package.json
+const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 pkg.version = newVersion;
 fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + "\n");
 console.log(`Updated package.json to ${newVersion}`);
