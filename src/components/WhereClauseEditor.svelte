@@ -6,7 +6,7 @@
     placeholder as cmPlaceholder,
   } from "@codemirror/view";
   import { EditorState, Compartment } from "@codemirror/state";
-  import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
+  import { linter, type Diagnostic } from "@codemirror/lint";
   import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
   import {
     autocompletion,
@@ -145,7 +145,6 @@
       extensions: [
         history(),
         closeBrackets(),
-        lintGutter(),
         linterCompartment.of(getLinterExtension(errorMessage)),
         autocompletion({ override: [getCompletions] }),
         sql({ dialect: StandardSQL }),
@@ -200,7 +199,6 @@
     min-width: 0;
     background: transparent;
     border-left: 2px solid #fca5a5;
-    border-right: 1px solid #eee;
     transition: all 0.2s ease;
     padding-left: 8px;
     cursor: text;

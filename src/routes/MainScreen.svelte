@@ -212,6 +212,9 @@
       );
 
       console.log("RES:::", res);
+      if (res.error_code) {
+        throw new Error(res.frontend_msg || res.sys_err || "Query failed");
+      }
       if (tabs[tabIndex]) {
         tabs[tabIndex].rows = res.data.rows;
         tabs[tabIndex].columns = res.data.columns;
