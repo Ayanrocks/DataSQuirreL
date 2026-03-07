@@ -52,6 +52,6 @@ impl DbTypeMapper for PostgresMapper {
     }
 
     fn cast_to_text_expr(&self, column_name: &str, _raw_type: &str) -> String {
-        format!("\"{}\"::text AS \"{}\"", column_name, column_name)
+        format!("\"{column_name}\"::text AS \"{column_name}\"")
     }
 }

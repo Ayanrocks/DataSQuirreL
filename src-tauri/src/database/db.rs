@@ -1,9 +1,8 @@
 use crate::types::db::{ConnPool, TableColumns, TableRowCount, TableSchema};
 use crate::{constants, log_function};
-use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
-use sqlx::{Column, FromRow, Postgres, Row, query_as};
+use sqlx::{Column, Row, query_as};
 
 // connect_to_db connects to postgres db
 pub async fn connect_to_db(
@@ -15,10 +14,7 @@ pub async fn connect_to_db(
     conn_name: &str,
 ) -> Result<ConnPool, sqlx::Error> {
     log_function!(connect_to_db);
-    let dsn = format!(
-        "postgres://{}:{}@{}:{}/{}",
-        username, password, hostname, port, dbname,
-    );
+    let dsn = format!("postgres://{username}:{password}@{hostname}:{port}/{dbname}",);
     let pool_result = PgPoolOptions::new()
         .max_connections(5)
         .acquire_timeout(std::time::Duration::from_secs(5)) // wait 5 seconds
@@ -33,7 +29,7 @@ pub async fn connect_to_db(
             Ok(ConnPool {
                 conn_name: conn_name.to_string(),
                 db_name: dbname.to_string(),
-                dsn: dsn,
+                dsn,
                 pool,
             })
         }
@@ -64,7 +60,7 @@ impl ConnPool {
                 Ok(schemas)
             }
             Err(e) => {
-                println!("{:#?}", e);
+                println!("{e:#?}");
                 Err(e)
             }
         }
@@ -97,12 +93,10 @@ impl ConnPool {
             .await;
 
         match query_result {
-            Ok(row) => {
-                return Ok(row);
-            }
+            Ok(row) => Ok(row),
             Err(e) => {
-                println!("{:#?}", e);
-                return Err(e);
+                println!("{e:#?}");
+                Err(e)
             }
         }
     }
@@ -120,11 +114,10 @@ impl ConnPool {
                 SELECT COLUMN_NAME,
                        DATA_TYPE
                 FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_CATALOG = '{}'
-                  AND TABLE_SCHEMA = '{}'
-                  AND TABLE_NAME = '{}';
+                WHERE TABLE_CATALOG = '{database_name}'
+                  AND TABLE_SCHEMA = '{schema_name}'
+                  AND TABLE_NAME = '{table_name}';
             ",
-            database_name, schema_name, table_name,
         );
 
         println!("Printing Query: {}", &query);
@@ -135,12 +128,10 @@ impl ConnPool {
             .await;
 
         match query_result {
-            Ok(row) => {
-                return Ok(row);
-            }
+            Ok(row) => Ok(row),
             Err(e) => {
-                println!("{:#?}", e);
-                return Err(e);
+                println!("{e:#?}");
+                Err(e)
             }
         }
     }
@@ -161,10 +152,9 @@ impl ConnPool {
               AND kcu.constraint_schema = tco.constraint_schema 
               AND kcu.constraint_name = tco.constraint_name 
             WHERE tco.constraint_type = 'PRIMARY KEY'
-              AND kcu.table_schema = '{}'
-              AND kcu.table_name = '{}';
-            ",
-            schema_name, table_name
+              AND kcu.table_schema = '{schema_name}'
+              AND kcu.table_name = '{table_name}';
+            "
         );
 
         let query_result = sqlx::query(&query).fetch_all(&self.pool).await;
@@ -175,7 +165,7 @@ impl ConnPool {
                 Ok(pks)
             }
             Err(e) => {
-                println!("[fetch_table_primary_keys] Error: {:#?}", e);
+                println!("[fetch_table_primary_keys] Error: {e:#?}");
                 Err(e)
             }
         }
@@ -197,10 +187,9 @@ impl ConnPool {
               AND kcu.constraint_schema = tco.constraint_schema 
               AND kcu.constraint_name = tco.constraint_name 
             WHERE tco.constraint_type = 'FOREIGN KEY'
-              AND kcu.table_schema = '{}'
-              AND kcu.table_name = '{}';
-            ",
-            schema_name, table_name
+              AND kcu.table_schema = '{schema_name}'
+              AND kcu.table_name = '{table_name}';
+            "
         );
 
         let query_result = sqlx::query(&query).fetch_all(&self.pool).await;
@@ -211,7 +200,7 @@ impl ConnPool {
                 Ok(fks)
             }
             Err(e) => {
-                println!("[fetch_table_foreign_keys] Error: {:#?}", e);
+                println!("[fetch_table_foreign_keys] Error: {e:#?}");
                 Err(e)
             }
         }
@@ -228,9 +217,8 @@ impl ConnPool {
             r#"
                 SELECT reltuples::bigint AS row_count
                 FROM pg_class
-                WHERE oid = '"{}"."{}"'::regclass;
+                WHERE oid = '"{schema_name}"."{table_name}"'::regclass;
             "#,
-            schema_name, table_name,
         );
 
         println!("Printing Query: {}", &query);
@@ -241,21 +229,20 @@ impl ConnPool {
             .await;
 
         match query_result {
-            Ok(row) => {
-                return Ok(row);
-            }
+            Ok(row) => Ok(row),
             Err(e) => {
-                println!("{:#?}", e);
-                return Err(e);
+                println!("{e:#?}");
+                Err(e)
             }
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn fetch_table_data(
         &self,
         schema_name: &str,
         table_name: &str,
-        columns: &Vec<TableColumns>,
+        columns: &[TableColumns],
         mapper: &dyn crate::database::types_mapper::DbTypeMapper,
         sort_column: &Option<String>,
         sort_direction: &Option<String>,
@@ -291,7 +278,7 @@ impl ConnPool {
         let mut where_str = String::new();
         if let Some(clause) = where_clause {
             if !clause.trim().is_empty() {
-                where_str = format!("WHERE {}", clause);
+                where_str = format!("WHERE {clause}");
             }
         }
 
@@ -322,22 +309,23 @@ impl ConnPool {
         match query_result {
             Ok(row) => {
                 let result = format_table_data(&row)?;
-                return Ok(result);
+                Ok(result)
             }
             Err(e) => {
-                println!("{:#?}", e);
-                return Err(e);
+                println!("{e:#?}");
+                Err(e)
             }
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn fetch_table_data_with_offset(
         &self,
         schema_name: &str,
         table_name: &str,
         offset: &u32,
         limit: &Option<u32>,
-        columns: &Vec<TableColumns>,
+        columns: &[TableColumns],
         mapper: &dyn crate::database::types_mapper::DbTypeMapper,
         sort_column: &Option<String>,
         sort_direction: &Option<String>,
@@ -379,19 +367,18 @@ impl ConnPool {
         let mut where_str = String::new();
         if let Some(clause) = where_clause {
             if !clause.trim().is_empty() {
-                where_str = format!("WHERE {}", clause);
+                where_str = format!("WHERE {clause}");
             }
         }
 
         let query = format!(
             r#"
-                SELECT {}
-                FROM "{}"."{}"
-                {}
-                {}
-                LIMIT {} OFFSET {};
-            "#,
-            cols_str, schema_name, table_name, where_str, order_by_str, limit_str, offset
+                SELECT {cols_str}
+                FROM "{schema_name}"."{table_name}"
+                {where_str}
+                {order_by_str}
+                LIMIT {limit_str} OFFSET {offset};
+            "#
         );
 
         println!("Printing Query: {}", &query);
@@ -402,10 +389,10 @@ impl ConnPool {
         match query_result {
             Ok(row) => {
                 let result = format_table_data(&row)?;
-                return Ok(result);
+                Ok(result)
             }
             Err(e) => {
-                println!("{:#?}", e);
+                println!("{e:#?}");
                 // return Err(e);
                 Err(e)
             }
@@ -526,14 +513,14 @@ impl ConnPool {
                     for (k, v) in &new_vals {
                         let cast = match &column_types {
                             Some(types_map) => match types_map.get(k) {
-                                Some(raw_type) => format!("::{}", raw_type),
+                                Some(raw_type) => format!("::{raw_type}"),
                                 None => "".to_string(),
                             },
                             None => "".to_string(),
                         };
-                        cols.push(format!("\"{}\"", k));
+                        cols.push(format!("\"{k}\""));
                         vals.push(v);
-                        placeholders.push(format!("${}{}", idx, cast));
+                        placeholders.push(format!("${idx}{cast}"));
                         idx += 1;
                     }
 
@@ -584,12 +571,12 @@ impl ConnPool {
 
                         let cast = match &column_types {
                             Some(types_map) => match types_map.get(k) {
-                                Some(raw_type) => format!("::{}", raw_type),
+                                Some(raw_type) => format!("::{raw_type}"),
                                 None => "".to_string(),
                             },
                             None => "".to_string(),
                         };
-                        set_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
+                        set_clauses.push(format!("\"{k}\" = ${idx}{cast}"));
                         binds.push(v);
                         idx += 1;
                     }
@@ -603,12 +590,12 @@ impl ConnPool {
                         for (k, v) in &pk_vals {
                             let cast = match &column_types {
                                 Some(types_map) => match types_map.get(k) {
-                                    Some(raw_type) => format!("::{}", raw_type),
+                                    Some(raw_type) => format!("::{raw_type}"),
                                     None => "".to_string(),
                                 },
                                 None => "".to_string(),
                             };
-                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
+                            where_clauses.push(format!("\"{k}\" = ${idx}{cast}"));
                             binds.push(v);
                             idx += 1;
                         }
@@ -617,12 +604,12 @@ impl ConnPool {
                         for (k, v) in &orig_vals {
                             let cast = match &column_types {
                                 Some(types_map) => match types_map.get(k) {
-                                    Some(raw_type) => format!("::{}", raw_type),
+                                    Some(raw_type) => format!("::{raw_type}"),
                                     None => "".to_string(),
                                 },
                                 None => "".to_string(),
                             };
-                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
+                            where_clauses.push(format!("\"{k}\" = ${idx}{cast}"));
                             binds.push(v);
                             idx += 1;
                         }
@@ -663,12 +650,12 @@ impl ConnPool {
                         for (k, v) in &pk_vals {
                             let cast = match &column_types {
                                 Some(types_map) => match types_map.get(k) {
-                                    Some(raw_type) => format!("::{}", raw_type),
+                                    Some(raw_type) => format!("::{raw_type}"),
                                     None => "".to_string(),
                                 },
                                 None => "".to_string(),
                             };
-                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
+                            where_clauses.push(format!("\"{k}\" = ${idx}{cast}"));
                             binds.push(v);
                             idx += 1;
                         }
@@ -676,12 +663,12 @@ impl ConnPool {
                         for (k, v) in &orig_vals {
                             let cast = match &column_types {
                                 Some(types_map) => match types_map.get(k) {
-                                    Some(raw_type) => format!("::{}", raw_type),
+                                    Some(raw_type) => format!("::{raw_type}"),
                                     None => "".to_string(),
                                 },
                                 None => "".to_string(),
                             };
-                            where_clauses.push(format!("\"{}\" = ${}{}", k, idx, cast));
+                            where_clauses.push(format!("\"{k}\" = ${idx}{cast}"));
                             binds.push(v);
                             idx += 1;
                         }
@@ -710,12 +697,12 @@ impl ConnPool {
     }
 }
 
-fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> {
+fn format_table_data(row: &[PgRow]) -> Result<Vec<Vec<String>>, sqlx::Error> {
     log_function!(format_table_data);
     let mut result: Vec<Vec<String>> = Vec::new();
 
     // looping through each row
-    for (_, r) in row.iter().enumerate() {
+    for r in row.iter() {
         let mut row_result: Vec<String> = Vec::new();
         // looping through each column
         for (col_index, col) in r.columns().iter().enumerate() {
@@ -855,5 +842,5 @@ fn format_table_data(row: &Vec<PgRow>) -> Result<Vec<Vec<String>>, sqlx::Error> 
         result.push(row_result);
     }
 
-    return Ok(result);
+    Ok(result)
 }

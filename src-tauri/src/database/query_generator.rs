@@ -39,7 +39,7 @@ fn format_sql_value(
             "NULL".to_string()
         } else {
             // we can still cast numeric defaults if we want, but bare value is often fine.
-            format!("{}::{}", val, raw_type)
+            format!("{val}::{raw_type}")
         }
     }
 }
@@ -78,7 +78,7 @@ pub fn generate_preview_queries(
                 let mut vals = Vec::new();
 
                 for (k, v) in &new_vals {
-                    cols.push(format!("\"{}\"", k));
+                    cols.push(format!("\"{k}\""));
                     vals.push(format_sql_value(v, k, &column_types));
                 }
 

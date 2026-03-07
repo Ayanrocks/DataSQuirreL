@@ -23,7 +23,6 @@ use crate::types::api_objects::{
     ApplicationState, DBConnectionRequest, DashboardData, DashboardDataRequest, IPCResponse,
     SchemaData, TableData, TableDataOffsetRequest, TableDataRequest,
 };
-use serde_json;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::{Connection, SqliteConnection};
 mod cache;
@@ -132,23 +131,23 @@ async fn init_connection(
                 }
             }
 
-            return Ok(IPCResponse {
+            Ok(IPCResponse {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: None,
                 sys_err: None,
                 frontend_msg: Some("Database connected successfully".to_string()),
                 data: None,
-            });
+            })
         }
         Err(e) => {
             log_error!("Failed to connect to database: {}", e);
-            return Ok(IPCResponse::<_> {
+            Ok(IPCResponse::<_> {
                 status: http::status::StatusCode::OK.as_u16(),
                 error_code: Some(constants::ERR_CODE_DATABASE_CONN_FAILED.to_string()),
                 sys_err: Some(e.to_string()),
                 frontend_msg: Some(e.to_string()),
                 data: None,
-            });
+            })
         }
     }
 }
@@ -410,20 +409,19 @@ async fn fetch_table_data(
         .await;
 
     let mapper = PostgresMapper;
-    let mut db_columns: Vec<crate::types::db::TableColumns> = vec![];
 
     // fetch table columns
-    match table_columns_result {
+    let db_columns: Vec<crate::types::db::TableColumns> = match table_columns_result {
         Ok(table_columns) => {
-            db_columns = table_columns.clone();
-            for t in table_columns {
+            for t in &table_columns {
                 // Convert the data type to js data type
                 columns.push((
                     mapper.sql_to_js_type(&t.data_type),
-                    t.column_name,
-                    t.data_type,
+                    t.column_name.clone(),
+                    t.data_type.clone(),
                 ));
             }
+            table_columns
         }
         Err(e) => {
             return Ok(IPCResponse::<_> {
@@ -467,9 +465,8 @@ async fn fetch_table_data(
         .fetch_table_rows_count(&req_payload.schema_name, &req_payload.table_name)
         .await;
 
-    let row_count: String;
-    match table_rows_count_result {
-        Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
+    let row_count: String = match table_rows_count_result {
+        Ok(table_row_count) => format!("{}", table_row_count.row_count),
         Err(e) => {
             return Ok(IPCResponse::<_> {
                 status: http::status::StatusCode::OK.as_u16(),
@@ -566,19 +563,18 @@ async fn fetch_table_data_with_offset(
         .await;
 
     let mapper = PostgresMapper;
-    let mut db_columns: Vec<crate::types::db::TableColumns> = vec![];
 
     // fetch table columns
-    match table_columns_result {
+    let db_columns: Vec<crate::types::db::TableColumns> = match table_columns_result {
         Ok(table_columns) => {
-            db_columns = table_columns.clone();
-            for t in table_columns {
+            for t in &table_columns {
                 columns.push((
                     mapper.sql_to_js_type(&t.data_type),
-                    t.column_name,
-                    t.data_type,
+                    t.column_name.clone(),
+                    t.data_type.clone(),
                 ));
             }
+            table_columns
         }
         Err(e) => {
             return Ok(IPCResponse::<_> {
@@ -596,9 +592,8 @@ async fn fetch_table_data_with_offset(
         .fetch_table_rows_count(&req_payload.schema_name, &req_payload.table_name)
         .await;
 
-    let row_count: String;
-    match table_rows_count_result {
-        Ok(table_row_count) => row_count = format!("{}", table_row_count.row_count),
+    let row_count: String = match table_rows_count_result {
+        Ok(table_row_count) => format!("{}", table_row_count.row_count),
         Err(e) => {
             return Ok(IPCResponse::<_> {
                 status: http::status::StatusCode::OK.as_u16(),
@@ -809,7 +804,7 @@ async fn fetch_table_rows(
     let total = 10_000;
     let rows = (offset..(offset + limit).min(total))
         .map(|i| RowData {
-            id: format!("row_{}", i),
+            id: format!("row_{i}"),
             data: serde_json::json!({ "col1": i, "col2": format!("Value {}", i) }),
         })
         .collect();
@@ -843,7 +838,7 @@ async fn generate_preview_queries_cmd(
                 status: 500,
                 error_code: Some("PREVIEW_ERROR".to_string()),
                 sys_err: Some(e.to_string()),
-                frontend_msg: Some(format!("Failed to generate preview: {}", e)),
+                frontend_msg: Some(format!("Failed to generate preview: {e}")),
                 data: None,
             })
         }
@@ -970,7 +965,7 @@ async fn commit_transaction_cmd(
                     status: 500,
                     error_code: Some("COMMIT_ERROR".to_string()),
                     sys_err: Some(e.to_string()),
-                    frontend_msg: Some(format!("Failed to commit: {}", e)),
+                    frontend_msg: Some(format!("Failed to commit: {e}")),
                     data: None,
                 })
             }
@@ -990,7 +985,7 @@ async fn commit_transaction_cmd(
 async fn main() {
     // Initialize logger
     if let Err(e) = logging::init_logger() {
-        eprintln!("Failed to initialize logger: {}", e);
+        eprintln!("Failed to initialize logger: {e}");
     }
 
     log_info!("Starting DataSquirrel application");
@@ -1001,7 +996,7 @@ async fn main() {
 
     if connections_path.exists() {
         // Try to read the file to check if it's malformed
-        if let Err(e) = std::fs::read_to_string(&connections_path)
+        if let Err(_e) = std::fs::read_to_string(&connections_path)
             .and_then(|content| Ok(serde_json::from_str::<Vec<StoredConnection>>(&content)?))
         {
             // Create backup with timestamp
@@ -1086,7 +1081,7 @@ async fn main() {
     .execute(&mut connection)
     .await
     .map_err(|e| {
-        eprintln!("failed to create cache_entries table: {}", e);
+        eprintln!("failed to create cache_entries table: {e}");
         e
     })
     .expect("failed to create cache_entries table");
@@ -1144,6 +1139,7 @@ async fn main() {
             if let Some(window) = app.get_webview_window("main") {
                 // set background color only when building for macOS
                 #[cfg(target_os = "macos")]
+                #[allow(deprecated)]
                 {
                     use cocoa::appkit::{NSColor, NSWindow};
                     use cocoa::base::{id, nil};

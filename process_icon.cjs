@@ -15,9 +15,7 @@ async function processOriginal() {
       process.exit(1);
     }
   } catch {
-    console.error(
-      `Error: Image not found or not readable at "${imgPath}".`,
-    );
+    console.error(`Error: Image not found or not readable at "${imgPath}".`);
     process.exit(1);
   }
 

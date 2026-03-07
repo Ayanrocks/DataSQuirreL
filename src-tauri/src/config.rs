@@ -61,7 +61,7 @@ impl ConfigManager {
         if !config_path.exists() {
             return Err(Error::new(
                 ErrorKind::NotFound,
-                format!("Config file not found: {:?}", config_path),
+                format!("Config file not found: {config_path:?}"),
             ));
         }
 
@@ -69,7 +69,7 @@ impl ConfigManager {
         serde_json::from_str(&contents).map_err(|e| {
             Error::new(
                 ErrorKind::InvalidData,
-                format!("Failed to parse config file: {}", e),
+                format!("Failed to parse config file: {e}"),
             )
         })
     }

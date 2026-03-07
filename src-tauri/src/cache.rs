@@ -1,7 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use crate::types::api_objects::ApplicationState;
-use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use sqlx::SqliteConnection;
 use tauri::State;

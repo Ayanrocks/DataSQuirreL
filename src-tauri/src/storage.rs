@@ -78,6 +78,7 @@ impl ConnectionStorage {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_connection(
         &self,
         conn_name: &str,
@@ -87,6 +88,7 @@ impl ConnectionStorage {
         Ok(connections.into_iter().find(|c| c.conn_name == conn_name))
     }
 
+    #[allow(dead_code)]
     pub fn get_password(&self, conn_name: &str) -> Result<String, Box<dyn Error>> {
         log_function!(get_password);
         let entry = Entry::new(APP_NAME, conn_name)?;
