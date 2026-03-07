@@ -3,7 +3,7 @@
 use crate::types::api_objects::ApplicationState;
 use lru::LruCache;
 use serde::{Deserialize, Serialize};
-use sqlx::{SqliteConnection};
+use sqlx::SqliteConnection;
 use tauri::State;
 use tokio::sync::Mutex;
 use zstd::{decode_all, encode_all};

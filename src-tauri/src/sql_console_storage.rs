@@ -1,9 +1,9 @@
 use crate::config::ConfigManager;
 use crate::{log_error, log_function, log_info};
+use once_cell::sync::Lazy;
 use std::fs;
 use std::io::{self, Error, ErrorKind};
 use std::path::PathBuf;
-use once_cell::sync::Lazy;
 use std::sync::Mutex;
 
 const CONSOLES_DIR: &str = "consoles";
@@ -62,7 +62,10 @@ impl SqlConsoleStorage {
                 }
             }
         }
-        log_info!("Successfully listed console files. Found {} files.", files.len());
+        log_info!(
+            "Successfully listed console files. Found {} files.",
+            files.len()
+        );
         Ok(files)
     }
 
@@ -79,8 +82,9 @@ impl SqlConsoleStorage {
     }
 }
 
-static SQL_CONSOLE_STORAGE: Lazy<Mutex<SqlConsoleStorage>> =
-    Lazy::new(|| Mutex::new(SqlConsoleStorage::new().expect("Failed to initialize SqlConsoleStorage")));
+static SQL_CONSOLE_STORAGE: Lazy<Mutex<SqlConsoleStorage>> = Lazy::new(|| {
+    Mutex::new(SqlConsoleStorage::new().expect("Failed to initialize SqlConsoleStorage"))
+});
 
 pub fn get_sql_console_storage() -> &'static Mutex<SqlConsoleStorage> {
     &SQL_CONSOLE_STORAGE
