@@ -185,10 +185,29 @@
       view.destroy();
     }
   });
+  function handleClear() {
+    value = "";
+    if (view) {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: "" },
+      });
+    }
+    onEnter();
+  }
 </script>
 
 <div class="where-editor-wrapper">
   <div bind:this={editorContainer} class="cm-container"></div>
+  {#if value.length > 0}
+    <button
+      class="clear-btn"
+      aria-label="Clear WHERE clause"
+      title="Clear filter"
+      onclick={handleClear}
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -211,8 +230,24 @@
   }
 
   .cm-container {
-    width: 100%;
+    flex: 1;
     min-width: 0;
+  }
+
+  .clear-btn {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+  }
+
+  .clear-btn:hover {
+    color: #ef4444;
   }
 
   :global(.cm-editor.cm-focused) {
