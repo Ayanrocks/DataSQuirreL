@@ -259,9 +259,11 @@
     </div>
   </div>
   <div class="init-connection-container--top-eclipse absolute">
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
     {@html InitScreenEclipse}
   </div>
   <div class="init-connection-container--background absolute">
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
     {@html InitWaveSVG}
   </div>
 </div>

@@ -38,12 +38,13 @@
     <div class="col-start-1 my-5 recent-projects-list">
       {#if projects.length > 0}
         <ul class="list-none p-0 m-0 w-full overflow-scroll h-120">
-          {#each projects as project}
+          {#each projects as project (project.id)}
             <li
               class="p-5 mb-5 bg-[#fff] border border-gray-200 rounded-md transition duration-300 ease-in-out cursor-pointer hover:shadow-md shadow-sm flex flex-column items-center justify-between hover:bg-gray-50"
             >
               <div class="project-name flex items-center gap-2">
                 <span class="icon-container scale-75">
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html folderIcon}
                 </span>
                 {project.name}
@@ -66,6 +67,7 @@
                     isShortcut(e, Shortcuts.Enter) && handleConnect(project)}
                   disabled={recentProjectsLoading}
                 >
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html connectIcon}
                 </button>
                 <button
@@ -77,6 +79,7 @@
                     isShortcut(e, Shortcuts.Enter) && onEdit(project)}
                   disabled={recentProjectsLoading}
                 >
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html editIcon}
                 </button>
                 <button
@@ -88,6 +91,7 @@
                     isShortcut(e, Shortcuts.Enter) && onDelete(project)}
                   disabled={recentProjectsLoading}
                 >
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                   {@html deleteIcon}
                 </button>
               </div>

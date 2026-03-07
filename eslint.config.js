@@ -11,6 +11,7 @@ export default [
       "build/**",
       "public/**",
       "node_modules/**",
+      "src-tauri/**",
     ],
   },
 

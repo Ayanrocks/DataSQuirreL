@@ -61,6 +61,7 @@
           }}
           aria-expanded={isExpanded}
         >
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html isExpanded ? ExpandableArrowIcon : ArrowRightIcon}
         </button>
       {/if}
@@ -68,18 +69,22 @@
     <div class="entity-icon">
       {#if entityType === "Schema"}
         <span class="icon-container">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html SchemaIcon}
         </span>
       {:else if entityType === "Table"}
         <span class="icon-container text-white">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html TableIcon}
         </span>
       {:else if entityType === "postgresql"}
         <span class="icon-container">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html PostgreSQLIcon}
         </span>
       {:else if entityType === "Console"}
         <span class="icon-container">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html ConsoleIcon}
         </span>
         <!-- {:else if entityName === "Function"}

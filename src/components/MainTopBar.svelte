@@ -23,6 +23,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="top-bar_right" onclick={openAbout}>
     <div class="top-bar_right_settings-icon">
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html settingsIcon}
     </div>
   </div>

@@ -114,7 +114,7 @@
       <div class="flex flex-col gap-1">
         <label for="year-select">YYYY</label>
         <select id="year-select" bind:value={year}>
-          {#each years as y}
+          {#each years as y (y)}
             <option value={y}>{y}</option>
           {/each}
         </select>
@@ -123,7 +123,7 @@
       <div class="flex flex-col gap-1">
         <label for="month-select">MM</label>
         <select id="month-select" bind:value={month}>
-          {#each months as m}
+          {#each months as m (m)}
             <option value={m}>{pad(m)}</option>
           {/each}
         </select>
@@ -132,7 +132,7 @@
       <div class="flex flex-col gap-1">
         <label for="day-select">DD</label>
         <select id="day-select" bind:value={day}>
-          {#each days as d}
+          {#each days as d (d)}
             <option value={d}>{pad(d)}</option>
           {/each}
         </select>
@@ -144,7 +144,7 @@
         <div class="flex flex-col gap-1">
           <label for="hour-select">HH</label>
           <select id="hour-select" bind:value={hour}>
-            {#each hours as h}
+            {#each hours as h (h)}
               <option value={h}>{pad(h)}</option>
             {/each}
           </select>
@@ -153,7 +153,7 @@
         <div class="flex flex-col gap-1">
           <label for="minute-select">mm</label>
           <select id="minute-select" bind:value={minute}>
-            {#each minutes as m}
+            {#each minutes as m (m)}
               <option value={m}>{pad(m)}</option>
             {/each}
           </select>
@@ -162,7 +162,7 @@
         <div class="flex flex-col gap-1">
           <label for="second-select">ss</label>
           <select id="second-select" bind:value={second}>
-            {#each seconds as s}
+            {#each seconds as s (s)}
               <option value={s}>{pad(s)}</option>
             {/each}
           </select>

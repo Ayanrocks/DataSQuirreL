@@ -182,7 +182,7 @@
     <div class="modal-content" onclick={(e) => e.stopPropagation()}>
       <div class="modal-header">
         <h2>Export Data</h2>
-        <button class="close-btn" onclick={onClose}>
+        <button class="close-btn" onclick={onClose} aria-label="Close">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -193,7 +193,7 @@
         <div class="form-group">
           <label for="export-format">Export Format</label>
           <select id="export-format" bind:value={selectedFormatId}>
-            {#each exportFormats as format}
+            {#each exportFormats as format (format.id)}
               <option value={format.id}>{format.label}</option>
             {/each}
           </select>
