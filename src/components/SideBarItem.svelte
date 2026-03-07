@@ -27,15 +27,27 @@
 
   const handleMouseTableClick = (e: MouseEvent) => {
     e.stopPropagation();
-    e.preventDefault();
-    handleTableClick(entityType, fullPath);
+    if (entityType === "Table" || entityType === "Console") {
+      e.preventDefault();
+      handleTableClick(entityType, fullPath);
+    } else {
+      // Toggle expansion when simply clicking the row container of schemas
+      if (hasChildren && e.target === e.currentTarget) {
+        // Only toggle if directly clicking the container, not the button
+        toggle();
+      }
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
     if (isShortcut(e, Shortcuts.Enter) || isShortcut(e, Shortcuts.Space)) {
-      handleTableClick(entityType, fullPath);
+      e.stopPropagation();
+      e.preventDefault();
+      if (entityType === "Table" || entityType === "Console") {
+        handleTableClick(entityType, fullPath);
+      } else if (hasChildren) {
+        toggle();
+      }
     }
   };
 </script>

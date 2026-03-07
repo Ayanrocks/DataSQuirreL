@@ -15,7 +15,21 @@
   }>();
 
   // Try to parse initial value
-  let parsedDate = initialValue ? new Date(initialValue) : new Date();
+  let parsedDate: Date;
+
+  if (initialValue && /^\d{4}-\d{2}-\d{2}$/.test(initialValue.trim())) {
+    const parts = initialValue.trim().split("-");
+    parsedDate = new Date(
+      parseInt(parts[0]),
+      parseInt(parts[1]) - 1,
+      parseInt(parts[2]),
+    );
+  } else if (initialValue) {
+    parsedDate = new Date(initialValue);
+  } else {
+    parsedDate = new Date();
+  }
+
   if (isNaN(parsedDate.getTime())) {
     parsedDate = new Date(); // fallback to now if invalid
   }
@@ -43,6 +57,14 @@
   );
   let months = Array.from({ length: 12 }, (_, i) => i + 1);
   let daysInMonth = $derived(new Date(year, month, 0).getDate());
+
+  // Watch for days in month changes and clamp
+  $effect(() => {
+    if (day > daysInMonth) {
+      day = daysInMonth;
+    }
+  });
+
   let days = $derived(Array.from({ length: daysInMonth }, (_, i) => i + 1));
   let hours = Array.from({ length: 24 }, (_, i) => i);
   let minutes = Array.from({ length: 60 }, (_, i) => i);
@@ -63,7 +85,15 @@
       if (rawType.includes("tz")) {
         // basic timezone append if it's timestamptz
         // Not a perfect ISO string, but usually accepted by Postgres
-        const offset = -new Date().getTimezoneOffset();
+        const constructedDate = new Date(
+          year,
+          month - 1,
+          day,
+          hour,
+          minute,
+          second,
+        );
+        const offset = -constructedDate.getTimezoneOffset();
         const sign = offset >= 0 ? "+" : "-";
         const offHours = pad(Math.floor(Math.abs(offset) / 60));
         const offMinutes = pad(Math.abs(offset) % 60);
