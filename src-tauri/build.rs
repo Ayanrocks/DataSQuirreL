@@ -7,7 +7,7 @@ fn main() {
         .trim()
         .to_string();
 
-    println!("cargo:rustc-env=APP_VERSION={}", version);
+    println!("cargo:rustc-env=APP_VERSION={version}");
     println!("cargo:rerun-if-changed=../VERSION");
 
     tauri_build::build();
