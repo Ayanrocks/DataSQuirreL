@@ -5,7 +5,8 @@
     keymap,
     placeholder as cmPlaceholder,
   } from "@codemirror/view";
-  import { EditorState } from "@codemirror/state";
+  import { EditorState, Compartment } from "@codemirror/state";
+  import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
   import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
   import {
     autocompletion,
@@ -20,10 +21,12 @@
   let {
     value = $bindable(""),
     columns = [],
+    errorMessage = null,
     onEnter = () => {},
   } = $props<{
     value?: string;
     columns?: string[];
+    errorMessage?: string | null;
     onEnter?: () => void;
   }>();
 
@@ -116,12 +119,34 @@
     }
   });
 
+  const linterCompartment = new Compartment();
+
+  function getLinterExtension(errorMsg: string | null) {
+    if (!errorMsg) {
+      return linter(() => []);
+    }
+    return linter((view) => {
+      let diagnostics: Diagnostic[] = [];
+      if (view.state.doc.length > 0) {
+        diagnostics.push({
+          from: 0,
+          to: view.state.doc.length,
+          severity: "error",
+          message: errorMsg,
+        });
+      }
+      return diagnostics;
+    });
+  }
+
   onMount(() => {
     let state = EditorState.create({
       doc: value,
       extensions: [
         history(),
         closeBrackets(),
+        lintGutter(),
+        linterCompartment.of(getLinterExtension(errorMessage)),
         autocompletion({ override: [getCompletions] }),
         sql({ dialect: StandardSQL }),
         customTheme,
@@ -142,6 +167,16 @@
     if (view && value !== view.state.doc.toString()) {
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: value },
+      });
+    }
+  });
+
+  $effect(() => {
+    if (view) {
+      view.dispatch({
+        effects: linterCompartment.reconfigure(
+          getLinterExtension(errorMessage),
+        ),
       });
     }
   });

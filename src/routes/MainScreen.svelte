@@ -233,8 +233,9 @@
           tabs[tabIndex].foreignKeys = res.data.foreign_keys;
         }
       }
-    } catch (e) {
-      console.log("ErrorCatching: ", e);
+    } catch (e: any) {
+      console.log("invokeTableData ErrorCatching: ", e);
+      throw e;
     }
   }
 </script>

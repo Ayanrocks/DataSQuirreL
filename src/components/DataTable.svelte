@@ -180,11 +180,18 @@
   let sortColumn = $state<string | null>(null);
   let sortDirection = $state<"asc" | "desc" | null>(null);
   let whereClause = $state<string>("");
+  let whereError = $state<string | null>(null);
 
-  function handleWhereEnter() {
+  async function handleWhereEnter() {
     offset = 0;
-    if (fetchData)
-      fetchData(offset, limit, sortColumn, sortDirection, whereClause);
+    whereError = null;
+    if (fetchData) {
+      try {
+        await fetchData(offset, limit, sortColumn, sortDirection, whereClause);
+      } catch (e: any) {
+        whereError = typeof e === "string" ? e : e.message || String(e);
+      }
+    }
   }
 
   $effect(() => {
@@ -203,6 +210,7 @@
     sortColumn = null;
     sortDirection = null;
     whereClause = "";
+    whereError = null;
     historyManager.clear();
   });
 
@@ -831,11 +839,8 @@
       dragSelectedCols = {};
       dragSelectedCells = {};
 
-      if (selectionAnchor && selectionAnchor.type === "cell" && !wasMultiDrag) {
-        editingCell = { r: selectionAnchor.r, c: selectionAnchor.c };
-      } else {
-        editingCell = null;
-      }
+      // Single click selection handled by handleMouseDown; we intentionally do not set `editingCell` here.
+      // Doing so would enter edit mode immediately on a single click, which prevents copying.
     }
   }
 
@@ -1256,6 +1261,7 @@
       {gotoFirst}
       columns={activeTableData?.columns?.map((c: string[]) => c[1]) || []}
       bind:whereClause
+      {whereError}
       onWhereEnter={handleWhereEnter}
       {gotoLast}
       {isRefreshing}

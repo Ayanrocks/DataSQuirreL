@@ -28,7 +28,11 @@
   });
 
   function handleBlur() {
-    onCommit(editValue, "none");
+    // Defer the commit using setTimeout to prevent Svelte 5 state updates during the DOM element destruction phase.
+    // This fixes a bug where scrolling an edited cell out of view would freeze the table's virtualization.
+    setTimeout(() => {
+      onCommit(editValue, "none");
+    }, 0);
   }
 
   function handleKeyDown(e: KeyboardEvent) {

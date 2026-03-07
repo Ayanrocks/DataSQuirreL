@@ -26,6 +26,7 @@
     onExport = () => {},
     columns = [],
     whereClause = $bindable(""),
+    whereError = null,
     onWhereEnter = () => {},
   } = $props<{
     currentPage?: number;
@@ -49,6 +50,7 @@
     onExport?: () => void;
     columns?: string[];
     whereClause?: string;
+    whereError?: string | null;
     onWhereEnter?: () => void;
   }>();
 
@@ -163,6 +165,7 @@
         <WhereClauseEditor
           {columns}
           bind:value={whereClause}
+          errorMessage={whereError}
           onEnter={onWhereEnter}
         />
       </div>
