@@ -775,6 +775,20 @@
     e.preventDefault();
     isDragging = true;
 
+    // Blur any focused element outside the table (e.g. WHERE clause editor)
+    // so that copy/paste events are handled by the DataTable, not by
+    // the previously focused input.
+    const active = document.activeElement as HTMLElement | null;
+    if (
+      active &&
+      !active.closest(".table-scroll-container") &&
+      (active.tagName === "INPUT" ||
+        active.tagName === "TEXTAREA" ||
+        active.isContentEditable)
+    ) {
+      active.blur();
+    }
+
     if (e.shiftKey && selectionAnchor && selectionAnchor.type === type) {
       if (!(e.metaKey || e.ctrlKey)) {
         baseSelectedRows = {};
