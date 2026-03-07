@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 use types::db::ConnPool;
 
 pub struct ApplicationState {
-    pub dbpool: Mutex<Option<ConnPool>>,
+    pub dbpool: Mutex<HashMap<String, ConnPool>>,
     pub connection_storage: ConnectionStorage,
     pub active_connection_map: Mutex<HashMap<String, StoredConnection>>,
     pub sql_console_storage: SqlConsoleStorage,

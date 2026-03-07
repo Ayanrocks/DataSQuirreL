@@ -36,11 +36,11 @@ Engineered with the incredibly fast **Tauri** framework and highly reactive **Sv
 
 ### 🚀 Built With
 
-* [![Tauri][Tauri-badge]][Tauri-url]
-* [![Svelte][Svelte-badge]][Svelte-url]
-* [![TypeScript][TypeScript-badge]][TypeScript-url]
-* [![Vite][Vite-badge]][Vite-url]
-* [![TailwindCSS][TailwindCSS-badge]][TailwindCSS-url]
+- [![Tauri][Tauri-badge]][Tauri-url]
+- [![Svelte][Svelte-badge]][Svelte-url]
+- [![TypeScript][TypeScript-badge]][TypeScript-url]
+- [![Vite][Vite-badge]][Vite-url]
+- [![TailwindCSS][TailwindCSS-badge]][TailwindCSS-url]
 
 ---
 
@@ -66,22 +66,26 @@ For setting up Tauri prerequisites for your specific OS, please refer to the [Ta
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/ayanrocks/DataSQuirreL.git
    cd DataSQuirreL
    ```
 
 2. **Install frontend dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Install the Tauri CLI (if not already globally installed)**
+
    ```bash
    cargo install tauri-cli
    ```
 
 4. **Run in development mode**
+
    ```bash
    npm run tauri dev
    ```
@@ -97,6 +101,7 @@ For setting up Tauri prerequisites for your specific OS, please refer to the [Ta
 ## 🗺️ Roadmap
 
 ### Current Iteration (v0.1.x -> v1.0.x)
+
 - [x] Basic Table Viewer & Explorer
 - [x] Write and Execute Custom Queries
 - [x] Direct inline CRUD operations on Tables
@@ -104,10 +109,12 @@ For setting up Tauri prerequisites for your specific OS, please refer to the [Ta
 - [x] PostgreSQL, MySQL, MSSQL Support
 
 ### Upcoming: v1.1.X
+
 - [ ] Comprehensive query history and logging
 - [ ] Concurrent connections to multiple remote databases
 
 ### Planned: v2.0.X
+
 - [ ] Rich theming support (Material UI, Ayu, Dracula, Noctis, Solarized algorithms)
 - [ ] Plugins system for deeper extensibility
 
@@ -115,7 +122,7 @@ For setting up Tauri prerequisites for your specific OS, please refer to the [Ta
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! DataSQuirreL is an open-source project and we'd love for you to get involved. 
+We welcome contributions from the community! DataSQuirreL is an open-source project and we'd love for you to get involved.
 
 Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
 
@@ -140,6 +147,7 @@ Ayan Banerjee - [ayanrocks](https://github.com/ayanrocks)
 Project Link: [https://github.com/ayanrocks/DataSQuirreL](https://github.com/ayanrocks/DataSQuirreL)
 
 <!-- Markdown link references -->
+
 [Tauri-badge]: https://img.shields.io/badge/tauri-%2324C8DB.svg?style=for-the-badge&logo=tauri&logoColor=white
 [Tauri-url]: https://tauri.app/
 [Svelte-badge]: https://img.shields.io/badge/svelte-%23f1413d.svg?style=for-the-badge&logo=svelte&logoColor=white

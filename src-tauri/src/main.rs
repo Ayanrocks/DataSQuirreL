@@ -65,7 +65,12 @@ async fn init_connection(
                 "Successfully connected to database: {}",
                 req_payload.database_name
             );
-            *application_state.dbpool.lock().await = Some(conn_pool);
+            let window_label = format!("connection-window-{}", req_payload.conn_name);
+            application_state
+                .dbpool
+                .lock()
+                .await
+                .insert(window_label.clone(), conn_pool);
 
             let stored_conn = StoredConnection {
                 id: req_payload.id.clone(),
@@ -246,28 +251,34 @@ async fn fetch_dashboard_data(
 
     // Fetch schemas and tables
     let mut database_schemas: Vec<SchemaData> = Vec::new();
-    let schemas_result = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
-        .fetch_schemas()
-        .await;
+
+    let pool = {
+        let dbpool = application_state.dbpool.lock().await;
+        match dbpool.get(&req_payload.connection_window_label) {
+            Some(p) => p.clone(),
+            None => {
+                return Ok(IPCResponse {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(constants::ERR_CODE_INVALID_CONN_DATA.to_string()),
+                    sys_err: Some("Connection data not found".to_string()),
+                    frontend_msg: Some(
+                        "Failed to retrieve connection details. Please try reconnecting."
+                            .to_string(),
+                    ),
+                    data: None,
+                });
+            }
+        }
+    };
+
+    let schemas_result = pool.fetch_schemas().await;
 
     match schemas_result {
         Ok(schemas) => {
             log_info!("Successfully fetched {} schemas", schemas.len());
             for schema_name in schemas {
                 let mut schema_tables: Vec<SchemaData> = Vec::new();
-                let tables_result = application_state
-                    .dbpool
-                    .lock()
-                    .await
-                    .as_ref()
-                    .unwrap()
-                    .fetch_tables(&schema_name)
-                    .await;
+                let tables_result = pool.fetch_tables(&schema_name).await;
 
                 match tables_result {
                     Ok(tables) => {
@@ -362,10 +373,26 @@ async fn fetch_dashboard_data(
 
 #[tauri::command]
 async fn fetch_table_data(
+    window: tauri::Window,
     req_payload: TableDataRequest,
     application_state: State<'_, ApplicationState>,
 ) -> Result<IPCResponse<TableData<String>>, ()> {
     log_function!(fetch_table_data);
+    let pool = {
+        let dbpool = application_state.dbpool.lock().await;
+        match dbpool.get(window.label()) {
+            Some(p) => p.clone(),
+            None => {
+                return Ok(IPCResponse {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(constants::ERR_CODE_INVALID_CONN_DATA.to_string()),
+                    sys_err: Some("No connection".to_string()),
+                    frontend_msg: Some("Connection error".to_string()),
+                    data: None,
+                });
+            }
+        }
+    };
     /*
        3 things needed to display table data
            1. table columns
@@ -375,12 +402,7 @@ async fn fetch_table_data(
 
     let mut columns: Vec<(String, String, String)> = vec![];
 
-    let table_columns_result = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let table_columns_result = pool
         .fetch_table_columns(
             &req_payload.database_name.to_lowercase(),
             &req_payload.schema_name.to_lowercase(),
@@ -416,12 +438,7 @@ async fn fetch_table_data(
     };
 
     // fetch table data
-    let table_data_result = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let table_data_result = pool
         .fetch_table_data(
             &req_payload.schema_name,
             &req_payload.table_name,
@@ -447,12 +464,7 @@ async fn fetch_table_data(
     };
 
     // fetch table rows count
-    let table_rows_count_result = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let table_rows_count_result = pool
         .fetch_table_rows_count(&req_payload.schema_name, &req_payload.table_name)
         .await;
 
@@ -473,22 +485,12 @@ async fn fetch_table_data(
     };
 
     // fetch primary and foreign keys
-    let pks = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let pks = pool
         .fetch_table_primary_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
         .unwrap_or_default();
 
-    let fks = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let fks = pool
         .fetch_table_foreign_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
         .unwrap_or_default();
@@ -512,18 +514,29 @@ async fn fetch_table_data(
 
 #[tauri::command]
 async fn fetch_table_data_with_offset(
+    window: tauri::Window,
     req_payload: TableDataOffsetRequest,
     application_state: State<'_, ApplicationState>,
 ) -> Result<IPCResponse<TableData<String>>, ()> {
     log_function!(fetch_table_data_with_offset);
+    let pool = {
+        let dbpool = application_state.dbpool.lock().await;
+        match dbpool.get(window.label()) {
+            Some(p) => p.clone(),
+            None => {
+                return Ok(IPCResponse {
+                    status: http::status::StatusCode::OK.as_u16(),
+                    error_code: Some(constants::ERR_CODE_INVALID_CONN_DATA.to_string()),
+                    sys_err: Some("No connection".to_string()),
+                    frontend_msg: Some("Connection error".to_string()),
+                    data: None,
+                });
+            }
+        }
+    };
     let mut columns: Vec<(String, String, String)> = vec![];
 
-    let table_columns_result = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let table_columns_result = pool
         .fetch_table_columns(
             &req_payload.database_name.to_lowercase(),
             &req_payload.schema_name.to_lowercase(),
@@ -558,12 +571,7 @@ async fn fetch_table_data_with_offset(
     };
 
     // fetch table rows count
-    let table_rows_count_result = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let table_rows_count_result = pool
         .fetch_table_rows_count(&req_payload.schema_name, &req_payload.table_name)
         .await;
 
@@ -587,12 +595,7 @@ async fn fetch_table_data_with_offset(
        Pass the offset and the table name and return the additional data
     */
 
-    let table_data_rows: Vec<Vec<String>> = match application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let table_data_rows: Vec<Vec<String>> = match pool
         .fetch_table_data_with_offset(
             &req_payload.schema_name,
             &req_payload.table_name,
@@ -619,22 +622,12 @@ async fn fetch_table_data_with_offset(
     };
 
     // fetch primary and foreign keys
-    let pks = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let pks = pool
         .fetch_table_primary_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
         .unwrap_or_default();
 
-    let fks = application_state
-        .dbpool
-        .lock()
-        .await
-        .as_ref()
-        .unwrap()
+    let fks = pool
         .fetch_table_foreign_keys(&req_payload.schema_name, &req_payload.table_name)
         .await
         .unwrap_or_default();
@@ -762,7 +755,6 @@ fn delete_console_file_cmd(
 }
 
 /// Simulate fetching from real DB
-#[tauri::command]
 async fn fetch_table_rows(
     _tab_id: String,
     offset: u32,
@@ -861,11 +853,14 @@ async fn get_export_path() -> Result<IPCResponse<String>, ()> {
 #[tauri::command]
 async fn save_export_path(path: String) -> Result<IPCResponse<()>, ()> {
     log_function!(save_export_path, "path" => path);
-    // Extract just the directory using std::path::Path
     let path_obj = std::path::Path::new(&path);
-    let dir_path = match path_obj.parent() {
-        Some(parent) => parent.to_string_lossy().into_owned(),
-        None => path, // Fallback to whatever was provided
+    let dir_path = if path_obj.is_dir() {
+        path.clone()
+    } else {
+        match path_obj.parent() {
+            Some(parent) => parent.to_string_lossy().into_owned(),
+            None => path, // Fallback to whatever was provided
+        }
     };
 
     let config_manager = config::get_config_manager().lock().unwrap();
@@ -895,14 +890,18 @@ async fn save_export_path(path: String) -> Result<IPCResponse<()>, ()> {
 
 #[tauri::command]
 async fn commit_transaction_cmd(
+    window: tauri::Window,
     req_payload: types::api_objects::CommitTransactionRequest,
     state: tauri::State<'_, ApplicationState>,
 ) -> Result<IPCResponse<()>, String> {
     log_function!(commit_transaction_cmd);
 
-    let dbpool = state.dbpool.lock().await;
+    let pool = {
+        let dbpool = state.dbpool.lock().await;
+        dbpool.get(window.label()).cloned()
+    };
 
-    if let Some(pool) = &*dbpool {
+    if let Some(pool) = pool {
         let commit_res = pool
             .commit_transaction(
                 &req_payload.schema_name,
@@ -1051,7 +1050,7 @@ async fn main() {
 
     builder
         .manage(ApplicationState {
-            dbpool: Mutex::new(None),
+            dbpool: Mutex::new(HashMap::new()),
             connection_storage: ConnectionStorage::new(),
             active_connection_map: Mutex::new(HashMap::new()),
             sql_console_storage: sql_console_storage::SqlConsoleStorage::new()

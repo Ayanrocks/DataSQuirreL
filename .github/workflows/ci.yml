@@ -2,43 +2,43 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
 
 jobs:
   frontend:
     name: Lint & Test Frontend (Svelte)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Lint Svelte/TS
         # Running the package.json lint script
         run: npm run lint
-        
+
       - name: Check Formatting
         # Note: the package.json "format" script writes changes, so we use npx prettier --check in CI
         run: npx prettier --check .
-        
+
       - name: Run Tests
         run: npm run test
 
   backend:
     name: Lint & Test Backend (Rust)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
       - name: Install Tauri system dependencies
         run: |
           sudo apt-get update
@@ -52,27 +52,27 @@ jobs:
             libssl-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev
-            
+
       - name: Setup Rust stable
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@a0b538fa0b742a6aa35d6e2c169b4bd06d225a98 # v1
         with:
           toolchain: stable
           components: rustfmt, clippy
-          rustflags: ''
-          
+          rustflags: ""
+
       - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db # v2
         with:
           workspaces: src-tauri
-          
+
       - name: Check formatting
         working-directory: ./src-tauri
         run: cargo fmt --all -- --check
-        
+
       - name: Run Clippy
         working-directory: ./src-tauri
         run: cargo clippy --all-targets --all-features -- -D warnings
-        
+
       - name: Run Tests
         working-directory: ./src-tauri
         run: cargo test --all-features

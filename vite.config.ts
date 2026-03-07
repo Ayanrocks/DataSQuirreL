@@ -44,10 +44,10 @@ export default defineConfig({
     host: host || false,
     hmr: host
       ? {
-        protocol: "ws",
-        host,
-        port: 3001,
-      }
+          protocol: "ws",
+          host,
+          port: 3001,
+        }
       : undefined,
 
     watch: {

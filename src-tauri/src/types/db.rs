@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Postgres};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConnPool {
     pub conn_name: String,
     pub db_name: String,

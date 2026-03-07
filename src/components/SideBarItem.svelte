@@ -32,8 +32,8 @@
       handleTableClick(entityType, fullPath);
     } else {
       // Toggle expansion when simply clicking the row container of schemas
-      if (hasChildren && e.target === e.currentTarget) {
-        // Only toggle if directly clicking the container, not the button
+      if (hasChildren) {
+        // Only toggle if directly clicking the container
         toggle();
       }
     }
@@ -57,18 +57,26 @@
     class="sidebar-item-content"
     onclick={handleMouseTableClick}
     onkeydown={handleKeyDown}
-    tabindex={entityType === "Table" ? 0 : -1}
+    tabindex={entityType === "Table" || entityType === "Console" ? 0 : -1}
     aria-label={entityType === "Table"
       ? `Select table ${entityName}`
-      : undefined}
-    role="button"
+      : entityType === "Console"
+        ? `Select console ${entityName}`
+        : undefined}
+    role={entityType === "Table" || entityType === "Console"
+      ? "button"
+      : hasChildren
+        ? "treeitem"
+        : undefined}
+    aria-expanded={hasChildren ? isExpanded : undefined}
   >
     <div class="arrow-space scale-75">
       {#if hasChildren}
         <button
           type="button"
           class="expandable-icon"
-          onclick={() => {
+          onclick={(e) => {
+            e.stopPropagation();
             toggle();
           }}
           aria-expanded={isExpanded}

@@ -9,16 +9,20 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 ## How Can I Contribute?
 
 ### Reporting Bugs
+
 If you find a bug, please open an issue in the GitHub repository. Provide as much detail as possible, including:
+
 - Steps to reproduce the bug.
 - The expected behavior vs. the actual behavior.
 - System specifications (OS, App version, Node/Rust versions).
 - Logs, screenshots, or error traces if applicable.
 
 ### Suggesting Enhancements
+
 Have an idea to make DataSQuirreL better? We'd love to hear it! Open an issue formatted as a feature request, explaining the motivation, use cases, and how the feature should behave.
 
 ### Pull Requests
+
 We gladly accept Merge/Pull Requests! Here is the workflow:
 
 1. **Fork the repository** to your own GitHub account and clone it to your local machine.
@@ -45,7 +49,9 @@ npm run tauri dev
 ```
 
 ### Formatting and Linting
+
 Please format and lint your code before committing. The project uses standard ESLint and Prettier for the frontend (Svelte/TS) and standard Cargo fmt for the Rust backend.
+
 - Format frontend code: `npm run format`
 - Lint frontend code: `npm run lint`
 

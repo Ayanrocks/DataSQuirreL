@@ -1,3 +1,3 @@
 export interface IDbTypeMapper {
-    sqlToJsType(sqlType: string): string;
+  sqlToJsType(sqlType: string): string;
 }
