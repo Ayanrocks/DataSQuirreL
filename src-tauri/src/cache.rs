@@ -10,20 +10,21 @@ use zstd::{decode_all, encode_all};
 /// Shared DB handle
 pub struct CacheDB(pub Mutex<SqliteConnection>);
 
+pub const CACHE_ENTRIES_DDL: &str = "\
+CREATE TABLE IF NOT EXISTS cache_entries (
+  tab_id TEXT NOT NULL,
+  row_idx INTEGER NOT NULL,
+  data_blob BLOB NOT NULL,
+  PRIMARY KEY (tab_id, row_idx)
+)";
+
 impl CacheDB {
     pub async fn init(&self) -> Result<(), String> {
         let mut conn = self.0.lock().await;
-        sqlx::query(
-            "CREATE TABLE IF NOT EXISTS cache_entries (
-          tab_id TEXT NOT NULL,
-          row_idx INTEGER NOT NULL,
-          data_blob BLOB NOT NULL,
-          PRIMARY KEY (tab_id, row_idx)
-        )",
-        )
-        .execute(&mut *conn)
-        .await
-        .map_err(|e| e.to_string())?;
+        sqlx::query(CACHE_ENTRIES_DDL)
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -33,8 +34,9 @@ impl CacheDB {
         row_idx: u32,
         row_json: String,
     ) -> Result<(), String> {
-        let mut db = self.0.lock().await;
         let blob = encode_all(row_json.as_bytes(), 0).map_err(|e| e.to_string())?;
+
+        let mut db = self.0.lock().await;
         sqlx::query("REPLACE INTO cache_entries (tab_id, row_idx, data_blob) VALUES (?, ?, ?)")
             .bind(tab_id)
             .bind(row_idx)
@@ -46,14 +48,15 @@ impl CacheDB {
     }
 
     pub async fn get_entry(&self, tab_id: String, row_idx: u32) -> Result<Option<String>, String> {
-        let mut conn = self.0.lock().await;
-        let row: Option<(Vec<u8>,)> =
+        let row: Option<(Vec<u8>,)> = {
+            let mut conn = self.0.lock().await;
             sqlx::query_as("SELECT data_blob FROM cache_entries WHERE tab_id = ? AND row_idx = ?")
                 .bind(tab_id)
                 .bind(row_idx)
                 .fetch_optional(&mut *conn)
                 .await
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| e.to_string())?
+        };
 
         if let Some((blob,)) = row {
             let decompressed = decode_all(&blob[..]).map_err(|e| e.to_string())?;

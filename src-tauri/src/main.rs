@@ -1071,21 +1071,14 @@ async fn main() {
     });
 
     // Ensure cache table exists before starting the app
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS cache_entries (
-      tab_id TEXT NOT NULL,
-      row_idx INTEGER NOT NULL,
-      data_blob BLOB NOT NULL,
-      PRIMARY KEY (tab_id, row_idx)
-    )",
-    )
-    .execute(&mut connection)
-    .await
-    .map_err(|e| {
-        eprintln!("failed to create cache_entries table: {e}");
-        e
-    })
-    .expect("failed to create cache_entries table");
+    sqlx::query(crate::cache::CACHE_ENTRIES_DDL)
+        .execute(&mut connection)
+        .await
+        .map_err(|e| {
+            eprintln!("failed to create cache_entries table: {e}");
+            e
+        })
+        .expect("failed to create cache_entries table");
 
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())

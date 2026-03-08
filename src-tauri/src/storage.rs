@@ -123,12 +123,12 @@ impl ConnectionStorage {
     }
 
     #[allow(dead_code)]
-    pub fn get_password(&self, conn_name: &str) -> Result<String, Box<dyn Error>> {
+    pub fn get_password(&self, conn_id: &str) -> Result<String, Box<dyn Error>> {
         log_function!(get_password);
         if self.mock_dir.is_some() {
             return Ok("mock_password".to_string());
         }
-        let entry = Entry::new(APP_NAME, conn_name)?;
+        let entry = Entry::new(APP_NAME, conn_id)?;
         Ok(entry.get_password()?)
     }
 

@@ -238,18 +238,28 @@ impl ConnPool {
     }
 }
 
+pub struct FetchOptions<'a> {
+    pub offset: u32,
+    pub limit: Option<u32>,
+    pub sort_column: &'a Option<String>,
+    pub sort_direction: &'a Option<String>,
+    pub where_clause: &'a Option<String>,
+}
+
 pub fn build_fetch_table_data_query(
     schema_name: &str,
     table_name: &str,
     columns: &[TableColumns],
     mapper: &dyn crate::database::types_mapper::DbTypeMapper,
-    sort_column: &Option<String>,
-    sort_direction: &Option<String>,
-    where_clause: &Option<String>,
+    opts: &FetchOptions,
 ) -> String {
+    let safe_schema = schema_name.replace("\"", "\"\"");
+    let safe_table = table_name.replace("\"", "\"\"");
+
     let mut select_cols = Vec::new();
     for col in columns {
-        select_cols.push(mapper.cast_to_text_expr(&col.column_name, &col.data_type));
+        let safe_col = col.column_name.replace("\"", "\"\"");
+        select_cols.push(mapper.cast_to_text_expr(&safe_col, &col.data_type));
     }
     let cols_str = if select_cols.is_empty() {
         "*".to_string()
@@ -257,23 +267,31 @@ pub fn build_fetch_table_data_query(
         select_cols.join(", ")
     };
 
+    let limit_str = match opts.limit {
+        Some(l) => l.to_string(),
+        None => "ALL".to_string(),
+    };
+
     let mut order_by_str = String::new();
-    if let Some(col) = sort_column {
-        if let Some(dir) = sort_direction {
-            if dir.to_lowercase() == "asc" || dir.to_lowercase() == "desc" {
-                order_by_str = format!(
-                    "ORDER BY \"{}\".\"{}\".\"{}\" {}",
-                    schema_name,
-                    table_name,
-                    col,
-                    dir.to_uppercase()
-                );
+    if let Some(col) = opts.sort_column {
+        if columns.iter().any(|c| &c.column_name == col) {
+            let safe_col = col.replace("\"", "\"\"");
+            if let Some(dir) = opts.sort_direction {
+                if dir.to_uppercase() == "ASC" || dir.to_uppercase() == "DESC" {
+                    order_by_str = format!(
+                        "ORDER BY \"{}\".\"{}\".\"{}\" {}",
+                        safe_schema,
+                        safe_table,
+                        safe_col,
+                        dir.to_uppercase()
+                    );
+                }
             }
         }
     }
 
     let mut where_str = String::new();
-    if let Some(clause) = where_clause {
+    if let Some(clause) = opts.where_clause {
         if !clause.trim().is_empty() {
             where_str = format!("WHERE {clause}");
         }
@@ -281,18 +299,13 @@ pub fn build_fetch_table_data_query(
 
     format!(
         r#"
-                SELECT {}
-                FROM "{}"."{}"
-                {}
-                {}
-                LIMIT {};
+                SELECT {cols_str}
+                FROM "{safe_schema}"."{safe_table}"
+                {where_str}
+                {order_by_str}
+                LIMIT {limit_str} OFFSET {offset};
             "#,
-        cols_str,
-        schema_name,
-        table_name,
-        where_str,
-        order_by_str,
-        constants::INITIAL_PAGE_SIZE
+        offset = opts.offset
     )
 }
 
@@ -310,15 +323,15 @@ impl ConnPool {
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data);
 
-        let query = build_fetch_table_data_query(
-            schema_name,
-            table_name,
-            columns,
-            mapper,
+        let opts = FetchOptions {
+            offset: 0,
+            limit: Some(constants::INITIAL_PAGE_SIZE),
             sort_column,
             sort_direction,
             where_clause,
-        );
+        };
+
+        let query = build_fetch_table_data_query(schema_name, table_name, columns, mapper, &opts);
 
         println!("Printing Query: {}", &query);
 
@@ -340,64 +353,7 @@ impl ConnPool {
     }
 }
 
-pub fn build_fetch_table_data_with_offset_query(
-    schema_name: &str,
-    table_name: &str,
-    offset: &u32,
-    limit: &Option<u32>,
-    columns: &[TableColumns],
-    mapper: &dyn crate::database::types_mapper::DbTypeMapper,
-    sort_column: &Option<String>,
-    sort_direction: &Option<String>,
-    where_clause: &Option<String>,
-) -> String {
-    let mut select_cols = Vec::new();
-    for col in columns {
-        select_cols.push(mapper.cast_to_text_expr(&col.column_name, &col.data_type));
-    }
-    let cols_str = if select_cols.is_empty() {
-        "*".to_string()
-    } else {
-        select_cols.join(", ")
-    };
-
-    let limit_str = match limit {
-        Some(l) => l.to_string(),
-        None => "ALL".to_string(),
-    };
-
-    let mut order_by_str = String::new();
-    if let Some(col) = sort_column {
-        if let Some(dir) = sort_direction {
-            if dir.to_lowercase() == "asc" || dir.to_lowercase() == "desc" {
-                order_by_str = format!(
-                    "ORDER BY \"{}\".\"{}\".\"{}\" {}",
-                    schema_name,
-                    table_name,
-                    col,
-                    dir.to_uppercase()
-                );
-            }
-        }
-    }
-
-    let mut where_str = String::new();
-    if let Some(clause) = where_clause {
-        if !clause.trim().is_empty() {
-            where_str = format!("WHERE {clause}");
-        }
-    }
-
-    format!(
-        r#"
-                SELECT {cols_str}
-                FROM "{schema_name}"."{table_name}"
-                {where_str}
-                {order_by_str}
-                LIMIT {limit_str} OFFSET {offset};
-            "#
-    )
-}
+// Removed duplicated builder fn since we use build_fetch_table_data_query
 
 impl ConnPool {
     #[allow(clippy::too_many_arguments)]
@@ -415,17 +371,15 @@ impl ConnPool {
     ) -> Result<Vec<Vec<String>>, sqlx::Error> {
         log_function!(fetch_table_data_with_offset);
 
-        let query = build_fetch_table_data_with_offset_query(
-            schema_name,
-            table_name,
-            offset,
-            limit,
-            columns,
-            mapper,
+        let opts = FetchOptions {
+            offset: *offset,
+            limit: *limit,
             sort_column,
             sort_direction,
             where_clause,
-        );
+        };
+
+        let query = build_fetch_table_data_query(schema_name, table_name, columns, mapper, &opts);
 
         println!("Printing Query: {}", &query);
 
@@ -919,15 +873,14 @@ mod tests {
             },
         ];
         let mapper = MockMapper;
-        let query = build_fetch_table_data_query(
-            "public",
-            "posts",
-            &cols,
-            &mapper,
-            &Some("id".to_string()),
-            &Some("desc".to_string()),
-            &Some("\"id\" > 10".to_string()),
-        );
+        let opts = FetchOptions {
+            offset: 0,
+            limit: Some(crate::constants::INITIAL_PAGE_SIZE),
+            sort_column: &Some("id".to_string()),
+            sort_direction: &Some("desc".to_string()),
+            where_clause: &Some("\"id\" > 10".to_string()),
+        };
+        let query = build_fetch_table_data_query("public", "posts", &cols, &mapper, &opts);
 
         let q_clean = query.replace(" ", "").replace("\n", "");
         assert!(q_clean.contains("SELECT\"id\"::text,\"title\"::text"));
@@ -935,8 +888,12 @@ mod tests {
         assert!(q_clean.contains("WHERE\"id\">10"));
         assert!(q_clean.contains("ORDERBY\"public\".\"posts\".\"id\"DESC"));
 
-        let limit_str = format!("LIMIT{};", crate::constants::INITIAL_PAGE_SIZE);
-        assert!(q_clean.contains(&limit_str));
+        let limit_str = format!("LIMIT{}OFFSET0;", crate::constants::INITIAL_PAGE_SIZE);
+        assert!(
+            q_clean.contains(&limit_str),
+            "Query should contain limit and offset, got: {}",
+            q_clean
+        );
     }
 
     #[test]
@@ -946,17 +903,14 @@ mod tests {
             data_type: "text".to_string(),
         }];
         let mapper = MockMapper;
-        let query = build_fetch_table_data_with_offset_query(
-            "public",
-            "users",
-            &100,
-            &Some(50),
-            &cols,
-            &mapper,
-            &None,
-            &None,
-            &None,
-        );
+        let opts = FetchOptions {
+            offset: 100,
+            limit: Some(50),
+            sort_column: &None,
+            sort_direction: &None,
+            where_clause: &None,
+        };
+        let query = build_fetch_table_data_query("public", "users", &cols, &mapper, &opts);
 
         let q_clean = query.replace(" ", "").replace("\n", "");
         assert!(q_clean.contains("SELECT\"name\"::text"));
@@ -968,15 +922,15 @@ mod tests {
     fn test_build_fetch_table_data_query_empty_columns_and_no_sort() {
         let cols = vec![]; // Empty should default to *
         let mapper = MockMapper;
-        let query = build_fetch_table_data_query(
-            "schema_test",
-            "table_test",
-            &cols,
-            &mapper,
-            &None,
-            &None,
-            &None,
-        );
+        let opts = FetchOptions {
+            offset: 0,
+            limit: None,
+            sort_column: &None,
+            sort_direction: &None,
+            where_clause: &None,
+        };
+        let query =
+            build_fetch_table_data_query("schema_test", "table_test", &cols, &mapper, &opts);
 
         let q_clean = query.replace(" ", "").replace("\n", "");
         assert!(q_clean.contains("SELECT*FROM\"schema_test\".\"table_test\""));
