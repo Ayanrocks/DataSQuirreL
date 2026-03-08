@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Loader Component > renders and applies styles when loaderActive is true 1`] = `
+<div>
+  <!---->
+  <div
+    class="lds-dual-ring svelte-li6gfl"
+    style="height: 30px; --width: 30px; --color: #ff0000;"
+  />
+  
+  
+</div>
+`;

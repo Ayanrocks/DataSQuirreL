@@ -1,0 +1,253 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DataTableToolBar Component > renders correctly 1`] = `
+<div>
+  <div
+    class="data-table-toolbar__container svelte-118v9x"
+  >
+    <div
+      class="data-table-toolbar-controls__container svelte-118v9x"
+    >
+      <div
+        class="data-table-toolbar__controls--left svelte-118v9x"
+      >
+        <button
+          aria-label="Add Row"
+          class="icon-btn svelte-118v9x"
+        >
+          <i
+            class="fa-solid fa-plus"
+          />
+        </button>
+         
+        <button
+          aria-label="Delete Row"
+          class="icon-btn svelte-118v9x"
+          disabled=""
+        >
+          <i
+            class="fa-solid fa-minus"
+          />
+        </button>
+         
+        <div
+          class="divider svelte-118v9x"
+        />
+         
+        <button
+          aria-label="Commit Changes"
+          class="icon-btn svelte-118v9x"
+          disabled=""
+          title="Commit"
+        >
+          <i
+            class="fa-solid fa-paper-plane"
+          />
+        </button>
+         
+        <button
+          aria-label="Revert"
+          class="icon-btn svelte-118v9x"
+          disabled=""
+          title="Revert"
+        >
+          <i
+            class="fa-solid fa-rotate-left"
+          />
+        </button>
+         
+        <button
+          aria-label="Export"
+          class="icon-btn svelte-118v9x"
+        >
+          <i
+            class="fa-solid fa-download"
+          />
+        </button>
+         
+        <div
+          class="divider svelte-118v9x"
+        />
+         
+        <button
+          aria-label="Preview Queries"
+          class="icon-btn svelte-118v9x"
+          disabled=""
+          title="Preview Queries"
+        >
+          <i
+            class="fa-solid fa-eye"
+          />
+        </button>
+         
+        <button
+          aria-label="Refresh"
+          class="icon-btn svelte-118v9x"
+          title="Refresh (Cmd/Ctrl + R)"
+        >
+          <i
+            class="fa-solid fa-rotate-right "
+          />
+        </button>
+         
+        <div
+          class="where-clause-container svelte-118v9x"
+        >
+          <span
+            class="where-label svelte-118v9x"
+          >
+            WHERE
+          </span>
+           
+          <div
+            class="where-editor-wrapper svelte-4k8ljr"
+          >
+            <div
+              class="cm-container svelte-4k8ljr"
+            >
+              <div
+                class="cm-editor ͼ1 ͼ2 ͼo"
+              >
+                <div
+                  aria-live="polite"
+                  class="cm-announced"
+                />
+                <div
+                  class="cm-scroller"
+                  tabindex="-1"
+                >
+                  <div
+                    aria-autocomplete="list"
+                    aria-multiline="true"
+                    aria-placeholder="condition..."
+                    autocapitalize="off"
+                    autocorrect="off"
+                    class="cm-content"
+                    contenteditable="true"
+                    data-language="sql"
+                    role="textbox"
+                    spellcheck="false"
+                    style="tab-size: 4;"
+                    translate="no"
+                    writingsuggestions="false"
+                  >
+                    <div
+                      class="cm-line"
+                    >
+                      <img
+                        aria-hidden="true"
+                        class="cm-widgetBuffer"
+                      />
+                      <span
+                        aria-hidden="true"
+                        class="cm-placeholder"
+                        style="pointer-events: none;"
+                      >
+                        condition...
+                      </span>
+                      <br />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+             
+            <!---->
+          </div>
+          <!---->
+        </div>
+      </div>
+       
+      <div
+        class="data-table-toolbar__controls--right svelte-118v9x"
+      >
+        <button
+          aria-label="First Page"
+          class="icon-btn svelte-118v9x"
+          disabled=""
+        >
+          <i
+            class="fa-solid fa-backward-step"
+          />
+        </button>
+         
+        <button
+          aria-label="Previous Page"
+          class="icon-btn svelte-118v9x"
+          disabled=""
+        >
+          <i
+            class="fa-solid fa-caret-left"
+          />
+        </button>
+         
+        <div
+          class="row-count-selector svelte-118v9x"
+        >
+          <select
+            class="pagination-select svelte-118v9x"
+          >
+            <option
+              class="svelte-118v9x"
+              value="100"
+            >
+              100 rows
+            </option>
+            <option
+              class="svelte-118v9x"
+              value="1000"
+            >
+              1000 rows
+            </option>
+            <option
+              class="svelte-118v9x"
+              value="5000"
+            >
+              5000 rows
+            </option>
+            <option
+              class="svelte-118v9x"
+              value="10000"
+            >
+              10000 rows
+            </option>
+            <option
+              class="svelte-118v9x"
+              value="Custom"
+            >
+              Custom
+            </option>
+            <option
+              class="svelte-118v9x"
+              value="All"
+            >
+              All
+            </option>
+          </select>
+           
+          <!---->
+        </div>
+         
+        <button
+          aria-label="Next Page"
+          class="icon-btn svelte-118v9x"
+        >
+          <i
+            class="fa-solid fa-caret-right"
+          />
+        </button>
+         
+        <button
+          aria-label="Last Page"
+          class="icon-btn svelte-118v9x"
+        >
+          <i
+            class="fa-solid fa-forward-step"
+          />
+        </button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+`;

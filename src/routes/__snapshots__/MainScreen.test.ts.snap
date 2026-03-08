@@ -1,0 +1,224 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MainScreen Component > renders correctly and mounts sub-components 1`] = `
+<div
+  class="main-container svelte-zgq571"
+>
+  <div
+    class="top-bar_container svelte-qc8gw3"
+  >
+    <div
+      class="top-bar_left svelte-qc8gw3"
+    >
+      <div
+        class="top-bar_left_title svelte-qc8gw3"
+      >
+         - DataSquirrel
+      </div>
+    </div>
+      
+    <div
+      class="top-bar_right svelte-qc8gw3"
+    >
+      <div
+        class="top-bar_right_settings-icon svelte-qc8gw3"
+      >
+        <svg
+          class="size-5"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          
+  
+          <path
+            clip-rule="evenodd"
+            d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .206 1.25l-1.18 2.045a1 1 0 0 1-1.187.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.114a7.05 7.05 0 0 1 0-2.227L1.821 7.773a1 1 0 0 1-.206-1.25l1.18-2.045a1 1 0 0 1 1.187-.447l1.598.54A6.992 6.992 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+            fill-rule="evenodd"
+          />
+          
+
+        </svg>
+        
+
+        <!---->
+      </div>
+    </div>
+  </div>
+   
+  <!---->
+  
+  <!---->
+  <!---->
+   
+  <div
+    class="sidebar-resize-wrapper svelte-181dlmc"
+    style="width: 260px; min-width: 180px; max-width: 500px;"
+  >
+    <div
+      class="sidebar-content svelte-181dlmc"
+    >
+      <div
+        class="sidebar-toolbar svelte-1sj36ph"
+      >
+        <div
+          class="sidebar-toolbar-content w-full svelte-1sj36ph"
+        >
+          <span
+            class="icon add-circle scale-75 svelte-1sj36ph"
+            title="Add New Connection"
+          >
+            <svg
+              class="size-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              
+  
+              <path
+                d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              
+
+            </svg>
+            
+
+            <!---->
+          </span>
+           
+          <span
+            class="icon refresh scale-75 svelte-1sj36ph"
+            title="Refresh"
+          >
+            <svg
+              class="size-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              
+  
+              <path
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              
+
+            </svg>
+            
+
+            <!---->
+          </span>
+           
+          <span
+            class="icon disconnect scale-75 svelte-1sj36ph"
+            title="Disconnect"
+          >
+            <svg
+              class="size-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              
+  
+              <path
+                d="M13.181 8.68a4.503 4.503 0 0 1 1.903 6.405m-9.768-2.782L3.56 14.06a4.5 4.5 0 0 0 6.364 6.365l3.129-3.129m5.614-5.615 1.757-1.757a4.5 4.5 0 0 0-6.364-6.365l-4.5 4.5c-.258.26-.479.541-.661.84m1.903 6.405a4.495 4.495 0 0 1-1.242-.88 4.483 4.483 0 0 1-1.062-1.683m6.587 2.345 5.907 5.907m-5.907-5.907L8.898 8.898M2.991 2.99 8.898 8.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              
+
+            </svg>
+            
+
+            <!---->
+          </span>
+           
+          <span
+            class="icon console scale-75 svelte-1sj36ph"
+            title="Open Query Console"
+          >
+            <svg
+              fill="none"
+              height="24"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              
+
+              <path
+                d="M4 17L10 11L4 5M12 19H20"
+                stroke="#1E1E1E"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+              />
+              
+
+            </svg>
+            
+
+            <!---->
+          </span>
+        </div>
+      </div>
+      <!---->
+       
+      <div
+        class="table-list has-text-left svelte-181dlmc"
+      >
+        <div
+          class="p-4 text-gray-500"
+        >
+          No data available
+        </div>
+        <!---->
+      </div>
+    </div>
+     
+    <button
+      aria-label="Resize sidebar"
+      class="sidebar-divider svelte-181dlmc"
+    >
+      <span
+        class="resize-icon svelte-181dlmc"
+      >
+        <i
+          class="fas fa-solid fa-grip-lines-vertical"
+        />
+      </span>
+    </button>
+  </div>
+  <!---->
+   
+  <div
+    class="right-panes svelte-zgq571"
+  >
+    <div
+      class="tabbar-container svelte-1n51new"
+    >
+      
+    </div>
+    <!---->
+     
+    <div
+      class="columns split-main-content svelte-zgq571"
+      id="right-main-content"
+    >
+      
+    </div>
+  </div>
+</div>
+`;

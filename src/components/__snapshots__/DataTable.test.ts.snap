@@ -1,0 +1,601 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DataTable Component > renders successfully without crashing 1`] = `
+<div>
+  <div
+    class="datatable-main-container svelte-b78yyc"
+  >
+    <!---->
+     
+    <!---->
+    <div
+      class="data-table-toolbar__container svelte-118v9x"
+    >
+      <div
+        class="data-table-toolbar-controls__container svelte-118v9x"
+      >
+        <div
+          class="data-table-toolbar__controls--left svelte-118v9x"
+        >
+          <button
+            aria-label="Add Row"
+            class="icon-btn svelte-118v9x"
+          >
+            <i
+              class="fa-solid fa-plus"
+            />
+          </button>
+           
+          <button
+            aria-label="Delete Row"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+          >
+            <i
+              class="fa-solid fa-minus"
+            />
+          </button>
+           
+          <div
+            class="divider svelte-118v9x"
+          />
+           
+          <button
+            aria-label="Commit Changes"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+            title="Commit"
+          >
+            <i
+              class="fa-solid fa-paper-plane"
+            />
+          </button>
+           
+          <button
+            aria-label="Revert"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+            title="Revert"
+          >
+            <i
+              class="fa-solid fa-rotate-left"
+            />
+          </button>
+           
+          <button
+            aria-label="Export"
+            class="icon-btn svelte-118v9x"
+          >
+            <i
+              class="fa-solid fa-download"
+            />
+          </button>
+           
+          <div
+            class="divider svelte-118v9x"
+          />
+           
+          <button
+            aria-label="Preview Queries"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+            title="Preview Queries"
+          >
+            <i
+              class="fa-solid fa-eye"
+            />
+          </button>
+           
+          <button
+            aria-label="Refresh"
+            class="icon-btn svelte-118v9x"
+            title="Refresh (Cmd/Ctrl + R)"
+          >
+            <i
+              class="fa-solid fa-rotate-right "
+            />
+          </button>
+           
+          <div
+            class="where-clause-container svelte-118v9x"
+          >
+            <span
+              class="where-label svelte-118v9x"
+            >
+              WHERE
+            </span>
+             
+            <div
+              class="where-editor-wrapper svelte-4k8ljr"
+            >
+              <div
+                class="cm-container svelte-4k8ljr"
+              >
+                <div
+                  class="cm-editor ͼ1 ͼ2 ͼo"
+                >
+                  <div
+                    aria-live="polite"
+                    class="cm-announced"
+                  />
+                  <div
+                    class="cm-scroller"
+                    tabindex="-1"
+                  >
+                    <div
+                      aria-autocomplete="list"
+                      aria-multiline="true"
+                      aria-placeholder="condition..."
+                      autocapitalize="off"
+                      autocorrect="off"
+                      class="cm-content"
+                      contenteditable="true"
+                      data-language="sql"
+                      role="textbox"
+                      spellcheck="false"
+                      style="tab-size: 4;"
+                      translate="no"
+                      writingsuggestions="false"
+                    >
+                      <div
+                        class="cm-line"
+                      >
+                        <img
+                          aria-hidden="true"
+                          class="cm-widgetBuffer"
+                        />
+                        <span
+                          aria-hidden="true"
+                          class="cm-placeholder"
+                          style="pointer-events: none;"
+                        >
+                          condition...
+                        </span>
+                        <br />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+               
+              <!---->
+            </div>
+            <!---->
+          </div>
+        </div>
+         
+        <div
+          class="data-table-toolbar__controls--right svelte-118v9x"
+        >
+          <button
+            aria-label="First Page"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+          >
+            <i
+              class="fa-solid fa-backward-step"
+            />
+          </button>
+           
+          <button
+            aria-label="Previous Page"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+          >
+            <i
+              class="fa-solid fa-caret-left"
+            />
+          </button>
+           
+          <div
+            class="row-count-selector svelte-118v9x"
+          >
+            <select
+              class="pagination-select svelte-118v9x"
+            >
+              <option
+                class="svelte-118v9x"
+                value="100"
+              >
+                100 rows
+              </option>
+              <option
+                class="svelte-118v9x"
+                value="1000"
+              >
+                1000 rows
+              </option>
+              <option
+                class="svelte-118v9x"
+                value="5000"
+              >
+                5000 rows
+              </option>
+              <option
+                class="svelte-118v9x"
+                value="10000"
+              >
+                10000 rows
+              </option>
+              <option
+                class="svelte-118v9x"
+                value="Custom"
+              >
+                Custom
+              </option>
+              <option
+                class="svelte-118v9x"
+                value="All"
+              >
+                All
+              </option>
+            </select>
+             
+            <!---->
+          </div>
+           
+          <button
+            aria-label="Next Page"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+          >
+            <i
+              class="fa-solid fa-caret-right"
+            />
+          </button>
+           
+          <button
+            aria-label="Last Page"
+            class="icon-btn svelte-118v9x"
+            disabled=""
+          >
+            <i
+              class="fa-solid fa-forward-step"
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+    <!---->
+     
+    <!---->
+    
+    <!---->
+     
+    <div
+      class="table-scroll-container svelte-b78yyc"
+      tabindex="-1"
+    >
+      <table
+        class="svelte-b78yyc"
+        style="table-layout: fixed; width: 350px;"
+      >
+        <colgroup>
+          <col
+            style="width: 50px;"
+          />
+          <col
+            style="width: 150px;"
+          />
+          <col
+            style="width: 150px;"
+          />
+          
+        </colgroup>
+        <thead>
+          <tr>
+            <th
+              class="svelte-b78yyc"
+              colspan="1"
+              style="cursor: default;"
+            >
+              <div
+                class="header-content svelte-b78yyc"
+              >
+                <span
+                  class="header-text svelte-b78yyc"
+                >
+                  <span
+                    class="svelte-b78yyc"
+                  >
+                    #
+                  </span>
+                   
+                  <!---->
+                   
+                  <!---->
+                </span>
+                 
+                <!---->
+              </div>
+               
+              <div
+                class="resizer svelte-b78yyc"
+              />
+              <!---->
+            </th>
+            <th
+              class="svelte-b78yyc"
+              colspan="1"
+              style="cursor: pointer;"
+            >
+              <div
+                class="header-content svelte-b78yyc"
+              >
+                <span
+                  class="header-text svelte-b78yyc"
+                >
+                  <span
+                    class="svelte-b78yyc"
+                  >
+                    id
+                  </span>
+                   
+                  <!---->
+                   
+                  <span
+                    class="datatype-text svelte-b78yyc"
+                  >
+                    (int)
+                  </span>
+                  <!---->
+                </span>
+                 
+                <button
+                  aria-label="Sort id"
+                  class="sort-btn svelte-b78yyc"
+                >
+                  <svg
+                    class="lucide lucide-arrow-up-down"
+                    fill="none"
+                    height="14"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="m21 16-4 4-4-4"
+                    />
+                    <path
+                      d="M17 20V4"
+                    />
+                    <path
+                      d="m3 8 4-4 4 4"
+                    />
+                    <path
+                      d="M7 4v16"
+                    />
+                  </svg>
+                  <!---->
+                </button>
+                <!---->
+              </div>
+               
+              <div
+                class="resizer svelte-b78yyc"
+              />
+              <!---->
+            </th>
+            <th
+              class="svelte-b78yyc"
+              colspan="1"
+              style="cursor: pointer;"
+            >
+              <div
+                class="header-content svelte-b78yyc"
+              >
+                <span
+                  class="header-text svelte-b78yyc"
+                >
+                  <span
+                    class="svelte-b78yyc"
+                  >
+                    name
+                  </span>
+                   
+                  <!---->
+                   
+                  <span
+                    class="datatype-text svelte-b78yyc"
+                  >
+                    (text)
+                  </span>
+                  <!---->
+                </span>
+                 
+                <button
+                  aria-label="Sort name"
+                  class="sort-btn svelte-b78yyc"
+                >
+                  <svg
+                    class="lucide lucide-arrow-up-down"
+                    fill="none"
+                    height="14"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    width="14"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="m21 16-4 4-4-4"
+                    />
+                    <path
+                      d="M17 20V4"
+                    />
+                    <path
+                      d="m3 8 4-4 4 4"
+                    />
+                    <path
+                      d="M7 4v16"
+                    />
+                  </svg>
+                  <!---->
+                </button>
+                <!---->
+              </div>
+               
+              <div
+                class="resizer svelte-b78yyc"
+              />
+              <!---->
+            </th>
+            
+          </tr>
+          
+        </thead>
+        <tbody
+          class="svelte-b78yyc"
+        >
+          <!---->
+          <tr
+            class="svelte-b78yyc"
+          >
+            <td
+              class="svelte-b78yyc"
+            >
+              <div
+                class="cell-content-wrapper svelte-b78yyc"
+              >
+                <span
+                  style="visibility: visible;"
+                >
+                  1
+                </span>
+                 
+                <!---->
+              </div>
+               
+              <!---->
+            </td>
+            <td
+              class="svelte-b78yyc"
+            >
+              <div
+                class="cell-content-wrapper svelte-b78yyc"
+              >
+                <span
+                  style="visibility: visible;"
+                >
+                  1
+                </span>
+                 
+                <!---->
+              </div>
+               
+              <!---->
+            </td>
+            <td
+              class="svelte-b78yyc"
+            >
+              <div
+                class="cell-content-wrapper svelte-b78yyc"
+              >
+                <span
+                  style="visibility: visible;"
+                >
+                  Alice
+                </span>
+                 
+                <!---->
+              </div>
+               
+              <!---->
+            </td>
+            
+          </tr>
+          <tr
+            class="svelte-b78yyc"
+          >
+            <td
+              class="svelte-b78yyc"
+            >
+              <div
+                class="cell-content-wrapper svelte-b78yyc"
+              >
+                <span
+                  style="visibility: visible;"
+                >
+                  2
+                </span>
+                 
+                <!---->
+              </div>
+               
+              <!---->
+            </td>
+            <td
+              class="svelte-b78yyc"
+            >
+              <div
+                class="cell-content-wrapper svelte-b78yyc"
+              >
+                <span
+                  style="visibility: visible;"
+                >
+                  2
+                </span>
+                 
+                <!---->
+              </div>
+               
+              <!---->
+            </td>
+            <td
+              class="svelte-b78yyc"
+            >
+              <div
+                class="cell-content-wrapper svelte-b78yyc"
+              >
+                <span
+                  style="visibility: visible;"
+                >
+                  Bob
+                </span>
+                 
+                <!---->
+              </div>
+               
+              <!---->
+            </td>
+            
+          </tr>
+          <!---->
+          <!---->
+        </tbody>
+      </table>
+    </div>
+    <!---->
+     
+    <!---->
+     
+    <div
+      class="datatable-footer svelte-b78yyc"
+    >
+      <span
+        class="pagination-info svelte-b78yyc"
+        title="Click to refresh data"
+      >
+        <i
+          class="fa-solid fa-rotate-right refresh-icon svelte-b78yyc"
+        />
+         
+        1-2 of 2
+        <!---->
+      </span>
+    </div>
+    <!---->
+     
+    <!---->
+    
+    <!---->
+  </div>
+  
+</div>
+`;

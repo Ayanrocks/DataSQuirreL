@@ -1,0 +1,188 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RecursiveSidebarItem Component > renders expanded item and its children 1`] = `
+<div>
+  <div
+    class="sidebar-item svelte-rkl2fl"
+    style="padding-left: 0px;"
+  >
+    <div
+      class="sidebar-item svelte-1xvmbnn"
+    >
+      <div
+        aria-expanded="true"
+        class="sidebar-item-content svelte-1xvmbnn"
+        role="treeitem"
+        tabindex="0"
+      >
+        <div
+          class="arrow-space scale-75 svelte-1xvmbnn"
+        >
+          <button
+            aria-expanded="true"
+            aria-label="Collapse public"
+            class="expandable-icon svelte-1xvmbnn"
+            type="button"
+          >
+            <svg
+              class="size-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              
+  
+              <path
+                d="m4.5 4.5 15 15m0 0V8.25m0 11.25H8.25"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              
+
+            </svg>
+            
+
+            <!---->
+          </button>
+          <!---->
+        </div>
+         
+        <div
+          class="entity-icon"
+        >
+          <span
+            class="icon-container svelte-1xvmbnn"
+          >
+            <!--?xml version="1.0" encoding="iso-8859-1"?-->
+            
+
+            <!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+            
+
+
+            <svg
+              fill="#000000"
+              id="Capa_1"
+              version="1.1"
+              viewBox="0 0 318.486 318.486"
+              xml:space="preserve"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+            >
+              
+	
+              <g>
+                
+		
+                <path
+                  d="M111.104,114.167h40.639v22.743c0,4.142,3.357,7.5,7.5,7.5s7.5-3.358,7.5-7.5v-22.743h40.639c4.143,0,7.5-3.358,7.5-7.5
+		V59.455c0-4.142-3.357-7.5-7.5-7.5h-96.277c-4.143,0-7.5,3.358-7.5,7.5v47.211C103.604,110.809,106.962,114.167,111.104,114.167z
+		 M118.604,66.955h81.277v32.211h-81.277V66.955z"
+                />
+                
+		
+                <path
+                  d="M103.776,204.32H7.5c-4.143,0-7.5,3.358-7.5,7.5v47.211c0,4.142,3.357,7.5,7.5,7.5h96.276c4.143,0,7.5-3.358,7.5-7.5
+		V211.82C111.276,207.678,107.919,204.32,103.776,204.32z M96.276,251.531H15V219.32h81.276V251.531z"
+                />
+                
+		
+                <path
+                  d="M310.986,227.925c-4.143,0-7.5,3.358-7.5,7.5v16.106H222.21V219.32h88.776c4.143,0,7.5-3.358,7.5-7.5s-3.357-7.5-7.5-7.5
+		h-40.855c-2.47-29.993-27.652-53.649-58.272-53.649H106.627c-22.51,0-43.274,13.154-52.9,33.511
+		c-1.771,3.745-0.17,8.216,3.574,9.986c3.746,1.77,8.215,0.17,9.986-3.574c7.159-15.14,22.601-24.923,39.34-24.923h105.232
+		c22.343,0,40.797,16.94,43.212,38.649H214.71c-4.143,0-7.5,3.358-7.5,7.5v47.211c0,4.142,3.357,7.5,7.5,7.5h96.276
+		c4.143,0,7.5-3.358,7.5-7.5v-23.606C318.486,231.283,315.129,227.925,310.986,227.925z"
+                />
+                
+	
+              </g>
+              
+
+            </svg>
+            <!---->
+          </span>
+          <!---->
+        </div>
+         
+        <div
+          class="entity-name svelte-1xvmbnn"
+        >
+          public
+        </div>
+      </div>
+    </div>
+    <!---->
+     
+    <div>
+      <div
+        class="sidebar-item svelte-rkl2fl"
+        style="padding-left: 15px;"
+      >
+        <div
+          class="sidebar-item svelte-1xvmbnn"
+        >
+          <div
+            aria-label="Select table users"
+            class="sidebar-item-content svelte-1xvmbnn"
+            role="button"
+            tabindex="0"
+          >
+            <div
+              class="arrow-space scale-75 svelte-1xvmbnn"
+            >
+              <!---->
+            </div>
+             
+            <div
+              class="entity-icon"
+            >
+              <span
+                class="icon-container text-white svelte-1xvmbnn"
+              >
+                <!--?xml version="1.0" encoding="utf-8"?-->
+                <!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+                
+
+                <svg
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  
+
+                  <path
+                    d="M4 9L20 9M8 9V20M6.2 20H17.8C18.9201 20 19.4802 20 19.908 19.782C20.2843 19.5903 20.5903 19.2843 20.782 18.908C21 18.4802 21 17.9201 21 16.8V7.2C21 6.0799 21 5.51984 20.782 5.09202C20.5903 4.71569 20.2843 4.40973 19.908 4.21799C19.4802 4 18.9201 4 17.8 4H6.2C5.0799 4 4.51984 4 4.09202 4.21799C3.71569 4.40973 3.40973 4.71569 3.21799 5.09202C3 5.51984 3 6.07989 3 7.2V16.8C3 17.9201 3 18.4802 3.21799 18.908C3.40973 19.2843 3.71569 19.5903 4.09202 19.782C4.51984 20 5.07989 20 6.2 20Z"
+                    stroke="#000000"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  />
+                  
+
+                </svg>
+                <!---->
+              </span>
+              <!---->
+            </div>
+             
+            <div
+              class="entity-name svelte-1xvmbnn"
+            >
+              users
+            </div>
+          </div>
+        </div>
+        <!---->
+         
+        <!---->
+      </div>
+      
+    </div>
+    <!---->
+  </div>
+  
+</div>
+`;

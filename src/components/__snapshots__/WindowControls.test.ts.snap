@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WindowControls Component > renders correctly based on mocked OS 1`] = `
+<div>
+  <div
+    class="window-controls svelte-1v8wbea"
+    data-tauri-drag-region=""
+  >
+    <div
+      class="linux-controls svelte-1v8wbea"
+    >
+      <button
+        class="linux-button minimize svelte-1v8wbea"
+      >
+        −
+      </button>
+       
+      <button
+        class="linux-button maximize svelte-1v8wbea"
+      >
+        □
+      </button>
+       &gt; 
+      <button
+        class="linux-button close svelte-1v8wbea"
+      >
+        ✕
+      </button>
+    </div>
+    <!---->
+  </div>
+  
+</div>
+`;
