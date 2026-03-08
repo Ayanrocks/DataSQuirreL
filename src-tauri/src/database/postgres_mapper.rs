@@ -55,3 +55,55 @@ impl DbTypeMapper for PostgresMapper {
         format!("\"{column_name}\"::text AS \"{column_name}\"")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sql_to_js_type() {
+        let mapper = PostgresMapper;
+
+        // String types
+        assert_eq!(mapper.sql_to_js_type("text"), "string");
+        assert_eq!(mapper.sql_to_js_type("varchar"), "string");
+        assert_eq!(mapper.sql_to_js_type("uuid"), "string");
+
+        // Numeric types
+        assert_eq!(mapper.sql_to_js_type("integer"), "number");
+        assert_eq!(mapper.sql_to_js_type("float8"), "number");
+        assert_eq!(mapper.sql_to_js_type("serial"), "number");
+
+        // Boolean types
+        assert_eq!(mapper.sql_to_js_type("boolean"), "boolean");
+        assert_eq!(mapper.sql_to_js_type("bool"), "boolean");
+
+        // Date/Time types
+        assert_eq!(mapper.sql_to_js_type("timestamp"), "Date");
+        assert_eq!(mapper.sql_to_js_type("timestamp with time zone"), "Date");
+
+        // JSON types
+        assert_eq!(mapper.sql_to_js_type("json"), "object");
+        assert_eq!(mapper.sql_to_js_type("jsonb"), "object");
+
+        // Array types
+        assert_eq!(mapper.sql_to_js_type("text[]"), "array");
+        assert_eq!(mapper.sql_to_js_type("integer[]"), "array");
+
+        // Unknown type
+        assert_eq!(mapper.sql_to_js_type("unknown_type_xxx"), "any");
+    }
+
+    #[test]
+    fn test_cast_to_text_expr() {
+        let mapper = PostgresMapper;
+        assert_eq!(
+            mapper.cast_to_text_expr("user_id", "integer"),
+            "\"user_id\"::text AS \"user_id\""
+        );
+        assert_eq!(
+            mapper.cast_to_text_expr("created_at", "timestamp"),
+            "\"created_at\"::text AS \"created_at\""
+        );
+    }
+}
