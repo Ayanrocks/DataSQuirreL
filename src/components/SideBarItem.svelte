@@ -107,18 +107,30 @@
           <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html PostgreSQLIcon}
         </span>
-      {:else if entityType === "Console"}
+      {:else if entityType === "Console" || entityType === "Consoles"}
         <span class="icon-container">
           <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html ConsoleIcon}
         </span>
-        <!-- {:else if entityName === "Function"}
-        {@html FunctionIcon} -->
       {/if}
     </div>
     <div class="entity-name">
       {entityName}
     </div>
+
+    {#if entityType === "Consoles"}
+      <button
+        class="add-console-btn"
+        onclick={(e) => {
+          e.stopPropagation();
+          // We can dispatch or just call handleTableClick with a special type
+          handleTableClick("CreateConsole", "new_console");
+        }}
+        title="New Console"
+      >
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    {/if}
   </div>
 </div>
 
@@ -137,6 +149,33 @@
     font-weight: 500;
     color: #1d1b20;
     margin-left: 5px;
+    flex: 1;
+  }
+
+  .add-console-btn {
+    background: transparent;
+    border: none;
+    color: #4b5563;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin-right: 8px;
+    border-radius: 4px;
+    opacity: 0;
+    transition:
+      opacity 0.2s,
+      background-color 0.2s;
+  }
+
+  .sidebar-item-content:hover .add-console-btn {
+    opacity: 1;
+  }
+
+  .add-console-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #111827;
   }
 
   .sidebar-item-content {

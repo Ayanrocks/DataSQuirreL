@@ -25,6 +25,12 @@
   import type { IPCResponse, DashboardData } from "../types/response";
   import type { SchemaData, SidebarItem } from "../types/interface";
   import TabBar from "../components/TabBar.svelte";
+  import QueryConsole from "../components/QueryConsole.svelte";
+  import {
+    INVOKE_EXECUTE_QUERY,
+    INVOKE_SAVE_CONSOLE,
+    INVOKE_READ_CONSOLE,
+  } from "../constants/constants";
 
   const appWindow = getCurrentWindow();
 
@@ -33,7 +39,18 @@
 
   var unlisten: any;
 
-  let tabs = $state<({ id: string } & ActiveTable)[]>([]);
+  // We add tabType, consoleContent, etc. to support consoles
+  type TabData = {
+    id: string;
+    tabType?: "table" | "console";
+    consoleContent?: string;
+    isExecuting?: boolean;
+    executionTimeMs?: number | null;
+    consoleData?: any;
+    hasUnsavedChanges?: boolean;
+    errorMessage?: string | null;
+  } & ActiveTable;
+  let tabs = $state<TabData[]>([]);
   let activeTabIndex = $state(-1);
 
   onDestroy(async () => {
@@ -67,6 +84,7 @@
       // Create new tab
       tabs.push({
         id: tabId,
+        tabType: "table",
         tableName: tableName,
         schemaName: schemaName,
         dbName: dbName,
@@ -82,6 +100,159 @@
 
       // Fetch initial data
       invokeTableData(dbName, schemaName, tableName, activeTabIndex, 0, 100);
+    } else if (entityType === "Console") {
+      let consoleName = fullPath;
+      let tabId = `console::${consoleName}`;
+
+      let existingIndex = tabs.findIndex((t) => t.id === tabId);
+      if (existingIndex !== -1) {
+        activeTabIndex = existingIndex;
+        return;
+      }
+
+      tabs.push({
+        id: tabId,
+        tabType: "console",
+        tableName: consoleName,
+        schemaName: "",
+        dbName: "",
+        displayName: consoleName,
+        columns: [],
+        currentPage: 1,
+        maxPage: 0,
+        rowCount: 0,
+        rows: [],
+        consoleContent: "",
+        hasUnsavedChanges: false,
+        consoleData: null,
+      });
+      activeTabIndex = tabs.length - 1;
+      updateTabNames();
+
+      // Load console content
+      loadConsoleContent(consoleName, activeTabIndex);
+    } else if (entityType === "CreateConsole") {
+      // Find a unique name
+      let baseName = "console";
+      let count = 1;
+      let existingConsoles: string[] = [];
+      let consolesEntity = dashboardData.find(
+        (d) => d.entityType === "Consoles",
+      );
+      if (consolesEntity && consolesEntity.children) {
+        existingConsoles = consolesEntity.children.map((c) => c.entityName);
+      }
+
+      let newName = `${baseName}_${count}.sql`;
+      while (existingConsoles.includes(newName)) {
+        count++;
+        newName = `${baseName}_${count}.sql`;
+      }
+
+      // Create empty console file
+      saveConsoleContent(newName, "", -1).then(() => {
+        // Refresh dashboard data to show the new console
+        refreshDashboard();
+        // Immediately click/open the new console tab
+        handleTableSelect("Console", newName);
+      });
+    }
+  }
+
+  async function refreshDashboard() {
+    try {
+      const res = await invoke<IPCResponse<DashboardData>>(
+        "fetch_dashboard_data",
+        {
+          reqPayload: {
+            connection_window_label: appWindow.label,
+          },
+        },
+      );
+      if (!res.error_code && res.data) {
+        dashboardData = res.data.dashboard_data;
+      }
+    } catch (e) {
+      console.error("Failed to refresh dashboard:", e);
+    }
+  }
+
+  async function loadConsoleContent(filename: string, tabIndex: number) {
+    try {
+      const res = await invoke<IPCResponse<string>>(INVOKE_READ_CONSOLE, {
+        filePath: filename,
+      });
+      if (!res.error_code && tabs[tabIndex]) {
+        tabs[tabIndex].consoleContent = res.data || "";
+        tabs[tabIndex].hasUnsavedChanges = false;
+        tabs[tabIndex].consoleData = null; // reset data on load
+      }
+    } catch (e) {
+      console.error("Failed to load console content:", e);
+    }
+  }
+
+  async function saveConsoleContent(
+    filename: string,
+    content: string,
+    tabIndex: number,
+  ) {
+    try {
+      const res = await invoke<IPCResponse<string>>(INVOKE_SAVE_CONSOLE, {
+        filePath: filename,
+        content: content,
+      });
+      if (!res.error_code && tabs[tabIndex]) {
+        tabs[tabIndex].hasUnsavedChanges = false;
+      }
+    } catch (e) {
+      console.error("Failed to save console content:", e);
+    }
+  }
+
+  async function executeConsoleQuery(
+    query: string,
+    offset: number,
+    limit: number,
+    sortColumn: string | null,
+    sortDirection: string | null,
+    whereClause: string | null,
+    tabIndex: number,
+  ) {
+    if (!tabs[tabIndex]) return;
+
+    tabs[tabIndex].isExecuting = true;
+    tabs[tabIndex].errorMessage = null;
+
+    try {
+      const res = await invoke<IPCResponse<any>>(INVOKE_EXECUTE_QUERY, {
+        reqPayload: {
+          query: query,
+          offset: offset,
+          limit: limit,
+          sort_column: sortColumn,
+          sort_direction: sortDirection,
+          where_clause: whereClause,
+        },
+      });
+
+      if (tabs[tabIndex]) {
+        tabs[tabIndex].isExecuting = false;
+        if (res.error_code) {
+          tabs[tabIndex].errorMessage =
+            res.frontend_msg || res.sys_err || "Query failed";
+        } else {
+          tabs[tabIndex].consoleData = res.data;
+          if (res.data) {
+            tabs[tabIndex].executionTimeMs = res.data.execution_time_ms;
+          }
+        }
+      }
+    } catch (e: any) {
+      if (tabs[tabIndex]) {
+        tabs[tabIndex].isExecuting = false;
+        tabs[tabIndex].errorMessage = e.toString();
+      }
     }
   }
 
@@ -103,8 +274,15 @@
 
   function updateTabNames() {
     for (let tab of tabs) {
+      if (tab.tabType === "console") {
+        tab.displayName = tab.tableName;
+        continue;
+      }
       let conflicts = tabs.filter(
-        (t) => t.tableName === tab.tableName && t.id !== tab.id,
+        (t) =>
+          t.tableName === tab.tableName &&
+          t.id !== tab.id &&
+          t.tabType !== "console",
       );
       if (conflicts.length === 0) {
         tab.displayName = tab.tableName;
@@ -262,27 +440,55 @@
             ? 'block'
             : 'none'}; height: 100%; width: 100%;"
         >
-          <DataTable
-            bind:activeTableData={tabs[i]}
-            fetchData={(
-              offset,
-              limit,
-              sortColumn,
-              sortDirection,
-              whereClause,
-            ) =>
-              invokeTableData(
-                tab.dbName,
-                tab.schemaName,
-                tab.tableName,
-                i,
+          {#if tab.tabType === "console"}
+            <QueryConsole
+              bind:content={tab.consoleContent}
+              bind:activeConsoleData={tab.consoleData}
+              isExecuting={tab.isExecuting}
+              executionTimeMs={tab.executionTimeMs}
+              hasUnsavedChanges={tab.consoleContent !== undefined
+                ? true
+                : tab.hasUnsavedChanges}
+              errorMessage={tab.errorMessage}
+              onExecute={(query, offset, limit, sortCol, sortDir, where) =>
+                executeConsoleQuery(
+                  query,
+                  offset,
+                  limit,
+                  sortCol,
+                  sortDir,
+                  where,
+                  i,
+                )}
+              onFormat={() => {
+                // simple placeholder for format
+              }}
+              onSave={() =>
+                saveConsoleContent(tab.tableName, tab.consoleContent || "", i)}
+            />
+          {:else}
+            <DataTable
+              bind:activeTableData={tabs[i]}
+              fetchData={(
                 offset,
                 limit,
                 sortColumn,
                 sortDirection,
                 whereClause,
-              )}
-          />
+              ) =>
+                invokeTableData(
+                  tab.dbName,
+                  tab.schemaName,
+                  tab.tableName,
+                  i,
+                  offset,
+                  limit,
+                  sortColumn,
+                  sortDirection,
+                  whereClause,
+                )}
+            />
+          {/if}
         </div>
       {/each}
     </div>

@@ -108,6 +108,8 @@ exports[`SideBarItem Component > renders correctly for a schema item with childr
       >
         public
       </div>
+       
+      <!---->
     </div>
   </div>
   
@@ -168,6 +170,8 @@ exports[`SideBarItem Component > renders correctly for a table item 1`] = `
       >
         users
       </div>
+       
+      <!---->
     </div>
   </div>
   

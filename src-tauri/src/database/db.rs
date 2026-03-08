@@ -1,8 +1,9 @@
-use crate::types::db::{ConnPool, TableColumns, TableRowCount, TableSchema};
+use crate::types::db::{ConnPool, RawQueryResult, TableColumns, TableRowCount, TableSchema};
 use crate::{constants, log_function};
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::types::chrono::Utc;
 use sqlx::{Column, Row, query_as};
+use std::time::Instant;
 
 // connect_to_db connects to postgres db
 pub async fn connect_to_db(
@@ -399,77 +400,122 @@ impl ConnPool {
         }
     }
 
-    // pub async fn update_table_data(
-    //     &self,
-    //     table_name: &str,
-    //     where_clause: &HashMap<String, String>,
-    //     update_map: &HashMap<String, String>,
-    // ) -> Result<TableRowCount, sqlx::Error> {
-    //     let mut db_conn = self.pool.acquire().await?;
-    //     let mut where_string: String = "".to_string();
-    //     let mut update_string: String = "".to_string();
+    /// Execute an arbitrary SQL query string.
+    ///
+    /// For SELECT queries the result includes columns and rows.
+    /// For non-SELECT statements it returns the number of affected rows.
+    pub async fn execute_raw_query(
+        &self,
+        query_string: &str,
+        offset: Option<i64>,
+        limit: Option<i64>,
+        sort_column: Option<String>,
+        sort_direction: Option<String>,
+        where_clause: Option<String>,
+    ) -> Result<RawQueryResult, sqlx::Error> {
+        log_function!(execute_raw_query);
+        let trimmed = query_string.trim();
+        let is_select = trimmed
+            .split_whitespace()
+            .next()
+            .map(|w| w.eq_ignore_ascii_case("SELECT") || w.eq_ignore_ascii_case("WITH"))
+            .unwrap_or(false);
 
-    //     for (key, val) in where_clause.into_iter() {
-    //         where_string = format!("{} AND {} = {}", where_string, key, val)
-    //     }
+        let start = Instant::now();
 
-    //     for (key, val) in update_map.into_iter() {
-    //         update_string = format!("{}, {} = {}", update_string, key, val)
-    //     }
+        if is_select {
+            // Strip trailing semicolons for subquery wrapping
+            let clean_query = trimmed.trim_end_matches(';');
 
-    //     // looping through the where map to form a where string.
+            let mut order_by_str = String::new();
+            if let Some(col) = &sort_column {
+                if let Some(dir) = &sort_direction {
+                    if dir.to_lowercase() == "asc" || dir.to_lowercase() == "desc" {
+                        order_by_str = format!("ORDER BY \"{}\" {}", col, dir.to_uppercase());
+                    }
+                }
+            }
 
-    //     let query_string = format!(
-    //         r#"
-    //             UPDATE {} SET {} WHERE {}
-    //         "#,
-    //         table_name, update_string, where_string
-    //     );
+            let mut where_str = String::new();
+            if let Some(clause) = &where_clause {
+                if !clause.trim().is_empty() {
+                    where_str = format!("WHERE {}", clause);
+                }
+            }
 
-    //     // println!("Printing Query: {}", &query);
+            let limit_str = match limit {
+                Some(l) => l.to_string(),
+                None => "ALL".to_string(),
+            };
 
-    //     let query_result = sqlx::query::Query(&query_string)
-    //         .execute(&mut db_conn)
-    //         .await;
+            let offset_val = offset.unwrap_or(0);
 
-    //     match query_result {
-    //         Ok(row) => {
-    //             return Ok(row);
-    //         }
-    //         Err(e) => {
-    //             println!("{:#?}", e);
-    //             return Err(e);
-    //         }
-    //     }
-    // }
+            // Fetch total row count first for pagination using a COUNT wrapper
+            let count_query = format!(
+                "SELECT COUNT(*) FROM ({}) AS _sq {}",
+                clean_query, where_str
+            );
+            let total_count_row = sqlx::query(&count_query).fetch_one(&self.pool).await?;
+            use sqlx::Row;
+            let total_count: i64 = total_count_row.get(0);
 
-    // pub async fn raw_query_runner(
-    //     &self,
-    //     table_name: &str,
-    //     query_string: &str,
-    // ) -> Result<Vec<Vec<String>>, sqlx::Error> {
-    //     let mut db_conn = self.pool.acquire().await?;
+            // The final data query
+            let final_query = format!(
+                "SELECT * FROM ({}) AS _sq {} {} LIMIT {} OFFSET {}",
+                clean_query, where_str, order_by_str, limit_str, offset_val
+            );
 
-    //     // looping through the where map to form a where string.
+            let query_result = sqlx::query(&final_query).fetch_all(&self.pool).await;
 
-    //     let query = query_string;
+            let elapsed_ms = start.elapsed().as_millis() as u64;
 
-    //     println!("Printing Query: {}", &query);
+            match query_result {
+                Ok(rows) => {
+                    // Extract column names from the first row
+                    let columns: Vec<String> = if rows.is_empty() {
+                        vec![]
+                    } else {
+                        rows[0]
+                            .columns()
+                            .iter()
+                            .map(|c| c.name().to_string())
+                            .collect()
+                    };
 
-    //     let query_result = query_as::<sqlx::Postgres, Any>(&query)
-    //         .fetch_one(&mut db_conn)
-    //         .await;
+                    let data = format_table_data(&rows)?;
+                    Ok(RawQueryResult {
+                        columns,
+                        rows: Some(data),
+                        row_count: total_count,
+                        execution_time_ms: elapsed_ms,
+                        is_select: true,
+                    })
+                }
+                Err(e) => {
+                    println!("[execute_raw_query] Error: {e:#?}");
+                    Err(e)
+                }
+            }
+        } else {
+            let result = sqlx::query(trimmed).execute(&self.pool).await;
 
-    //     match query_result {
-    //         Ok(row) => {
-    //             return Ok(row);
-    //         }
-    //         Err(e) => {
-    //             println!("{:#?}", e);
-    //             return Err(e);
-    //         }
-    //     }
-    // }
+            let elapsed_ms = start.elapsed().as_millis() as u64;
+
+            match result {
+                Ok(pg_result) => Ok(RawQueryResult {
+                    columns: vec![],
+                    rows: None,
+                    row_count: pg_result.rows_affected() as i64,
+                    execution_time_ms: elapsed_ms,
+                    is_select: false,
+                }),
+                Err(e) => {
+                    println!("[execute_raw_query] Error: {e:#?}");
+                    Err(e)
+                }
+            }
+        }
+    }
 
     pub async fn commit_transaction(
         &self,

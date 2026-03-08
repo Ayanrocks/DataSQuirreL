@@ -8,7 +8,7 @@
     onTabChange = (index: number) => {},
     onTabClose = (index: number) => {},
   } = $props<{
-    tabs: ({ id: string } & ActiveTable)[];
+    tabs: ({ id: string; tabType?: "table" | "console" } & ActiveTable)[];
     activeTabIndex: number;
     onTabChange: (index: number) => void;
     onTabClose: (index: number) => void;
@@ -25,7 +25,11 @@
           if (isShortcut(e, Shortcuts.Enter)) onTabChange(i);
         }}
       >
-        <i class="fa-solid fa-table tab-icon"></i>
+        {#if tab.tabType === "console"}
+          <i class="fa-solid fa-terminal tab-icon"></i>
+        {:else}
+          <i class="fa-solid fa-table tab-icon"></i>
+        {/if}
         <span class="tab-text">{tab.displayName || tab.tableName}</span>
       </button>
       <button

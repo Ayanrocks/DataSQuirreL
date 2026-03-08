@@ -111,3 +111,13 @@ pub struct CommitTransactionRequest {
     pub changes: Vec<TransactionChange>,
     pub column_types: Option<HashMap<String, String>>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExecuteQueryRequest {
+    pub query: String,
+    pub offset: Option<i64>,
+    pub limit: Option<i64>,
+    pub sort_column: Option<String>,
+    pub sort_direction: Option<String>,
+    pub where_clause: Option<String>,
+}

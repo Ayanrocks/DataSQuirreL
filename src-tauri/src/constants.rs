@@ -45,6 +45,7 @@ pub const QUERY_TYPE_FETCH_TABLES: &str = "FETCH_TABLES";
 pub const QUERY_TYPE_FETCH_INITIAL_TABLE_DATA: &str = "FETCH_INITIAL_TABLE_DATA";
 pub const QUERY_TYPE_FETCH_OFFSET_TABLE_DATA: &str = "FETCH_OFFSET_TABLE_DATA";
 pub const QUERY_TYPE_CUSTOM: &str = "custom";
+pub const QUERY_TYPE_EXECUTE: &str = "EXECUTE_RAW_QUERY";
 
 pub const APP_NAME: &str = "DataSquirrel";
 

@@ -221,6 +221,8 @@ exports[`Sidebar Component > renders structured data 1`] = `
               >
                 mydb
               </div>
+               
+              <!---->
             </div>
           </div>
           <!---->
@@ -336,6 +338,8 @@ exports[`Sidebar Component > renders structured data 1`] = `
                   >
                     public
                   </div>
+                   
+                  <!---->
                 </div>
               </div>
               <!---->
@@ -397,6 +401,8 @@ exports[`Sidebar Component > renders structured data 1`] = `
                       >
                         logs
                       </div>
+                       
+                      <!---->
                     </div>
                   </div>
                   <!---->

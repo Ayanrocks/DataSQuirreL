@@ -14,6 +14,7 @@ exports[`TabBar Component > renders tabs correctly 1`] = `
         <i
           class="fa-solid fa-table tab-icon svelte-1n51new"
         />
+        <!---->
          
         <span
           class="tab-text svelte-1n51new"
@@ -40,6 +41,7 @@ exports[`TabBar Component > renders tabs correctly 1`] = `
         <i
           class="fa-solid fa-table tab-icon svelte-1n51new"
         />
+        <!---->
          
         <span
           class="tab-text svelte-1n51new"

@@ -42,11 +42,13 @@
     ...(item.entityType === "Schema" && { schemaName: item.entityName }),
   });
 
-  // Get the full path for tables
+  // Get the full path for tables and consoles
   let fullPath = $derived(
     item.entityType === "Table"
       ? `${currentContext.databaseName || "NULL"}::${currentContext.schemaName || "NULL"}::${item.entityName}`
-      : "NULL",
+      : item.entityType === "Console"
+        ? item.entityName
+        : "NULL",
   );
 </script>
 

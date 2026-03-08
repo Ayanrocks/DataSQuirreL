@@ -28,3 +28,13 @@ pub struct TableColumns {
 pub struct TableRowCount {
     pub row_count: i64,
 }
+
+/// Result of executing a raw SQL query via the console.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RawQueryResult {
+    pub columns: Vec<String>,
+    pub rows: Option<Vec<Vec<String>>>,
+    pub row_count: i64,
+    pub execution_time_ms: u64,
+    pub is_select: bool,
+}

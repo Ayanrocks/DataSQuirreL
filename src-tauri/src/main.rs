@@ -329,28 +329,27 @@ async fn fetch_dashboard_data(
         children: Some(database_schemas),
     }];
 
-    // Add consoles entity if there are consoles present
+    // Always add consoles entity
     match application_state.sql_console_storage.list_console_files() {
         Ok(console_files) => {
-            if !console_files.is_empty() {
-                let children: Vec<SchemaData> = console_files
-                    .into_iter()
-                    .map(|file_name| SchemaData {
-                        entity_type: "Console".to_string(),
-                        entity_name: file_name,
-                        is_expanded: false,
-                        children: None,
-                    })
-                    .collect();
+            let children: Vec<SchemaData> = console_files
+                .into_iter()
+                .map(|file_name| SchemaData {
+                    entity_type: "Console".to_string(),
+                    entity_name: file_name,
+                    is_expanded: false,
+                    children: None,
+                })
+                .collect();
 
-                let consoles_entity = SchemaData {
-                    entity_type: "Consoles".to_string(),
-                    entity_name: "Consoles".to_string(),
-                    is_expanded: true,
-                    children: Some(children),
-                };
-                dashboard_data.push(consoles_entity);
-            }
+            let consoles_entity = SchemaData {
+                entity_type: "Consoles".to_string(),
+                entity_name: "Consoles".to_string(),
+                // Keep expanded by default if there are children, or always. Let's say always.
+                is_expanded: true,
+                children: Some(children),
+            };
+            dashboard_data.push(consoles_entity);
         }
         Err(e) => {
             log_error!("Failed to list console files: {}", e);
@@ -982,6 +981,61 @@ async fn commit_transaction_cmd(
     }
 }
 
+#[tauri::command]
+async fn execute_query_cmd(
+    window: tauri::Window,
+    req_payload: types::api_objects::ExecuteQueryRequest,
+    state: tauri::State<'_, ApplicationState>,
+) -> Result<IPCResponse<types::db::RawQueryResult>, String> {
+    crate::log_function!(execute_query_cmd);
+
+    let pool = {
+        let dbpool = state.dbpool.lock().await;
+        dbpool.get(window.label()).cloned()
+    };
+
+    if let Some(pool) = pool {
+        let execution_result = pool
+            .execute_raw_query(
+                &req_payload.query,
+                req_payload.offset,
+                req_payload.limit,
+                req_payload.sort_column,
+                req_payload.sort_direction,
+                req_payload.where_clause,
+            )
+            .await;
+
+        match execution_result {
+            Ok(result) => Ok(IPCResponse {
+                status: 200,
+                error_code: None,
+                sys_err: None,
+                frontend_msg: Some("Query executed successfully".to_string()),
+                data: Some(result),
+            }),
+            Err(e) => {
+                crate::log_error!("[execute_query_cmd] Error: {:#?}", e);
+                Ok(IPCResponse {
+                    status: 500,
+                    error_code: Some("EXECUTE_QUERY_ERROR".to_string()),
+                    sys_err: Some(e.to_string()),
+                    frontend_msg: Some(format!("Failed to execute query: {}", e)),
+                    data: None,
+                })
+            }
+        }
+    } else {
+        Ok(IPCResponse {
+            status: 400,
+            error_code: Some("NO_CONNECTION".to_string()),
+            sys_err: None,
+            frontend_msg: Some("No active database connection found.".to_string()),
+            data: None,
+        })
+    }
+}
+
 #[tokio::main]
 async fn main() {
     // Initialize logger
@@ -1129,6 +1183,7 @@ async fn main() {
             clear_cache,
             generate_preview_queries_cmd,
             commit_transaction_cmd,
+            execute_query_cmd,
             get_export_path,
             save_export_path,
         ])
