@@ -4,13 +4,13 @@
 
   // take props from the parent component
   let {
-    projectName = $bindable(''),
-    hostName = $bindable(''),
+    projectName = $bindable(""),
+    hostName = $bindable(""),
     port = $bindable(0),
-    userName = $bindable(''),
-    password = $bindable(''),
-    dbName = $bindable(''),
-    dbType = $bindable(''),
+    userName = $bindable(""),
+    password = $bindable(""),
+    dbName = $bindable(""),
+    dbType = $bindable(""),
     loaderActive = $bindable(false),
     OnClickConnect,
   } = $props<{
@@ -24,8 +24,6 @@
     loaderActive: boolean;
     OnClickConnect: (e: MouseEvent) => void;
   }>();
-
-  
 </script>
 
 <div
@@ -198,6 +196,7 @@
   >
     {#if !loaderActive}
       <span class="text-base flex items-center justify-center gap-2">
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         Connect <span class="text-white scale-70">{@html ArrowRight}</span>
       </span>
     {/if}

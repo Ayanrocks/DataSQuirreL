@@ -1,19 +1,35 @@
 <script lang="ts">
   import settingsIcon from "../assets/icons/settings.svg?raw";
+  import AboutModal from "./AboutModal.svelte";
 
   let { connectionName }: { connectionName: string } = $props();
+
+  let isAboutOpen = $state(false);
+
+  function openAbout() {
+    isAboutOpen = true;
+  }
+
+  function closeAbout() {
+    isAboutOpen = false;
+  }
 </script>
 
 <div class="top-bar_container">
   <div class="top-bar_left">
     <div class="top-bar_left_title">{connectionName} - DataSquirrel</div>
   </div>
-  <div class="top-bar_right">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="top-bar_right" onclick={openAbout}>
     <div class="top-bar_right_settings-icon">
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html settingsIcon}
     </div>
   </div>
 </div>
+
+<AboutModal isOpen={isAboutOpen} onClose={closeAbout} />
 
 <style>
   .top-bar_container {

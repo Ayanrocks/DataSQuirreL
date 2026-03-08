@@ -1,25 +1,41 @@
 <script>
+  import { onMount, onDestroy } from "svelte";
+  import { listen } from "@tauri-apps/api/event";
   export const ssr = false;
-  import { Router, Route } from "svelte-routing";
   import InitScreen from "./routes/InitScreen.svelte";
   import MainScreen from "./routes/MainScreen.svelte";
   import Notification from "./components/Notification.svelte";
   import WindowControls from "./components/WindowControls.svelte";
+  import AboutModal from "./components/AboutModal.svelte";
+  import { currentPath } from "./lib/router";
   import "./App.css";
+
+  let isAboutOpen = $state(false);
+  let unlistenAbout;
+
+  onMount(async () => {
+    unlistenAbout = await listen("open-about-modal", () => {
+      isAboutOpen = true;
+    });
+  });
+
+  onDestroy(() => {
+    if (unlistenAbout) unlistenAbout();
+  });
 </script>
 
 <WindowControls />
 <Notification />
-<Router>
+<AboutModal isOpen={isAboutOpen} onClose={() => (isAboutOpen = false)} />
+{#if $currentPath === "/dashboard"}
   <div id="router-view">
-    <Route path="/">
-      <InitScreen />
-    </Route>
-    <Route path="/dashboard">
-      <MainScreen />
-    </Route>
+    <MainScreen />
   </div>
-</Router>
+{:else}
+  <div id="router-view">
+    <InitScreen />
+  </div>
+{/if}
 
 <style>
   #router-view {

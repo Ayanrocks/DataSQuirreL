@@ -1,17 +1,18 @@
-use types::db::ConnPool;
+use crate::cache::CacheDB;
 use crate::sql_console_storage::SqlConsoleStorage;
 use crate::storage::{ConnectionStorage, StoredConnection};
 use crate::types;
-use crate::types::db::TableSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
+use types::db::ConnPool;
 
 pub struct ApplicationState {
-    pub dbpool: Mutex<Option<ConnPool>>,
+    pub dbpool: Mutex<HashMap<String, ConnPool>>,
     pub connection_storage: ConnectionStorage,
     pub active_connection_map: Mutex<HashMap<String, StoredConnection>>,
     pub sql_console_storage: SqlConsoleStorage,
+    pub sqlite_db: CacheDB,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,11 +29,13 @@ pub struct DBConnectionRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableData<T> {
-    pub columns: Vec<String>,
+    pub columns: Vec<(String, String, String)>,
     pub rows: Option<Vec<Vec<T>>>,
     pub row_count: Option<String>,
     pub table_name: Option<String>,
     pub query_type: String,
+    pub primary_keys: Option<Vec<String>>,
+    pub foreign_keys: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,13 +50,24 @@ pub struct IPCResponse<T> {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableDataRequest {
+    pub database_name: String,
+    pub schema_name: String,
     pub table_name: String,
+    pub sort_column: Option<String>,
+    pub sort_direction: Option<String>,
+    pub where_clause: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableDataOffsetRequest {
+    pub database_name: String,
+    pub schema_name: String,
     pub table_name: String,
     pub offset: u32,
+    pub limit: Option<u32>,
+    pub sort_column: Option<String>,
+    pub sort_direction: Option<String>,
+    pub where_clause: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -77,4 +91,23 @@ pub struct SchemaData {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DashboardDataRequest {
     pub connection_window_label: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionChange {
+    pub r#type: String, // "INSERT" | "UPDATE" | "DELETE"
+    pub row_index: usize,
+    pub primary_keys: Option<HashMap<String, String>>,
+    pub original_row: Option<HashMap<String, String>>,
+    pub new_values: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommitTransactionRequest {
+    pub database_name: String,
+    pub schema_name: String,
+    pub table_name: String,
+    pub changes: Vec<TransactionChange>,
+    pub column_types: Option<HashMap<String, String>>,
 }

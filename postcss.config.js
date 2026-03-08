@@ -3,4 +3,4 @@ export default {
     // tailwindcss: {}, // Handled by @tailwindcss/vite
     autoprefixer: {},
   },
-}
+};

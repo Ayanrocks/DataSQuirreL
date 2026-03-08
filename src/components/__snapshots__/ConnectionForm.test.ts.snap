@@ -1,0 +1,301 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ConnectionForm Component > renders form elements properly 1`] = `
+<div>
+  <div
+    class="max-w-lg border border-gray-200 rounded-lg p-4 bg-white shadow-md mx-auto"
+  >
+    <div
+      class="flex flex-wrap mx-3 mb-5"
+    >
+      <div
+        class="w-full px-3 my-5"
+      >
+        <h2
+          class="text-2xl text-center"
+        >
+          New Database Connection
+        </h2>
+      </div>
+    </div>
+     
+    <div
+      class="flex flex-wrap -mx-3"
+    >
+      <div
+        class="w-full px-3"
+      >
+        <div
+          class="mb-4"
+        >
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="projectName"
+          >
+            Project Name
+          </label>
+           
+          <div
+            class="relative"
+          >
+            <input
+              autocomplete="off"
+              class="shadow appearance-none border border-gray-200 rounded w-full py-2 px-3 text-gray-500 leading-tight focus:outline-none focus:shadow-outline"
+              id="projectName"
+              placeholder="Enter Project name"
+              type="text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+     
+    <div
+      class="flex flex-wrap -mx-3"
+    >
+      <div
+        class="w-full px-3"
+      >
+        <div
+          class="mb-4"
+        >
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="dbType"
+          >
+            Database Type
+          </label>
+           
+          <div
+            class="relative"
+          >
+            <div
+              class="inline-block relative w-full"
+            >
+              <select
+                class="block appearance-none w-full bg-white border border-gray-200 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
+                id="dbType"
+              >
+                <option
+                  disabled=""
+                  selected=""
+                  value=""
+                >
+                  Select your database type
+                </option>
+                <option
+                  value="postgres"
+                >
+                  PostgreSQL
+                </option>
+              </select>
+               
+              <div
+                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"
+              >
+                <svg
+                  class="fill-current h-4 w-4"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+     
+    <div
+      class="flex flex-wrap -mx-3"
+    >
+      <div
+        class="w-full md:w-1/2 px-3"
+      >
+        <div
+          class="mb-4"
+        >
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="hostName"
+          >
+            Host
+          </label>
+           
+          <div
+            class="relative"
+          >
+            <input
+              autocomplete="off"
+              class="shadow appearance-none border border-gray-200 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="hostName"
+              placeholder="Enter Host"
+              type="text"
+            />
+          </div>
+        </div>
+      </div>
+       
+      <div
+        class="w-full md:w-1/2 px-3"
+      >
+        <div
+          class="mb-4"
+        >
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="port"
+          >
+            Port
+          </label>
+           
+          <div
+            class="relative"
+          >
+            <input
+              autocomplete="off"
+              class="shadow appearance-none border border-gray-200 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="port"
+              placeholder="Enter Port"
+              type="number"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+     
+    <div
+      class="flex flex-wrap -mx-3"
+    >
+      <div
+        class="w-full md:w-1/2 px-3"
+      >
+        <div
+          class="mb-4"
+        >
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="userName"
+          >
+            Username
+          </label>
+           
+          <div
+            class="relative"
+          >
+            <input
+              autocomplete="off"
+              class="shadow appearance-none border border-gray-200 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="userName"
+              placeholder="Enter Username"
+              type="text"
+            />
+          </div>
+        </div>
+      </div>
+       
+      <div
+        class="w-full md:w-1/2 px-3"
+      >
+        <div
+          class="mb-4"
+        >
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="password"
+          >
+            Password
+          </label>
+           
+          <div
+            class="relative"
+          >
+            <input
+              autocomplete="off"
+              class="shadow appearance-none border border-gray-200 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="password"
+              placeholder="Enter Password"
+              type="password"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+     
+    <div
+      class="flex flex-wrap -mx-3"
+    >
+      <div
+        class="w-full px-3"
+      >
+        <div
+          class="mb-4"
+        >
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="projectName"
+          >
+            Database Name
+          </label>
+           
+          <div
+            class="relative"
+          >
+            <input
+              autocomplete="off"
+              class="shadow appearance-none border border-gray-200 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="dbName"
+              placeholder="Enter database name"
+              type="text"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+     
+    <button
+      class="bg-(--secondaryColor) hover:bg-(--secondaryColor) text-white w-35 h-10 rounded focus:outline-none focus:shadow-outline flex items-center justify-center gap-2 cursor-pointer transition duration-300 ease-in-out"
+    >
+      <span
+        class="text-base flex items-center justify-center gap-2"
+      >
+        Connect 
+        <span
+          class="text-white scale-70"
+        >
+          <svg
+            class="size-6"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            
+  
+            <path
+              d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            
+
+          </svg>
+          
+
+          <!---->
+        </span>
+      </span>
+      <!---->
+       
+      <!---->
+      
+      <!---->
+    </button>
+  </div>
+  
+</div>
+`;

@@ -1,6 +1,5 @@
 use crate::config::{ConfigType, get_config_manager};
 use crate::constants::APP_NAME;
-use crate::{log_error, log_function, log_info};
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -78,6 +77,7 @@ impl ConnectionStorage {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_connection(
         &self,
         conn_name: &str,
@@ -87,6 +87,7 @@ impl ConnectionStorage {
         Ok(connections.into_iter().find(|c| c.conn_name == conn_name))
     }
 
+    #[allow(dead_code)]
     pub fn get_password(&self, conn_name: &str) -> Result<String, Box<dyn Error>> {
         log_function!(get_password);
         let entry = Entry::new(APP_NAME, conn_name)?;

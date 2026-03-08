@@ -1,10 +1,10 @@
 module.exports = {
-  plugins: ['prettier-plugin-svelte'],
+  plugins: ["prettier-plugin-svelte"],
   overrides: [
     {
-      files: '*.svelte',
+      files: "*.svelte",
       options: {
-        parser: 'svelte',
+        parser: "svelte",
       },
     },
   ],

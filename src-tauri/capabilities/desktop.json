@@ -1,14 +1,7 @@
 {
   "identifier": "desktop-capability",
-  "platforms": [
-    "macOS",
-    "windows",
-    "linux"
-  ],
-  "windows": [
-    "main",
-    "*"
-  ],
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["main", "*"],
   "permissions": [
     "global-shortcut:default",
     "fs:default",
@@ -16,6 +9,11 @@
     "process:default",
     "clipboard-manager:default",
     "core:window:default",
-    "core:window:allow-start-dragging"
+    "core:window:allow-start-dragging",
+    "fs:allow-write-text-file",
+    "fs:allow-download-write",
+    "fs:allow-home-write",
+    "fs:allow-document-write",
+    "fs:allow-desktop-write"
   ]
 }

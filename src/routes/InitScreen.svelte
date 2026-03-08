@@ -2,7 +2,6 @@
   export const ssr = false;
 
   import { invoke } from "@tauri-apps/api/core";
-  import { navigate } from "svelte-routing";
   import { notificationMsg } from "../stores";
   import { onMount } from "svelte";
   import {
@@ -13,7 +12,7 @@
   import RecentProjects from "../components/RecentProjects.svelte";
   import InitWaveSVG from "../assets/InitWave.svg?raw";
   import InitScreenEclipse from "../assets/InitScreenEclipse.svg?raw";
-  import MainLogo from "../assets/MainLogo.svg?raw";
+  import MainLogo from "../assets/MainLogo.png";
   import type { RecentProjects as RecentProjectsType } from "../types/props";
   import { v4 as uuidv4 } from "uuid";
   import type { IPCResponse, StoredConnection } from "../types/response";
@@ -229,8 +228,8 @@
 </script>
 
 <div id="init-connection-container">
-  <div class="main-logo-container" title="DataSquirrel">
-    {@html MainLogo}
+  <div class="main-logo-container mt-12" title="DataSquirrel">
+    <img src={MainLogo} alt="DataSQuirreL Logo" width="220" />
   </div>
   <div class="columns-2 flex w-5/6 justify-evenly z-1 mt-20">
     <div
@@ -260,9 +259,11 @@
     </div>
   </div>
   <div class="init-connection-container--top-eclipse absolute">
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
     {@html InitScreenEclipse}
   </div>
   <div class="init-connection-container--background absolute">
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
     {@html InitWaveSVG}
   </div>
 </div>

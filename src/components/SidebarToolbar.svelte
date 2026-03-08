@@ -8,15 +8,19 @@
 <div class="sidebar-toolbar">
   <div class="sidebar-toolbar-content w-full">
     <span class="icon add-circle scale-75" title="Add New Connection">
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html AddCircle}
     </span>
     <span class="icon refresh scale-75" title="Refresh">
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html Refresh}
     </span>
     <span class="icon disconnect scale-75" title="Disconnect">
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html Disconnect}
     </span>
     <span class="icon console scale-75" title="Open Query Console">
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
       {@html Console}
     </span>
   </div>

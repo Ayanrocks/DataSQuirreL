@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { activeTable, notificationMsg, tableNames } from "../stores";
+  import { notificationMsg, tableNames } from "../stores";
   import { invoke } from "@tauri-apps/api/core";
   import {
     NOTIFICATION_TYPE_ERROR,
@@ -12,6 +12,10 @@
   let activeTableName: string = "";
 
   export let dashboardData: SchemaData[];
+  export let onTableSelect: (
+    entityType: string,
+    fullPath: string,
+  ) => void = () => {};
 
   // Sidebar width state
   let sidebarWidth = 260; // px, default width
@@ -56,47 +60,7 @@
   let sideBarColumn: string = "Table Names";
   let tables: string[] = [];
 
-  tableNames.subscribe((e) => {
-    tables = e.tables;
-    sideBarColumn = e.tableName;
-  });
-
-  activeTable.subscribe((val) => {
-    activeTableName = val.tableName;
-  });
-
-  // let MockTableData = [
-  //   {
-  //     entityType: "postgresql",
-  //     entityName: "Database",
-  //     isExpanded: true,
-  //     children: [
-  //       {
-  //         entityType: "Schema",
-  //         entityName: "Public",
-  //         isExpanded: true,
-  //         children: [
-  //           {
-  //             entityType: "Table",
-  //             entityName: "users",
-  //             isExpanded: false,
-  //           },
-  //           {
-  //             entityType: "Table",
-  //             entityName: "posts",
-  //             isExpanded: false,
-  //           },
-  //         ],
-  //       },
-  //     ],
-  //   },
-  // ];
-
-  function renderSideBarItem(
-    item: any,
-    data: SchemaData[],
-    level: number,
-  ): SidebarItem[] {
+  function renderSideBarItem(data: SchemaData[], level: number): SidebarItem[] {
     const items: SidebarItem[] = [];
     for (const currentItem of data) {
       items.push({
@@ -104,12 +68,19 @@
         isExpanded: currentItem.isExpanded,
         entityType: currentItem.entityType,
         level: level,
-        children: currentItem.children && currentItem.children.length > 0
-          ? renderSideBarItem(currentItem, currentItem.children, level + 1)
-          : [],
+        children:
+          currentItem.children && currentItem.children.length > 0
+            ? renderSideBarItem(currentItem.children, level + 1)
+            : [],
       });
     }
     return items;
+  }
+
+  function handleTableClick(entityType: string, fullPath: string) {
+    if (entityType === "Table" || entityType === "Console") {
+      onTableSelect(entityType, fullPath);
+    }
   }
 </script>
 
@@ -121,10 +92,14 @@
   <div class="sidebar-content">
     <SidebarToolbar />
     <div class="table-list has-text-left">
-      {#if dashboardData.length > 0}
-        {#each renderSideBarItem(null, dashboardData, 0) as item}
-          <RecursiveSidebarItem {item} />
+      {#if dashboardData && dashboardData.length > 0}
+        {#each renderSideBarItem(dashboardData, 0) as item (item.entityName)}
+          <RecursiveSidebarItem {item} {handleTableClick} parentContext={{}} />
         {/each}
+      {:else}
+        <div class="p-4 text-gray-500">
+          {dashboardData ? "No data available" : "Loading..."}
+        </div>
       {/if}
     </div>
   </div>
@@ -190,8 +165,5 @@
     line-height: 25px;
     word-break: break-all;
     height: 85%;
-  }
-  #resize-icon {
-    display: none;
   }
 </style>

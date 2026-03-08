@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Postgres};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ConnPool {
     pub conn_name: String,
     pub db_name: String,
@@ -17,7 +18,7 @@ pub struct TableSchema {
     pub table_type: String,
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct TableColumns {
     pub column_name: String,
     pub data_type: String,

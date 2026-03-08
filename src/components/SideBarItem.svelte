@@ -5,36 +5,88 @@
   import PostgreSQLIcon from "../assets/icons/postgresql.svg?raw";
   import ArrowRightIcon from "../assets/icons/arrowRight.svg?raw";
   import ConsoleIcon from "../assets/icons/console.svg?raw";
-  
-  import { createEventDispatcher } from "svelte";
-
-  const dispatch = createEventDispatcher();
+  import { isShortcut, Shortcuts } from "../lib/shortcuts";
 
   let {
     entityName,
     isExpanded,
     entityType,
     hasChildren,
+    fullPath,
+    toggle,
+    handleTableClick,
   }: {
     entityName: string;
     isExpanded: boolean;
     entityType: string;
     hasChildren: boolean;
+    fullPath: string;
+    toggle: () => void;
+    handleTableClick: (entityType: string, fullPath: string) => void;
   } = $props();
+
+  const handleMouseTableClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    if (entityType === "Table" || entityType === "Console") {
+      e.preventDefault();
+      handleTableClick(entityType, fullPath);
+    } else {
+      // Toggle expansion when simply clicking the row container of schemas
+      if (hasChildren) {
+        // Only toggle if directly clicking the container
+        toggle();
+      }
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (isShortcut(e, Shortcuts.Enter) || isShortcut(e, Shortcuts.Space)) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (entityType === "Table" || entityType === "Console") {
+        handleTableClick(entityType, fullPath);
+      } else if (hasChildren) {
+        toggle();
+      }
+    }
+  };
 </script>
 
 <div class="sidebar-item">
-  <div class="sidebar-item-content">
+  <div
+    class="sidebar-item-content"
+    onclick={handleMouseTableClick}
+    onkeydown={handleKeyDown}
+    tabindex={entityType === "Table" || entityType === "Console" || hasChildren
+      ? 0
+      : -1}
+    aria-label={entityType === "Table"
+      ? `Select table ${entityName}`
+      : entityType === "Console"
+        ? `Select console ${entityName}`
+        : undefined}
+    role={entityType === "Table" || entityType === "Console"
+      ? "button"
+      : hasChildren
+        ? "treeitem"
+        : undefined}
+    aria-expanded={hasChildren ? isExpanded : undefined}
+  >
     <div class="arrow-space scale-75">
       {#if hasChildren}
         <button
           type="button"
           class="expandable-icon"
-          onclick={() => {
-            dispatch("toggle");
+          onclick={(e) => {
+            e.stopPropagation();
+            toggle();
           }}
           aria-expanded={isExpanded}
+          aria-label={isExpanded
+            ? `Collapse ${entityName}`
+            : `Expand ${entityName}`}
         >
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html isExpanded ? ExpandableArrowIcon : ArrowRightIcon}
         </button>
       {/if}
@@ -42,18 +94,22 @@
     <div class="entity-icon">
       {#if entityType === "Schema"}
         <span class="icon-container">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html SchemaIcon}
         </span>
       {:else if entityType === "Table"}
         <span class="icon-container text-white">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html TableIcon}
         </span>
       {:else if entityType === "postgresql"}
         <span class="icon-container">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html PostgreSQLIcon}
         </span>
       {:else if entityType === "Console"}
         <span class="icon-container">
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html ConsoleIcon}
         </span>
         <!-- {:else if entityName === "Function"}
@@ -108,7 +164,6 @@
     margin: 0 5px;
     /* color: #1d1b20; */
   }
-
 
   .arrow-space {
     width: 24px;

@@ -17,21 +17,21 @@ fn get_log_dir() -> String {
         .unwrap_or_else(|| PathBuf::from("."))
         .join(format!(".{}", APP_NAME.to_lowercase()))
         .join("logs");
-    return log_dir.to_string_lossy().to_string();
+    log_dir.to_string_lossy().to_string()
 }
 
 /// Initialize the logging system with both file and stdout output
 pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
     LOGGER.get_or_try_init(|| -> Result<(), Box<dyn std::error::Error>> {
         let log_dir = get_log_dir();
-        print!("LOGGING DIR: {:?}", log_dir);
+        print!("LOGGING DIR: {log_dir:?}");
 
         // Create log directory if it doesn't exist
         std::fs::create_dir_all(&log_dir)?;
 
         // Configure file appender with rotation
         let file_appender =
-            RollingFileAppender::new(Rotation::DAILY, log_dir, format!("{}.log", APP_NAME));
+            RollingFileAppender::new(Rotation::DAILY, log_dir, format!("{APP_NAME}.log"));
 
         // Configure stdout appender
         let (stdout_appender, guard) = tracing_appender::non_blocking(std::io::stdout());
