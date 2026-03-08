@@ -110,7 +110,7 @@ async fn init_connection(
                 }
             } else {
                 // Create new window for this connection
-                let mut builder = WebviewWindowBuilder::new(&app, &window_label, webview_url)
+                let builder = WebviewWindowBuilder::new(&app, &window_label, webview_url)
                     .title(format!("{} - {}", req_payload.conn_name.clone(), APP_NAME))
                     .inner_size(1450.0, 950.0)
                     .center()
@@ -120,9 +120,7 @@ async fn init_connection(
                     .fullscreen(false);
 
                 #[cfg(target_os = "macos")]
-                {
-                    builder = builder.title_bar_style(tauri::TitleBarStyle::Overlay);
-                }
+                let builder = builder.title_bar_style(tauri::TitleBarStyle::Overlay);
 
                 let window = builder.build();
 
@@ -1139,7 +1137,7 @@ async fn main() {
             let _ = menu::create_menu(app);
 
             // Get the main window that was created by the configuration
-            if let Some(window) = app.get_webview_window("main") {
+            if let Some(_window) = app.get_webview_window("main") {
                 // set background color only when building for macOS
                 #[cfg(target_os = "macos")]
                 #[allow(deprecated)]
@@ -1147,7 +1145,7 @@ async fn main() {
                     use cocoa::appkit::{NSColor, NSWindow};
                     use cocoa::base::{id, nil};
 
-                    let ns_window = window.ns_window().unwrap() as id;
+                    let ns_window = _window.ns_window().unwrap() as id;
                     unsafe {
                         let bg_color = NSColor::colorWithRed_green_blue_alpha_(
                             nil,
