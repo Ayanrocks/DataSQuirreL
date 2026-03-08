@@ -65,6 +65,10 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Create frontend dist directory
+        # Tauri's generate_context!() validates frontendDist at compile time
+        run: mkdir -p dist && echo '<html></html>' > dist/index.html
+
       - name: Check formatting
         working-directory: ./src-tauri
         run: cargo fmt --all -- --check

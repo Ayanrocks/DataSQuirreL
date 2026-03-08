@@ -8,9 +8,7 @@ extern crate core;
 use database::db::connect_to_db;
 use std::collections::HashMap;
 use storage::{ConnectionStorage, StoredConnection};
-use tauri::{
-    AppHandle, Manager, State, TitleBarStyle, Url, WebviewUrl, WebviewWindowBuilder, http,
-};
+use tauri::{AppHandle, Manager, State, Url, WebviewUrl, WebviewWindowBuilder, http};
 use tokio::sync::Mutex;
 
 use crate::cache::{
@@ -112,22 +110,27 @@ async fn init_connection(
                 }
             } else {
                 // Create new window for this connection
-                let window = WebviewWindowBuilder::new(&app, &window_label, webview_url)
+                let mut builder = WebviewWindowBuilder::new(&app, &window_label, webview_url)
                     .title(format!("{} - {}", req_payload.conn_name.clone(), APP_NAME))
                     .inner_size(1450.0, 950.0)
                     .center()
-                    .title_bar_style(TitleBarStyle::Overlay)
                     .resizable(true)
                     .decorations(true)
                     .visible(true)
-                    .fullscreen(false)
-                    .build();
+                    .fullscreen(false);
+
+                #[cfg(target_os = "macos")]
+                {
+                    builder = builder.title_bar_style(tauri::TitleBarStyle::Overlay);
+                }
+
+                let window = builder.build();
 
                 match window {
                     Ok(w) => {
-                        w.start_dragging().unwrap();
+                        let _ = w.start_dragging();
                     }
-                    Err(e) => log_error!("Failed to create window: {}", e),
+                    Err(e) => log_error!("Failed to create window: {e}"),
                 }
             }
 

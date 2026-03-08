@@ -1,6 +1,5 @@
 use crate::config::{ConfigType, get_config_manager};
 use crate::constants::APP_NAME;
-use crate::{log_error, log_function, log_info};
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
