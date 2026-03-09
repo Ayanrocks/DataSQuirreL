@@ -74,10 +74,7 @@ impl ConnectionStorage {
         let connections = self.get_all_connections()?;
         let mut updated_connections = connections.clone();
 
-        if let Some(index) = connections
-            .iter()
-            .position(|c| c.conn_name == conn.conn_name)
-        {
+        if let Some(index) = connections.iter().position(|c| c.id == conn.id) {
             updated_connections[index] = conn.clone();
         } else {
             updated_connections.push(conn.clone());
@@ -141,7 +138,7 @@ impl ConnectionStorage {
         let connections = self.get_all_connections()?;
         let updated_connections: Vec<StoredConnection> = connections
             .into_iter()
-            .filter(|c| c.conn_name != conn_name && project_id != c.id)
+            .filter(|c| !(c.conn_name == conn_name && project_id == c.id))
             .collect();
 
         self.write_connections(&updated_connections)?;
