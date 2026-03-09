@@ -25,6 +25,13 @@ impl SqlConsoleStorage {
         Ok(Self { consoles_dir })
     }
 
+    pub fn with_dir(consoles_dir: PathBuf) -> io::Result<Self> {
+        if !consoles_dir.exists() {
+            fs::create_dir_all(&consoles_dir)?;
+        }
+        Ok(Self { consoles_dir })
+    }
+
     pub fn save_console_file(&self, file_name: &str, content: &str) -> io::Result<()> {
         log_function!(save_console_file, "file_name" => file_name);
         let file_path = self.consoles_dir.join(file_name);
@@ -87,4 +94,69 @@ static SQL_CONSOLE_STORAGE: Lazy<Mutex<SqlConsoleStorage>> = Lazy::new(|| {
 
 pub fn get_sql_console_storage() -> &'static Mutex<SqlConsoleStorage> {
     &SQL_CONSOLE_STORAGE
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn setup_storage() -> SqlConsoleStorage {
+        let temp_dir = env::temp_dir();
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let test_dir = temp_dir.join(format!("datasquirrel_test_consoles_{}", timestamp));
+        SqlConsoleStorage::with_dir(test_dir).unwrap()
+    }
+
+    #[test]
+    fn test_save_and_read_console_file() {
+        let storage = setup_storage();
+        storage
+            .save_console_file("test1.sql", "SELECT * FROM test;")
+            .unwrap();
+
+        let content = storage.read_console_file("test1.sql").unwrap();
+        assert_eq!(content, "SELECT * FROM test;");
+    }
+
+    #[test]
+    fn test_read_non_existent_file() {
+        let storage = setup_storage();
+        let result = storage.read_console_file("missing.sql");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind(), ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn test_list_console_files() {
+        let storage = setup_storage();
+        storage.save_console_file("file1.sql", "query 1").unwrap();
+        storage.save_console_file("file2.sql", "query 2").unwrap();
+        storage
+            .save_console_file("file3.txt", "not a query")
+            .unwrap();
+
+        let mut files = storage.list_console_files().unwrap();
+        files.sort();
+
+        assert_eq!(files.len(), 2);
+        assert_eq!(files[0], "file1.sql");
+        assert_eq!(files[1], "file2.sql");
+    }
+
+    #[test]
+    fn test_delete_console_file() {
+        let storage = setup_storage();
+        storage.save_console_file("todelete.sql", "data").unwrap();
+
+        assert!(storage.read_console_file("todelete.sql").is_ok());
+
+        storage.delete_console_file("todelete.sql").unwrap();
+
+        assert!(storage.read_console_file("todelete.sql").is_err());
+    }
 }

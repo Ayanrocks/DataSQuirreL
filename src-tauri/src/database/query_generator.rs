@@ -203,3 +203,179 @@ pub fn generate_preview_queries(
 
     Ok(queries)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_sql_value_string() {
+        let types = Some(HashMap::from([("name".to_string(), "text".to_string())]));
+        assert_eq!(
+            format_sql_value("O'Connor", "name", &types),
+            "'O''Connor'::text"
+        );
+    }
+
+    #[test]
+    fn test_format_sql_value_integer() {
+        let types = Some(HashMap::from([("id".to_string(), "integer".to_string())]));
+        assert_eq!(format_sql_value("42", "id", &types), "42::integer");
+        assert_eq!(format_sql_value("  ", "id", &types), "NULL");
+    }
+
+    #[test]
+    fn test_format_sql_value_unknown_type() {
+        let types = None;
+        assert_eq!(
+            format_sql_value("O'Connor", "name", &types),
+            "'O''Connor'::text"
+        );
+    }
+
+    #[test]
+    fn test_generate_insert_query() {
+        let mut new_values = HashMap::new();
+        new_values.insert("id".to_string(), "1".to_string());
+        new_values.insert("name".to_string(), "Alice".to_string());
+
+        let change = TransactionChange {
+            r#type: "INSERT".to_string(),
+            row_index: 0,
+            primary_keys: None,
+            original_row: None,
+            new_values: Some(new_values),
+        };
+
+        let column_types = Some(HashMap::from([
+            ("id".to_string(), "integer".to_string()),
+            ("name".to_string(), "text".to_string()),
+        ]));
+
+        let queries =
+            generate_preview_queries("public", "users", vec![change], column_types).unwrap();
+        assert_eq!(queries.len(), 1);
+        let q_clean = queries[0].replace(" ", "").replace("\n", "");
+        assert!(q_clean.starts_with("INSERTINTO\"public\".\"users\""));
+        assert!(q_clean.contains("\"id\""));
+        assert!(q_clean.contains("\"name\""));
+        assert!(q_clean.contains("1::integer"));
+        assert!(q_clean.contains("'Alice'::text"));
+    }
+
+    #[test]
+    fn test_generate_insert_empty_guard() {
+        let mut new_values = HashMap::new();
+        new_values.insert("name".to_string(), "  ".to_string());
+
+        let change = TransactionChange {
+            r#type: "INSERT".to_string(),
+            row_index: 0,
+            primary_keys: None,
+            original_row: None,
+            new_values: Some(new_values),
+        };
+
+        let err = generate_preview_queries("public", "users", vec![change], None).unwrap_err();
+        assert_eq!(
+            err,
+            "Safety Guard: Attempted to insert a completely empty row"
+        );
+    }
+
+    #[test]
+    fn test_generate_update_query() {
+        let mut new_values = HashMap::new();
+        new_values.insert("name".to_string(), "Bob".to_string());
+
+        let mut primary_keys = HashMap::new();
+        primary_keys.insert("id".to_string(), "2".to_string());
+
+        let change = TransactionChange {
+            r#type: "UPDATE".to_string(),
+            row_index: 0,
+            primary_keys: Some(primary_keys),
+            original_row: None,
+            new_values: Some(new_values),
+        };
+
+        let column_types = Some(HashMap::from([
+            ("id".to_string(), "integer".to_string()),
+            ("name".to_string(), "text".to_string()),
+        ]));
+
+        let queries =
+            generate_preview_queries("public", "users", vec![change], column_types).unwrap();
+        assert_eq!(queries.len(), 1);
+        let q_clean = queries[0].replace(" ", "").replace("\n", "");
+        assert!(q_clean.starts_with("UPDATE\"public\".\"users\""));
+        assert!(q_clean.contains("SET\"name\"='Bob'::text"));
+        assert!(q_clean.contains("WHERE\"id\"=2::integer"));
+    }
+
+    #[test]
+    fn test_generate_update_guard() {
+        let mut new_values = HashMap::new();
+        new_values.insert("name".to_string(), "Bob".to_string());
+
+        let change = TransactionChange {
+            r#type: "UPDATE".to_string(),
+            row_index: 0,
+            primary_keys: None,
+            original_row: None,
+            new_values: Some(new_values),
+        };
+
+        let err = generate_preview_queries("public", "users", vec![change], None).unwrap_err();
+        assert_eq!(
+            err,
+            "Safety Guard: Attempted UPDATE without WHERE clause identifiers"
+        );
+    }
+
+    #[test]
+    fn test_generate_delete_query() {
+        let mut original_row = HashMap::new();
+        original_row.insert("id".to_string(), "3".to_string());
+        original_row.insert("name".to_string(), "Charlie".to_string());
+
+        let change = TransactionChange {
+            r#type: "DELETE".to_string(),
+            row_index: 0,
+            primary_keys: None, // Testing fallback to original_row
+            original_row: Some(original_row),
+            new_values: None,
+        };
+
+        let column_types = Some(HashMap::from([
+            ("id".to_string(), "integer".to_string()),
+            ("name".to_string(), "text".to_string()),
+        ]));
+
+        let queries =
+            generate_preview_queries("public", "users", vec![change], column_types).unwrap();
+        assert_eq!(queries.len(), 1);
+        let q_clean = queries[0].replace(" ", "").replace("\n", "");
+        assert!(q_clean.starts_with("DELETEFROM\"public\".\"users\""));
+        assert!(q_clean.contains("\"id\"=3::integer"));
+        assert!(q_clean.contains("\"name\"='Charlie'::text"));
+        assert!(q_clean.contains("AND"));
+    }
+
+    #[test]
+    fn test_generate_delete_guard() {
+        let change = TransactionChange {
+            r#type: "DELETE".to_string(),
+            row_index: 0,
+            primary_keys: None,
+            original_row: None,
+            new_values: None,
+        };
+
+        let err = generate_preview_queries("public", "users", vec![change], None).unwrap_err();
+        assert_eq!(
+            err,
+            "Safety Guard: Attempted DELETE without WHERE clause identifiers"
+        );
+    }
+}

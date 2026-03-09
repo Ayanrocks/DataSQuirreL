@@ -373,3 +373,30 @@ macro_rules! log_function {
         let _exit_logger = ExitLogger { function_name };
     }};
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_log_dir() {
+        let dir = get_log_dir();
+        assert!(!dir.is_empty());
+        assert!(dir.contains(&APP_NAME.to_lowercase()));
+    }
+
+    #[test]
+    fn test_macros_compile() {
+        // We just ensure they compile. Since there's no initialized logger in this isolated
+        // test, it will just be a no-op at runtime (or log to tracing's default sink).
+        log_error!("Test error");
+        log_warn!("Test warning");
+        log_info!("Test info");
+        log_debug!("Test debug");
+        log_trace!("Test trace");
+
+        log_function!(test_macros_compile);
+        log_function!("custom_name");
+        log_function!(test_macros_compile, "arg1" => 42);
+    }
+}

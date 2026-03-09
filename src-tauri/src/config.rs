@@ -38,6 +38,13 @@ impl ConfigManager {
         Ok(Self { config_dir })
     }
 
+    pub fn with_dir(config_dir: PathBuf) -> io::Result<Self> {
+        if !config_dir.exists() {
+            fs::create_dir_all(&config_dir)?;
+        }
+        Ok(Self { config_dir })
+    }
+
     pub fn get_config_path(&self, config_type: &ConfigType) -> PathBuf {
         log_function!(get_config_path, "config_type" => config_type);
         let filename = match config_type {
