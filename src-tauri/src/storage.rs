@@ -80,13 +80,9 @@ impl ConnectionStorage {
             updated_connections.push(conn.clone());
         }
 
-        if self.mock_dir.is_some() {
+        if let Some(dir) = &self.mock_dir {
             // Mock keyring logic: persist password to a mock file keyed by connection id
-            let mock_keyring_path = self
-                .mock_dir
-                .as_ref()
-                .unwrap()
-                .join(format!("{}.mock_key", conn.id));
+            let mock_keyring_path = dir.join(format!("{}.mock_key", conn.id));
             std::fs::write(&mock_keyring_path, password)?;
             self.write_connections(&updated_connections)?;
             return Ok(());
@@ -126,12 +122,8 @@ impl ConnectionStorage {
     #[allow(dead_code)]
     pub fn get_password(&self, conn_id: &str) -> Result<String, Box<dyn Error>> {
         log_function!(get_password);
-        if self.mock_dir.is_some() {
-            let mock_keyring_path = self
-                .mock_dir
-                .as_ref()
-                .unwrap()
-                .join(format!("{}.mock_key", conn_id));
+        if let Some(dir) = &self.mock_dir {
+            let mock_keyring_path = dir.join(format!("{}.mock_key", conn_id));
             if mock_keyring_path.exists() {
                 let p = std::fs::read_to_string(&mock_keyring_path)?;
                 return Ok(p);
@@ -158,12 +150,8 @@ impl ConnectionStorage {
             .filter(|c| !(c.conn_name == conn_name && project_id == c.id))
             .collect();
 
-        if self.mock_dir.is_some() {
-            let mock_keyring_path = self
-                .mock_dir
-                .as_ref()
-                .unwrap()
-                .join(format!("{}.mock_key", project_id));
+        if let Some(dir) = &self.mock_dir {
+            let mock_keyring_path = dir.join(format!("{}.mock_key", project_id));
             if mock_keyring_path.exists() {
                 std::fs::remove_file(mock_keyring_path)?;
             }
