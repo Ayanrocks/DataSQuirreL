@@ -84,7 +84,16 @@ impl ConnectionStorage {
             // Mock keyring logic: persist password to a mock file keyed by connection id
             let mock_keyring_path = dir.join(format!("{}.mock_key", conn.id));
             std::fs::write(&mock_keyring_path, password)?;
-            self.write_connections(&updated_connections)?;
+
+            if let Err(e) = self.write_connections(&updated_connections) {
+                log_error!(
+                    "Failed to write connections after mock password save: {:?}",
+                    e
+                );
+                // Rollback: try to remove the mock file
+                let _ = std::fs::remove_file(&mock_keyring_path);
+                return Err(e);
+            }
             return Ok(());
         }
 
@@ -93,7 +102,14 @@ impl ConnectionStorage {
             Ok(_) => {
                 log_info!("Successfully saved to keyring");
                 // Only write to the config file after successfully persisting to keyring
-                self.write_connections(&updated_connections)?;
+                if let Err(e) = self.write_connections(&updated_connections) {
+                    log_error!("Failed to write connections after keyring save: {:?}", e);
+                    // Rollback: try to delete the credential
+                    if let Err(rollback_e) = entry.delete_credential() {
+                        log_error!("Failed to rollback keyring entry: {:?}", rollback_e);
+                    }
+                    return Err(e);
+                }
                 Ok(())
             }
             Err(keyring::Error::NoEntry) => {
@@ -145,6 +161,17 @@ impl ConnectionStorage {
     ) -> Result<String, Box<dyn Error>> {
         log_function!(delete_connection, "conn_name" => conn_name);
         let connections = self.get_all_connections()?;
+
+        let connection_exists = connections
+            .iter()
+            .any(|c| c.conn_name == conn_name && project_id == c.id);
+        if !connection_exists {
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Connection not found",
+            )));
+        }
+
         let updated_connections: Vec<StoredConnection> = connections
             .into_iter()
             .filter(|c| !(c.conn_name == conn_name && project_id == c.id))
@@ -208,11 +235,15 @@ mod tests {
         assert_eq!(conns.len(), 1);
         assert_eq!(conns[0].conn_name, "test1");
 
+        // Verify passwordretrieval
+        assert_eq!(storage.get_password("id1").unwrap(), "pass");
+
         let conn2 = mock_conn("test2", "id2");
-        storage.save_connection(&conn2, "pass").unwrap();
+        storage.save_connection(&conn2, "pass2").unwrap();
 
         let conns = storage.get_all_connections().unwrap();
         assert_eq!(conns.len(), 2);
+        assert_eq!(storage.get_password("id2").unwrap(), "pass2");
     }
 
     #[test]
@@ -222,11 +253,12 @@ mod tests {
         storage.save_connection(&conn1, "pass").unwrap();
 
         conn1.host_name = "127.0.0.1".to_string();
-        storage.save_connection(&conn1, "pass").unwrap();
+        storage.save_connection(&conn1, "new_pass").unwrap();
 
         let conns = storage.get_all_connections().unwrap();
         assert_eq!(conns.len(), 1);
         assert_eq!(conns[0].host_name, "127.0.0.1");
+        assert_eq!(storage.get_password("id1").unwrap(), "new_pass");
     }
 
     #[test]
@@ -260,5 +292,8 @@ mod tests {
         let conns = storage.get_all_connections().unwrap();
         assert_eq!(conns.len(), 1);
         assert_eq!(conns[0].conn_name, "keep_conn");
+
+        // Verify password deletion
+        assert!(storage.get_password("id1").is_err());
     }
 }
