@@ -80,10 +80,15 @@ impl ConnectionStorage {
             updated_connections.push(conn.clone());
         }
 
-        self.write_connections(&updated_connections)?;
-
         if self.mock_dir.is_some() {
-            // Mock keyring logic for tests
+            // Mock keyring logic: persist password to a mock file keyed by connection id
+            let mock_keyring_path = self
+                .mock_dir
+                .as_ref()
+                .unwrap()
+                .join(format!("{}.mock_key", conn.id));
+            std::fs::write(&mock_keyring_path, password)?;
+            self.write_connections(&updated_connections)?;
             return Ok(());
         }
 
@@ -91,6 +96,8 @@ impl ConnectionStorage {
         match entry.set_password(password) {
             Ok(_) => {
                 log_info!("Successfully saved to keyring");
+                // Only write to the config file after successfully persisting to keyring
+                self.write_connections(&updated_connections)?;
                 Ok(())
             }
             Err(keyring::Error::NoEntry) => {
@@ -110,20 +117,30 @@ impl ConnectionStorage {
     }
 
     #[allow(dead_code)]
-    pub fn get_connection(
-        &self,
-        conn_name: &str,
-    ) -> Result<Option<StoredConnection>, Box<dyn Error>> {
-        log_function!(get_connection, "conn_name" => conn_name);
+    pub fn get_connection(&self, id: &str) -> Result<Option<StoredConnection>, Box<dyn Error>> {
+        log_function!(get_connection, "id" => id);
         let connections = self.get_all_connections()?;
-        Ok(connections.into_iter().find(|c| c.conn_name == conn_name))
+        Ok(connections.into_iter().find(|c| c.id == id))
     }
 
     #[allow(dead_code)]
     pub fn get_password(&self, conn_id: &str) -> Result<String, Box<dyn Error>> {
         log_function!(get_password);
         if self.mock_dir.is_some() {
-            return Ok("mock_password".to_string());
+            let mock_keyring_path = self
+                .mock_dir
+                .as_ref()
+                .unwrap()
+                .join(format!("{}.mock_key", conn_id));
+            if mock_keyring_path.exists() {
+                let p = std::fs::read_to_string(&mock_keyring_path)?;
+                return Ok(p);
+            } else {
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "Mock password not found",
+                )));
+            }
         }
         let entry = Entry::new(APP_NAME, conn_id)?;
         Ok(entry.get_password()?)
@@ -141,14 +158,23 @@ impl ConnectionStorage {
             .filter(|c| !(c.conn_name == conn_name && project_id == c.id))
             .collect();
 
-        self.write_connections(&updated_connections)?;
-
         if self.mock_dir.is_some() {
+            let mock_keyring_path = self
+                .mock_dir
+                .as_ref()
+                .unwrap()
+                .join(format!("{}.mock_key", project_id));
+            if mock_keyring_path.exists() {
+                std::fs::remove_file(mock_keyring_path)?;
+            }
+            self.write_connections(&updated_connections)?;
             return Ok("Connection deleted successfully".to_string());
         }
 
         let entry = Entry::new(APP_NAME, project_id)?;
         entry.delete_credential()?;
+        // Delete from JSON only after credential removed successfully
+        self.write_connections(&updated_connections)?;
 
         Ok("Connection deleted successfully".to_string())
     }
@@ -221,11 +247,11 @@ mod tests {
         let conn1 = mock_conn("target_conn", "id1");
         storage.save_connection(&conn1, "pass").unwrap();
 
-        let found = storage.get_connection("target_conn").unwrap();
+        let found = storage.get_connection("id1").unwrap();
         assert!(found.is_some());
         assert_eq!(found.unwrap().id, "id1");
 
-        let not_found = storage.get_connection("missing");
+        let not_found = storage.get_connection("missing_id");
         assert!(not_found.unwrap().is_none());
     }
 
